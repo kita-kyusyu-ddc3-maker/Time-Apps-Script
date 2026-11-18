@@ -237,6 +237,30 @@
             接続を保存してデータ読込
           </button>
         </div>
+
+        <!-- ★追加：他端末導入用の号車別QRコード発行セクション -->
+        <div class="border-t border-zinc-200/80 pt-4 space-y-3">
+          <div>
+            <h3 class="text-sm font-black text-zinc-900">他端末導入用 QRコード発行</h3>
+            <p class="text-[11px] font-semibold text-zinc-400">号車を選んでQRコードをカメラで読み取ると、初期設定なしで自動接続されます</p>
+          </div>
+          <div class="flex items-center gap-2">
+            <select id="qr-car-select" class="clean-select flex-1 bg-white border border-zinc-200 rounded-xl px-3.5 py-2.5 text-sm font-black text-zinc-900 focus:border-zinc-900 focus:outline-none"></select>
+            <button type="button" id="generate-qr-btn" class="px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 active:scale-95 text-white font-extrabold text-xs shadow-xs transition shrink-0">
+              QR表示
+            </button>
+          </div>
+          <div id="qr-preview-box" class="hidden bg-white border border-zinc-200/90 rounded-2xl p-4 flex flex-col items-center text-center space-y-2.5 shadow-2xs">
+            <div id="qr-target-label" class="text-sm font-black text-zinc-900">15号車 専用QRコード</div>
+            <img id="qr-code-image" src="" alt="QRコード" class="w-48 h-48 rounded-xl border border-zinc-100 bg-white p-1" />
+            <p class="text-[11px] font-bold text-zinc-500 leading-relaxed">
+              スマホのカメラで読み取り後、<br>ブラウザメニューから「ホーム画面に追加」してください
+            </p>
+            <button type="button" id="copy-invite-url-btn" class="w-full py-2 rounded-xl bg-zinc-100 hover:bg-zinc-200/80 active:scale-95 text-zinc-800 font-extrabold text-xs transition">
+              配布用URLをコピー
+            </button>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -263,6 +287,12 @@
     const paramCar = parseInt(urlParams.get('car'), 10);
     const excelCarIndex = (!isNaN(paramCar) && paramCar >= 0 && paramCar <= 34) ? paramCar : 15;
     const isSingleCourseCar = (excelCarIndex === 14);
+
+    // ★QRコードのURLパラメータ(?gas=...)があれば自動取得してスマホに永続保存（一発自動接続）
+    const paramGasUrl = urlParams.get('gas');
+    if (paramGasUrl && paramGasUrl.startsWith('http')) {
+      localStorage.setItem('store_arrival_gas_url', paramGasUrl.trim());
+    }
 
     // 自分自身のGASウェブアプリURLを自動検出
     const AUTO_GAS_URL = (typeof google !== 'undefined' && google.script && google.script.run)
@@ -1024,6 +1054,7 @@
 
       document.getElementById('open-gas-modal-btn').addEventListener('click', () => {
         document.getElementById('gas-url-input').value = gasWebAppUrl;
+        initQrCarSelector();
         const modal = document.getElementById('gas-modal');
         modal.classList.remove('hidden');
         modal.classList.add('flex');
@@ -1043,6 +1074,70 @@
         modal.classList.add('hidden');
         modal.classList.remove('flex');
         fetchSheetData();
+      });
+
+      // ★QRコード発行＆配布URLコピー処理
+      let currentInviteUrl = '';
+      function initQrCarSelector() {
+        const sel = document.getElementById('qr-car-select');
+        if (sel.options.length === 0) {
+          for (let c = 0; c <= 34; c++) {
+            const opt = document.createElement('option');
+            opt.value = String(c);
+            opt.textContent = `${c}号車`;
+            sel.appendChild(opt);
+          }
+        }
+        sel.value = String(excelCarIndex);
+        renderQrCodeForSelectedCar();
+      }
+
+      function renderQrCodeForSelectedCar() {
+        const inputUrl = document.getElementById('gas-url-input').value.trim() || gasWebAppUrl;
+        const targetCar = document.getElementById('qr-car-select').value;
+        const previewBox = document.getElementById('qr-preview-box');
+
+        if (!inputUrl) {
+          previewBox.classList.add('hidden');
+          return;
+        }
+
+        const basePageUrl = window.location.href.split('?')[0];
+        const shareParams = new URLSearchParams({
+          car: targetCar,
+          gas: inputUrl
+        });
+        currentInviteUrl = `${basePageUrl}?${shareParams.toString()}`;
+
+        document.getElementById('qr-target-label').textContent = `${targetCar}号車 専用QRコード`;
+        document.getElementById('qr-code-image').src =
+          `https://api.qrserver.com/v1/create-qr-code/?size=240x240&margin=8&data=${encodeURIComponent(currentInviteUrl)}`;
+        previewBox.classList.remove('hidden');
+      }
+
+      document.getElementById('generate-qr-btn').addEventListener('click', () => {
+        const inputUrl = document.getElementById('gas-url-input').value.trim();
+        if (!inputUrl) {
+          showToast('先に上の欄にGAS ウェブアプリURLを入力してください');
+          return;
+        }
+        gasWebAppUrl = inputUrl;
+        localStorage.setItem('store_arrival_gas_url', gasWebAppUrl);
+        renderQrCodeForSelectedCar();
+        showToast('専用QRコードを表示しました');
+      });
+
+      document.getElementById('qr-car-select').addEventListener('change', renderQrCodeForSelectedCar);
+
+      document.getElementById('copy-invite-url-btn').addEventListener('click', () => {
+        if (!currentInviteUrl) return;
+        const tempInput = document.createElement('input');
+        tempInput.value = currentInviteUrl;
+        document.body.appendChild(tempInput);
+        tempInput.select();
+        document.execCommand('copy');
+        document.body.removeChild(tempInput);
+        showToast('配布用URLをコピーしました');
       });
 
       document.getElementById('open-history-btn').addEventListener('click', () => {
