@@ -1017,93 +1017,96 @@
         const ctx = canvas.getContext('2d');
         if (!ctx) return;
 
-        // 1. リッチなダークネイビー〜ブルーのグラデーション背景
+        // 1. 鮮やかなコバルトブルー〜スカイシアンのグラデーション背景
         const bgGrad = ctx.createLinearGradient(0, 0, size, size);
-        bgGrad.addColorStop(0, '#0f172a');
-        bgGrad.addColorStop(0.55, '#1e293b');
-        bgGrad.addColorStop(1, '#1d4ed8');
+        bgGrad.addColorStop(0, '#0284c7');
+        bgGrad.addColorStop(0.5, '#2563eb');
+        bgGrad.addColorStop(1, '#4f46e5');
         ctx.fillStyle = bgGrad;
         ctx.fillRect(0, 0, size, size);
 
-        // 2. 背景の柔らかな光のアクセント
-        const glow = ctx.createRadialGradient(size * 0.78, size * 0.22, 10, size * 0.78, size * 0.22, size * 0.55);
-        glow.addColorStop(0, 'rgba(56, 189, 248, 0.35)');
+        // 2. 上部からの明るいハイライト（立体感）
+        const glow = ctx.createRadialGradient(size * 0.25, size * 0.15, 20, size * 0.35, size * 0.25, size * 0.75);
+        glow.addColorStop(0, 'rgba(125, 211, 252, 0.55)');
         glow.addColorStop(1, 'rgba(56, 189, 248, 0)');
         ctx.fillStyle = glow;
         ctx.fillRect(0, 0, size, size);
 
-        // 3. モダンな配送トラックのシルエット（白）
+        // 3. アイコン枠ギリギリまで大きく描いた鮮明な配送トラック（白＋鮮やかアクセント）
+        // 荷台部分（大きくワイドに配置）
         ctx.fillStyle = '#ffffff';
-        // 荷台部分（角丸）
         ctx.beginPath();
-        ctx.roundRect(86, 168, 224, 152, 24);
+        ctx.roundRect(36, 118, 286, 218, 30);
         ctx.fill();
 
-        // 運転席キャビン
+        // 荷台の鮮やかなオレンジ・ゴールドのスピードライン装飾
+        ctx.fillStyle = '#f59e0b';
         ctx.beginPath();
-        ctx.moveTo(324, 206);
-        ctx.lineTo(384, 206);
-        ctx.quadraticCurveTo(404, 206, 412, 224);
-        ctx.lineTo(428, 264);
-        ctx.quadraticCurveTo(432, 274, 432, 286);
-        ctx.lineTo(432, 304);
-        ctx.quadraticCurveTo(432, 320, 416, 320);
-        ctx.lineTo(324, 320);
+        ctx.roundRect(36, 286, 286, 24, 0);
+        ctx.fill();
+
+        // 運転席キャビン（大きく存在感のあるシルエット）
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.moveTo(338, 166);
+        ctx.lineTo(416, 166);
+        ctx.quadraticCurveTo(444, 166, 454, 192);
+        ctx.lineTo(476, 250);
+        ctx.quadraticCurveTo(482, 266, 482, 284);
+        ctx.lineTo(482, 314);
+        ctx.quadraticCurveTo(482, 336, 460, 336);
+        ctx.lineTo(338, 336);
         ctx.closePath();
         ctx.fill();
 
-        // キャビンの窓（ネイビー抜きの窓）
-        ctx.fillStyle = '#1e3a8a';
+        // キャビンの大きなフロントウィンドウ（鮮やかなディープブルー抜き）
+        ctx.fillStyle = '#1d4ed8';
         ctx.beginPath();
-        ctx.moveTo(338, 222);
-        ctx.lineTo(378, 222);
-        ctx.quadraticCurveTo(390, 222, 395, 233);
-        ctx.lineTo(408, 264);
-        ctx.lineTo(338, 264);
+        ctx.moveTo(358, 188);
+        ctx.lineTo(408, 188);
+        ctx.quadraticCurveTo(426, 188, 434, 204);
+        ctx.lineTo(452, 252);
+        ctx.lineTo(358, 252);
         ctx.closePath();
         ctx.fill();
 
-        // 4. 荷台の中の「定時・到着チェック」時計バッジ（スカイブルー）
-        ctx.fillStyle = '#0ea5e9';
+        // 4. 荷台中央に大きく配置した「定時チェック時計」バッジ（鮮やかなエメラルドグリーン）
+        ctx.fillStyle = '#10b981';
         ctx.beginPath();
-        ctx.arc(198, 244, 52, 0, Math.PI * 2);
+        ctx.arc(179, 204, 64, 0, Math.PI * 2);
         ctx.fill();
 
-        // 時計の針（白）
+        // 時計の白い縁取りと太い針
         ctx.strokeStyle = '#ffffff';
-        ctx.lineWidth = 11;
+        ctx.lineWidth = 14;
         ctx.lineCap = 'round';
         ctx.lineJoin = 'round';
         ctx.beginPath();
-        ctx.moveTo(198, 214);
-        ctx.lineTo(198, 244);
-        ctx.lineTo(222, 258);
+        ctx.moveTo(179, 166);
+        ctx.lineTo(179, 204);
+        ctx.lineTo(210, 222);
         ctx.stroke();
 
-        // 5. タイヤ（ダーク枠＋白ホイール）
-        [154, 368].forEach((wx) => {
+        // 5. 大きなタイヤ（2輪）
+        [128, 398].forEach((wx) => {
+          // タイヤ外周（濃いネイビー）
           ctx.fillStyle = '#0f172a';
           ctx.beginPath();
-          ctx.arc(wx, 326, 42, 0, Math.PI * 2);
+          ctx.arc(wx, 344, 56, 0, Math.PI * 2);
           ctx.fill();
 
+          // ホイール（白）
           ctx.fillStyle = '#ffffff';
           ctx.beginPath();
-          ctx.arc(wx, 326, 26, 0, Math.PI * 2);
+          ctx.arc(wx, 344, 34, 0, Math.PI * 2);
           ctx.fill();
 
-          ctx.fillStyle = '#38bdf8';
+          // センターキャップ（鮮やかなスカイブルー）
+          ctx.fillStyle = '#0284c7';
           ctx.beginPath();
-          ctx.arc(wx, 326, 10, 0, Math.PI * 2);
+          ctx.arc(wx, 344, 14, 0, Math.PI * 2);
           ctx.fill();
         });
-
-        // 6. 下部にアプリ名「店着記録」をスッキリ配置
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.92)';
-        ctx.font = '900 44px "Noto Sans JP", "Inter", sans-serif';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText('店着記録', size / 2, 426);
 
         const iconDataUrl = canvas.toDataURL('image/png');
         const appleIcon = document.getElementById('app-apple-touch-icon');
