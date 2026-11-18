@@ -3,6 +3,12 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="店着記録" />
+  <meta name="theme-color" content="#0f172a" />
+  <link id="app-apple-touch-icon" rel="apple-touch-icon" sizes="180x180" href="" />
+  <link id="app-favicon" rel="icon" type="image/png" href="" />
   <title>店着時間記録</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -1001,7 +1007,114 @@
       document.getElementById('clock-display').textContent = `${pad2(now.getHours())}:${pad2(now.getMinutes())}`;
     }
 
+    // ★ネイティブアプリ風のホーム画面アイコン（iOS / Android対応）を動的生成
+    function generateAppIcons() {
+      try {
+        const size = 512;
+        const canvas = document.createElement('canvas');
+        canvas.width = size;
+        canvas.height = size;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return;
+
+        // 1. リッチなダークネイビー〜ブルーのグラデーション背景
+        const bgGrad = ctx.createLinearGradient(0, 0, size, size);
+        bgGrad.addColorStop(0, '#0f172a');
+        bgGrad.addColorStop(0.55, '#1e293b');
+        bgGrad.addColorStop(1, '#1d4ed8');
+        ctx.fillStyle = bgGrad;
+        ctx.fillRect(0, 0, size, size);
+
+        // 2. 背景の柔らかな光のアクセント
+        const glow = ctx.createRadialGradient(size * 0.78, size * 0.22, 10, size * 0.78, size * 0.22, size * 0.55);
+        glow.addColorStop(0, 'rgba(56, 189, 248, 0.35)');
+        glow.addColorStop(1, 'rgba(56, 189, 248, 0)');
+        ctx.fillStyle = glow;
+        ctx.fillRect(0, 0, size, size);
+
+        // 3. モダンな配送トラックのシルエット（白）
+        ctx.fillStyle = '#ffffff';
+        // 荷台部分（角丸）
+        ctx.beginPath();
+        ctx.roundRect(86, 168, 224, 152, 24);
+        ctx.fill();
+
+        // 運転席キャビン
+        ctx.beginPath();
+        ctx.moveTo(324, 206);
+        ctx.lineTo(384, 206);
+        ctx.quadraticCurveTo(404, 206, 412, 224);
+        ctx.lineTo(428, 264);
+        ctx.quadraticCurveTo(432, 274, 432, 286);
+        ctx.lineTo(432, 304);
+        ctx.quadraticCurveTo(432, 320, 416, 320);
+        ctx.lineTo(324, 320);
+        ctx.closePath();
+        ctx.fill();
+
+        // キャビンの窓（ネイビー抜きの窓）
+        ctx.fillStyle = '#1e3a8a';
+        ctx.beginPath();
+        ctx.moveTo(338, 222);
+        ctx.lineTo(378, 222);
+        ctx.quadraticCurveTo(390, 222, 395, 233);
+        ctx.lineTo(408, 264);
+        ctx.lineTo(338, 264);
+        ctx.closePath();
+        ctx.fill();
+
+        // 4. 荷台の中の「定時・到着チェック」時計バッジ（スカイブルー）
+        ctx.fillStyle = '#0ea5e9';
+        ctx.beginPath();
+        ctx.arc(198, 244, 52, 0, Math.PI * 2);
+        ctx.fill();
+
+        // 時計の針（白）
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 11;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        ctx.beginPath();
+        ctx.moveTo(198, 214);
+        ctx.lineTo(198, 244);
+        ctx.lineTo(222, 258);
+        ctx.stroke();
+
+        // 5. タイヤ（ダーク枠＋白ホイール）
+        [154, 368].forEach((wx) => {
+          ctx.fillStyle = '#0f172a';
+          ctx.beginPath();
+          ctx.arc(wx, 326, 42, 0, Math.PI * 2);
+          ctx.fill();
+
+          ctx.fillStyle = '#ffffff';
+          ctx.beginPath();
+          ctx.arc(wx, 326, 26, 0, Math.PI * 2);
+          ctx.fill();
+
+          ctx.fillStyle = '#38bdf8';
+          ctx.beginPath();
+          ctx.arc(wx, 326, 10, 0, Math.PI * 2);
+          ctx.fill();
+        });
+
+        // 6. 下部にアプリ名「店着記録」をスッキリ配置
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.92)';
+        ctx.font = '900 44px "Noto Sans JP", "Inter", sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('店着記録', size / 2, 426);
+
+        const iconDataUrl = canvas.toDataURL('image/png');
+        const appleIcon = document.getElementById('app-apple-touch-icon');
+        const favIcon = document.getElementById('app-favicon');
+        if (appleIcon) appleIcon.href = iconDataUrl;
+        if (favIcon) favIcon.href = iconDataUrl;
+      } catch (e) {}
+    }
+
     document.addEventListener('DOMContentLoaded', () => {
+      generateAppIcons();
       initTimeSelectOptions();
       updateClock();
       setInterval(updateClock, 10000);
