@@ -32,6 +32,68 @@
       background-position: right 0.9rem center;
       background-size: 1rem;
     }
+    /* iPhoneタイマー風 ドラムロール（ピッカーホイール） */
+    .wheel-viewport {
+      position: relative;
+      height: 168px;
+      overflow: hidden;
+      touch-action: none;
+      user-select: none;
+      -webkit-user-select: none;
+      cursor: grab;
+    }
+    .wheel-viewport:active {
+      cursor: grabbing;
+    }
+    .wheel-mask {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      z-index: 20;
+      background: linear-gradient(
+        to bottom,
+        rgba(255, 255, 255, 0.96) 0%,
+        rgba(255, 255, 255, 0.72) 22%,
+        rgba(255, 255, 255, 0.0) 38%,
+        rgba(255, 255, 255, 0.0) 62%,
+        rgba(255, 255, 255, 0.72) 78%,
+        rgba(255, 255, 255, 0.96) 100%
+      );
+    }
+    .wheel-highlight-bar {
+      position: absolute;
+      left: 8px;
+      right: 8px;
+      top: 50%;
+      height: 44px;
+      transform: translateY(-50%);
+      border-radius: 14px;
+      background: rgba(241, 245, 249, 0.85);
+      border-top: 1px solid rgba(203, 213, 225, 0.8);
+      border-bottom: 1px solid rgba(203, 213, 225, 0.8);
+      pointer-events: none;
+      z-index: 5;
+    }
+    .wheel-reel {
+      position: relative;
+      z-index: 10;
+      will-change: transform;
+    }
+    .wheel-item {
+      height: 44px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.85rem;
+      font-weight: 800;
+      color: #71717a;
+      transition: color 0.1s ease, transform 0.1s ease;
+      transform-origin: center center;
+    }
+    .wheel-item.is-selected {
+      color: #09090b;
+      font-weight: 900;
+    }
     @keyframes sheetSlideUp {
       from { transform: translateY(32px); opacity: 0; }
       to { transform: translateY(0); opacity: 1; }
@@ -171,36 +233,51 @@
               <span id="modal-last-badge" class="hidden text-[11px] font-extrabold text-emerald-800 bg-emerald-50 border border-emerald-200/80 px-2.5 py-0.5 rounded-full">最終店舗</span>
             </div>
             <h2 id="modal-store-name" class="text-2xl font-black text-zinc-900 tracking-tight leading-snug">店舗名</h2>
-            <p class="text-xs font-semibold text-zinc-400 mt-0.5">
-              指定定時 <span id="modal-scheduled-time" class="text-zinc-800 font-extrabold text-sm tabular-nums ml-1">--:--</span>
-            </p>
+            <div class="text-xs font-semibold text-zinc-400 mt-1 tabular-nums">
+              予定定時 <span id="modal-scheduled-time" class="text-zinc-800 font-extrabold">--:--</span>
+            </div>
           </div>
-          <button type="button" id="close-arrival-modal-btn" class="w-9 h-9 rounded-full bg-white border border-zinc-200/90 active:bg-zinc-100 text-zinc-500 flex items-center justify-center transition shrink-0 shadow-2xs">
-            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-          </button>
+          <button type="button" id="close-arrival-modal-btn" class="w-9 h-9 rounded-full bg-white border border-zinc-200/90 text-zinc-500 hover:text-zinc-800 active:scale-95 flex items-center justify-center shrink-0 shadow-2xs">✕</button>
         </div>
 
-        <div class="space-y-3">
-          <div class="flex items-center justify-between">
-            <span class="text-xs font-extrabold text-zinc-600">店着時間を入力</span>
-            <button type="button" id="set-now-btn" class="inline-flex items-center gap-1.5 text-xs font-extrabold text-zinc-800 bg-white border border-zinc-200/90 hover:bg-zinc-50 active:scale-95 px-3 py-1.5 rounded-full shadow-2xs transition">
-              <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-              <span>現在時刻</span>
+        <div class="space-y-4">
+          <div class="flex items-center justify-between px-1">
+            <span class="text-xs font-extrabold text-zinc-500 tracking-wide">到着時刻を選択</span>
+            <button type="button" id="set-now-btn" class="text-xs font-extrabold text-zinc-800 bg-white border border-zinc-200/90 hover:bg-zinc-50 active:scale-95 px-3 py-1.5 rounded-full transition shadow-2xs">
+              現在時刻
             </button>
           </div>
 
-          <div class="bg-white rounded-3xl p-4 border border-zinc-200/85 shadow-[0_2px_10px_rgba(24,24,27,0.03)]">
-            <div class="grid grid-cols-11 items-center gap-2">
-              <div class="col-span-5">
-                <label for="select-hour" class="block text-[10px] font-extrabold text-zinc-400 text-center mb-1 tracking-wider">時 (HOUR)</label>
-                <select id="select-hour" class="clean-select w-full h-16 bg-[#FAFAFB] border-2 border-zinc-200 focus:border-zinc-900 rounded-2xl px-4 text-3xl font-black text-zinc-900 tabular-nums text-center shadow-2xs focus:outline-none transition cursor-pointer"></select>
+          <div class="bg-white rounded-3xl px-3 py-2.5 border border-zinc-200/85 shadow-[0_2px_12px_rgba(24,24,27,0.04)] relative">
+            <div class="grid grid-cols-11 items-center">
+              <!-- 時 (HOUR) ドラムリール -->
+              <div class="col-span-5 flex flex-col items-center">
+                <span class="text-[10px] font-extrabold text-zinc-400 tracking-wider mb-0.5">時 (HOUR)</span>
+                <div id="wheel-hour-viewport" class="wheel-viewport w-full rounded-2xl">
+                  <div class="wheel-highlight-bar"></div>
+                  <div id="wheel-hour-reel" class="wheel-reel"></div>
+                  <div class="wheel-mask"></div>
+                </div>
               </div>
-              <div class="col-span-1 text-center text-2xl font-black text-zinc-300 pt-4">:</div>
-              <div class="col-span-5">
-                <label for="select-minute" class="block text-[10px] font-extrabold text-zinc-400 text-center mb-1 tracking-wider">分 (MIN)</label>
-                <select id="select-minute" class="clean-select w-full h-16 bg-[#FAFAFB] border-2 border-zinc-200 focus:border-zinc-900 rounded-2xl px-4 text-3xl font-black text-zinc-900 tabular-nums text-center shadow-2xs focus:outline-none transition cursor-pointer"></select>
+
+              <!-- 中央コロン -->
+              <div class="col-span-1 flex flex-col items-center justify-center pt-4">
+                <span class="text-2xl font-black text-zinc-800 pb-1">:</span>
+              </div>
+
+              <!-- 分 (MIN) ドラムリール -->
+              <div class="col-span-5 flex flex-col items-center">
+                <span class="text-[10px] font-extrabold text-zinc-400 tracking-wider mb-0.5">分 (MIN)</span>
+                <div id="wheel-minute-viewport" class="wheel-viewport w-full rounded-2xl">
+                  <div class="wheel-highlight-bar"></div>
+                  <div id="wheel-minute-reel" class="wheel-reel"></div>
+                  <div class="wheel-mask"></div>
+                </div>
               </div>
             </div>
+            <!-- 値保持用の隠しinput -->
+            <input type="hidden" id="select-hour" value="00" />
+            <input type="hidden" id="select-minute" value="00" />
           </div>
 
           <div id="modal-diff-preview" class="py-3 px-4 rounded-2xl bg-emerald-100/75 text-emerald-900 text-center font-extrabold text-xs tabular-nums transition-colors">
@@ -335,7 +412,8 @@
 
     let arrivalLogs = [];
     let selectedStoreForModal = null;
-    let isSearchingWheel = false;
+    let hourWheelController = null;
+    let minuteWheelController = null;
 
     function pad2(n) {
       return String(n).padStart(2, '0');
@@ -472,46 +550,47 @@
 
     function triggerDialWheelTick() {
       try {
-        if (navigator.vibrate) navigator.vibrate(6);
+        if (navigator.vibrate) navigator.vibrate(5);
+        const ctx = getAudioCtx();
+        if (!ctx) return;
+        const now = ctx.currentTime;
+
+        // iPhoneピッカー特有の短い高音クリック（カリッ）
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(1650, now);
+        osc.frequency.exponentialRampToValueAtTime(620, now + 0.018);
+
+        gain.gain.setValueAtTime(0.001, now);
+        gain.gain.linearRampToValueAtTime(0.085, now + 0.002);
+        gain.gain.exponentialRampToValueAtTime(0.0008, now + 0.022);
+
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.025);
+      } catch (e) {}
+    }
+
+    function triggerDialSelectChime() {
+      try {
+        if (navigator.vibrate) navigator.vibrate(10);
         const ctx = getAudioCtx();
         if (!ctx) return;
         const now = ctx.currentTime;
         const osc = ctx.createOscillator();
         const gain = ctx.createGain();
         osc.type = 'sine';
-        osc.frequency.setValueAtTime(520, now);
-        osc.frequency.exponentialRampToValueAtTime(920, now + 0.055);
+        osc.frequency.setValueAtTime(1180, now);
+        osc.frequency.exponentialRampToValueAtTime(840, now + 0.03);
         gain.gain.setValueAtTime(0.001, now);
-        gain.gain.linearRampToValueAtTime(0.06, now + 0.01);
-        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.065);
+        gain.gain.linearRampToValueAtTime(0.055, now + 0.004);
+        gain.gain.exponentialRampToValueAtTime(0.0008, now + 0.035);
         osc.connect(gain);
         gain.connect(ctx.destination);
         osc.start(now);
-        osc.stop(now + 0.07);
-      } catch (e) {}
-    }
-
-    function triggerDialSelectChime() {
-      try {
-        if (navigator.vibrate) navigator.vibrate(14);
-        const ctx = getAudioCtx();
-        if (!ctx) return;
-        const now = ctx.currentTime;
-        [1046.5, 1567.98].forEach((freq, i) => {
-          const t = now + i * 0.055;
-          const osc = ctx.createOscillator();
-          const gain = ctx.createGain();
-          osc.type = 'sine';
-          osc.frequency.setValueAtTime(freq * 0.94, t);
-          osc.frequency.exponentialRampToValueAtTime(freq, t + 0.03);
-          gain.gain.setValueAtTime(0.001, t);
-          gain.gain.linearRampToValueAtTime(0.075, t + 0.012);
-          gain.gain.exponentialRampToValueAtTime(0.0008, t + 0.34);
-          osc.connect(gain);
-          gain.connect(ctx.destination);
-          osc.start(t);
-          osc.stop(t + 0.36);
-        });
+        osc.stop(now + 0.04);
       } catch (e) {}
     }
 
@@ -562,36 +641,250 @@
       } catch (e) {}
     }
 
+    // ★iPhoneタイマー風 縦型ドラムホイール（慣性スクロール＆スナップ付き）
+    function createDrumWheel({ viewportId, reelId, hiddenInputId, maxCount, onValueChange }) {
+      const viewport = document.getElementById(viewportId);
+      const reel = document.getElementById(reelId);
+      const hiddenInput = document.getElementById(hiddenInputId);
+
+      const ITEM_HEIGHT = 44;
+      const VIEWPORT_HEIGHT = 168;
+      const CENTER_OFFSET = (VIEWPORT_HEIGHT - ITEM_HEIGHT) / 2;
+
+      reel.innerHTML = '';
+      const itemEls = [];
+      for (let i = 0; i < maxCount; i++) {
+        const div = document.createElement('div');
+        div.className = 'wheel-item tabular-nums';
+        div.textContent = pad2(i);
+        div.dataset.index = String(i);
+        reel.appendChild(div);
+        itemEls.push(div);
+      }
+
+      let currentOffset = 0;
+      let currentIndex = 0;
+      let isDragging = false;
+      let startY = 0;
+      let startOffset = 0;
+      let lastTouchY = 0;
+      let lastTouchTime = 0;
+      let velocity = 0;
+      let animFrameId = null;
+
+      function clampOffset(offset) {
+        const minOffset = -(maxCount - 1) * ITEM_HEIGHT;
+        const maxOffset = 0;
+        if (offset > maxOffset) return maxOffset + (offset - maxOffset) * 0.28;
+        if (offset < minOffset) return minOffset + (offset - minOffset) * 0.28;
+        return offset;
+      }
+
+      function renderWheel(offset, silent = false) {
+        currentOffset = offset;
+        reel.style.transform = `translate3d(0, ${CENTER_OFFSET + offset}px, 0)`;
+
+        const rawIdx = Math.round(-offset / ITEM_HEIGHT);
+        const clampedIdx = Math.max(0, Math.min(maxCount - 1, rawIdx));
+
+        if (clampedIdx !== currentIndex) {
+          currentIndex = clampedIdx;
+          hiddenInput.value = pad2(currentIndex);
+          if (!silent) triggerDialWheelTick();
+          if (onValueChange) onValueChange(pad2(currentIndex));
+        }
+
+        // 3D円筒遠近感（中央を1.0、上下に離れるほど縮小・回転）
+        for (let i = 0; i < maxCount; i++) {
+          const dist = i - (-offset / ITEM_HEIGHT);
+          if (Math.abs(dist) > 3.5) continue;
+          const el = itemEls[i];
+          const angle = Math.max(-65, Math.min(65, dist * 22));
+          const scale = Math.max(0.76, 1 - Math.abs(dist) * 0.085);
+          el.style.transform = `perspective(240px) rotateX(${-angle}deg) scale(${scale})`;
+          if (i === clampedIdx) {
+            el.classList.add('is-selected');
+          } else {
+            el.classList.remove('is-selected');
+          }
+        }
+      }
+
+      function animateToOffset(targetOffset, playFinishChime = true) {
+        cancelAnimationFrame(animFrameId);
+        function step() {
+          const diff = targetOffset - currentOffset;
+          if (Math.abs(diff) < 0.4) {
+            renderWheel(targetOffset, true);
+            if (playFinishChime) triggerDialSelectChime();
+            return;
+          }
+          renderWheel(currentOffset + diff * 0.24, false);
+          animFrameId = requestAnimationFrame(step);
+        }
+        animFrameId = requestAnimationFrame(step);
+      }
+
+      function snapToNearest() {
+        const minOffset = -(maxCount - 1) * ITEM_HEIGHT;
+        const bounded = Math.max(minOffset, Math.min(0, currentOffset));
+        const nearestIdx = Math.round(-bounded / ITEM_HEIGHT);
+        animateToOffset(-nearestIdx * ITEM_HEIGHT, true);
+      }
+
+      function startInertia(initialVel) {
+        cancelAnimationFrame(animFrameId);
+        let vel = initialVel;
+        const minOffset = -(maxCount - 1) * ITEM_HEIGHT;
+
+        function inertiaStep() {
+          vel *= 0.92;
+          let nextOffset = currentOffset + vel;
+
+          if (nextOffset > 0 || nextOffset < minOffset) {
+            snapToNearest();
+            return;
+          }
+
+          renderWheel(nextOffset, false);
+
+          if (Math.abs(vel) < 0.7) {
+            snapToNearest();
+            return;
+          }
+          animFrameId = requestAnimationFrame(inertiaStep);
+        }
+        animFrameId = requestAnimationFrame(inertiaStep);
+      }
+
+      // タッチ操作（スマホ指スワイプ）
+      viewport.addEventListener('touchstart', (e) => {
+        if (e.touches.length !== 1) return;
+        cancelAnimationFrame(animFrameId);
+        isDragging = true;
+        startY = e.touches[0].clientY;
+        startOffset = currentOffset;
+        lastTouchY = startY;
+        lastTouchTime = performance.now();
+        velocity = 0;
+      }, { passive: true });
+
+      viewport.addEventListener('touchmove', (e) => {
+        if (!isDragging || e.touches.length !== 1) return;
+        const y = e.touches[0].clientY;
+        const now = performance.now();
+        const dt = now - lastTouchTime;
+        if (dt > 0) {
+          velocity = ((y - lastTouchY) / dt) * 16;
+        }
+        lastTouchY = y;
+        lastTouchTime = now;
+
+        const deltaY = y - startY;
+        renderWheel(clampOffset(startOffset + deltaY), false);
+      }, { passive: true });
+
+      viewport.addEventListener('touchend', (e) => {
+        if (!isDragging) return;
+        isDragging = false;
+        const endY = (e.changedTouches && e.changedTouches[0]) ? e.changedTouches[0].clientY : lastTouchY;
+        // ほとんど動かずタップした場合は、タップした数字の位置へ移動
+        if (Math.abs(endY - startY) < 6) {
+          const targetEl = document.elementFromPoint(
+            viewport.getBoundingClientRect().left + viewport.clientWidth / 2,
+            endY
+          );
+          if (targetEl && targetEl.dataset && targetEl.dataset.index !== undefined) {
+            const tappedIdx = parseInt(targetEl.dataset.index, 10);
+            animateToOffset(-tappedIdx * ITEM_HEIGHT, true);
+            return;
+          }
+        }
+        if (Math.abs(velocity) > 1.8) {
+          startInertia(velocity);
+        } else {
+          snapToNearest();
+        }
+      });
+
+      // PCマウスドラッグ＆ホイール対応
+      viewport.addEventListener('mousedown', (e) => {
+        cancelAnimationFrame(animFrameId);
+        isDragging = true;
+        startY = e.clientY;
+        startOffset = currentOffset;
+        lastTouchY = startY;
+        lastTouchTime = performance.now();
+        velocity = 0;
+      });
+
+      window.addEventListener('mousemove', (e) => {
+        if (!isDragging) return;
+        const now = performance.now();
+        const dt = now - lastTouchTime;
+        if (dt > 0) velocity = ((e.clientY - lastTouchY) / dt) * 16;
+        lastTouchY = e.clientY;
+        lastTouchTime = now;
+        renderWheel(clampOffset(startOffset + (e.clientY - startY)), false);
+      });
+
+      window.addEventListener('mouseup', (e) => {
+        if (!isDragging) return;
+        isDragging = false;
+        if (Math.abs(e.clientY - startY) < 5 && e.target.dataset && e.target.dataset.index !== undefined) {
+          const tappedIdx = parseInt(e.target.dataset.index, 10);
+          animateToOffset(-tappedIdx * ITEM_HEIGHT, true);
+          return;
+        }
+        if (Math.abs(velocity) > 1.8) {
+          startInertia(velocity);
+        } else {
+          snapToNearest();
+        }
+      });
+
+      let wheelSnapTimer = null;
+      viewport.addEventListener('wheel', (e) => {
+        e.preventDefault();
+        cancelAnimationFrame(animFrameId);
+        const minOffset = -(maxCount - 1) * ITEM_HEIGHT;
+        const next = Math.max(minOffset, Math.min(0, currentOffset - e.deltaY * 0.45));
+        renderWheel(next, false);
+        clearTimeout(wheelSnapTimer);
+        wheelSnapTimer = setTimeout(() => snapToNearest(), 110);
+      }, { passive: false });
+
+      return {
+        setValue(valStr, animate = false) {
+          const idx = Math.max(0, Math.min(maxCount - 1, parseInt(valStr, 10) || 0));
+          currentIndex = idx;
+          hiddenInput.value = pad2(idx);
+          if (animate) {
+            animateToOffset(-idx * ITEM_HEIGHT, true);
+          } else {
+            cancelAnimationFrame(animFrameId);
+            renderWheel(-idx * ITEM_HEIGHT, true);
+          }
+          if (onValueChange) onValueChange(pad2(idx));
+        }
+      };
+    }
+
     function initTimeSelectOptions() {
-      const hourSel = document.getElementById('select-hour');
-      const minSel = document.getElementById('select-minute');
-      hourSel.innerHTML = '';
-      minSel.innerHTML = '';
+      hourWheelController = createDrumWheel({
+        viewportId: 'wheel-hour-viewport',
+        reelId: 'wheel-hour-reel',
+        hiddenInputId: 'select-hour',
+        maxCount: 24,
+        onValueChange: () => updateModalDiffPreview()
+      });
 
-      for (let h = 0; h < 24; h++) {
-        const opt = document.createElement('option');
-        opt.value = pad2(h);
-        opt.textContent = pad2(h);
-        hourSel.appendChild(opt);
-      }
-      for (let m = 0; m < 60; m++) {
-        const opt = document.createElement('option');
-        opt.value = pad2(m);
-        opt.textContent = pad2(m);
-        minSel.appendChild(opt);
-      }
-
-      [hourSel, minSel].forEach((sel) => {
-        sel.addEventListener('focus', () => { isSearchingWheel = true; });
-        sel.addEventListener('wheel', () => { triggerDialWheelTick(); }, { passive: true });
-        sel.addEventListener('touchmove', () => {
-          if (isSearchingWheel) triggerDialWheelTick();
-        }, { passive: true });
-        sel.addEventListener('change', () => {
-          isSearchingWheel = false;
-          triggerDialSelectChime();
-          updateModalDiffPreview();
-        });
+      minuteWheelController = createDrumWheel({
+        viewportId: 'wheel-minute-viewport',
+        reelId: 'wheel-minute-reel',
+        hiddenInputId: 'select-minute',
+        maxCount: 60,
+        onValueChange: () => updateModalDiffPreview()
       });
     }
 
@@ -865,8 +1158,12 @@
         initTime = `${pad2(now.getHours())}:${pad2(now.getMinutes())}`;
       }
       const [hh, mm] = initTime.split(':');
-      document.getElementById('select-hour').value = pad2(parseInt(hh, 10) || 0);
-      document.getElementById('select-minute').value = pad2(parseInt(mm, 10) || 0);
+      const hVal = pad2(parseInt(hh, 10) || 0);
+      const mVal = pad2(parseInt(mm, 10) || 0);
+      document.getElementById('select-hour').value = hVal;
+      document.getElementById('select-minute').value = mVal;
+      if (hourWheelController) hourWheelController.setValue(hVal, false);
+      if (minuteWheelController) minuteWheelController.setValue(mVal, false);
 
       updateModalDiffPreview();
 
@@ -1159,8 +1456,12 @@
 
       document.getElementById('set-now-btn').addEventListener('click', () => {
         const now = new Date();
-        document.getElementById('select-hour').value = pad2(now.getHours());
-        document.getElementById('select-minute').value = pad2(now.getMinutes());
+        const hVal = pad2(now.getHours());
+        const mVal = pad2(now.getMinutes());
+        document.getElementById('select-hour').value = hVal;
+        document.getElementById('select-minute').value = mVal;
+        if (hourWheelController) hourWheelController.setValue(hVal, true);
+        if (minuteWheelController) minuteWheelController.setValue(mVal, true);
         updateModalDiffPreview();
       });
 
