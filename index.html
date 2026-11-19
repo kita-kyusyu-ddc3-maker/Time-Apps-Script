@@ -1044,9 +1044,19 @@
         let rightHtml = '';
         if (log) {
           if (log.isHoliday) {
-            rightHtml = `<span class="px-3 py-1 rounded-full bg-amber-100 text-amber-800 border border-amber-300 text-xs font-extrabold shrink-0">休業</span>`;
+            rightHtml = `
+              <div class="text-right shrink-0">
+                <span class="px-3 py-1 rounded-full bg-amber-100 text-amber-800 border border-amber-300 text-xs font-extrabold inline-block">休業</span>
+                ${isLastStore && log.drSentTime ? `<div class="text-[10px] font-bold text-slate-400 mt-1 tabular-nums">送信 ${log.drSentTime}</div>` : ''}
+              </div>
+            `;
           } else if (log.isExtraRun) {
-            rightHtml = `<span class="px-3 py-1 rounded-full bg-violet-100 text-violet-800 border border-violet-300 text-xs font-extrabold shrink-0">臨時便</span>`;
+            rightHtml = `
+              <div class="text-right shrink-0">
+                <span class="px-3 py-1 rounded-full bg-violet-100 text-violet-800 border border-violet-300 text-xs font-extrabold inline-block">臨時便</span>
+                ${isLastStore && log.drSentTime ? `<div class="text-[10px] font-bold text-slate-400 mt-1 tabular-nums">送信 ${log.drSentTime}</div>` : ''}
+              </div>
+            `;
           } else {
             const diffColor = log.isDelayed ? 'bg-rose-100 text-rose-700' : 'bg-emerald-100 text-emerald-700';
             rightHtml = `
@@ -1055,6 +1065,7 @@
                 <span class="inline-block mt-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold tabular-nums ${diffColor}">
                   ${log.diffDisplay}
                 </span>
+                ${isLastStore && log.drSentTime ? `<div class="text-[10px] font-bold text-slate-400 mt-0.5 tabular-nums">最終送信 ${log.drSentTime}</div>` : ''}
               </div>
             `;
           }
@@ -1220,14 +1231,15 @@
         storeName: store.name,
         scheduled: store.scheduled,
         scheduledTime: store.scheduled,
-        arrival: isHoliday ? '休業' : isExtraRun ? '臨時便' : arrivalStr,
-        arrivalTime: isHoliday ? '休業' : isExtraRun ? '臨時便' : arrivalStr,
+        arrival: isHoliday ? '休業' : isExtraRun ? '' : arrivalStr,
+        arrivalTime: isHoliday ? '休業' : isExtraRun ? '' : arrivalStr,
         diffMinutes: diff,
         diffDisplay,
+        sheetDiffText: (isHoliday || isExtraRun) ? '' : (diff === 0 ? '±0' : diff > 0 ? `+${diff}` : `${diff}`),
         isDelayed,
         isHoliday,
         isExtraRun,
-        isLastStore: store.isLastStore,
+        isLastStore: Boolean(store.isLastStore),
         drSentTime
       };
 
