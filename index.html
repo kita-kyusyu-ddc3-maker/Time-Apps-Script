@@ -383,10 +383,11 @@
       : '';
     let gasWebAppUrl = localStorage.getItem('store_arrival_gas_url') || AUTO_GAS_URL;
 
+    // ① 配送当日の日付（0:00〜11:59は前日扱い、12:00〜23:59は当日扱い）
     function getInitialDeliveryDate() {
       const now = new Date();
-      if (now.getHours() >= 12) {
-        now.setDate(now.getDate() + 1);
+      if (now.getHours() < 12) {
+        now.setDate(now.getDate() - 1);
       }
       return new Date(now.getFullYear(), now.getMonth(), now.getDate());
     }
