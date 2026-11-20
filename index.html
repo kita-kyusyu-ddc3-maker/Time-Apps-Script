@@ -15,6 +15,12 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Noto+Sans+JP:wght@400;500;700;900&display=swap" rel="stylesheet">
   <style>
+    html, body {
+      max-width: 100%;
+      overflow-x: hidden;
+      overscroll-behavior-x: none;
+      position: relative;
+    }
     body {
       font-family: 'Inter', 'Noto Sans JP', -apple-system, BlinkMacSystemFont, sans-serif;
       -webkit-tap-highlight-color: transparent;
@@ -123,10 +129,11 @@
           <div class="min-w-0">
             <div class="flex items-center gap-1.5">
               <h1 id="fixed-car-label" class="text-lg font-black tracking-tight text-slate-900 leading-none">15号車</h1>
-              <!-- 運行携帯（?admin=1）専用：全号車切替セレクト -->
-              <div id="admin-car-switcher" class="hidden items-center">
-                <select id="admin-car-select" class="clean-select bg-violet-100 text-violet-950 border border-violet-300 rounded-xl pl-2.5 pr-6 py-1 text-xs font-black shadow-2xs focus:outline-none"></select>
-              </div>
+              <!-- 運行携帯（?admin=1）専用：タップで号車選択パネルを開くボタン -->
+              <button type="button" id="admin-car-switcher-btn" class="hidden items-center gap-1 bg-violet-100 active:bg-violet-200 text-violet-950 border border-violet-300 rounded-xl px-2.5 py-1 text-xs font-black shadow-2xs transition">
+                <span id="admin-car-btn-label">0号車</span>
+                <svg class="w-3.5 h-3.5 text-violet-700" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+              </button>
               <span id="gas-status-pill" class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-200/70 text-slate-600 shrink-0">
                 <span id="gas-status-dot" class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
                 <span id="gas-status-text">デモ表示</span>
@@ -227,8 +234,23 @@
 
     <!-- 5. モーダル1：店着時間を入力する画面（シックな白デザイン） -->
     <div id="arrival-modal" class="fixed inset-0 bg-zinc-950/35 backdrop-blur-xs z-40 hidden items-end sm:items-center justify-center p-0 sm:p-4">
-      <div class="bg-[#FCFCFD] w-full max-w-md rounded-t-[2rem] sm:rounded-[2rem] p-6 shadow-[0_20px_50px_rgba(24,24,27,0.16)] border-t sm:border border-zinc-200/80 space-y-5 animate-modal-in">
+      <div class="bg-[#FCFCFD] w-full max-w-md rounded-t-[2rem] sm:rounded-[2rem] p-6 shadow-[0_20px_50px_rgba(24,24,27,0.16)] border-t sm:border border-zinc-200/80 space-y-5 animate-modal-in max-h-[92vh] overflow-y-auto">
         <div class="w-10 h-1 bg-zinc-200 rounded-full mx-auto -mt-2 mb-1 sm:hidden"></div>
+
+        <!-- ★事務所からの緊急伝言カード（未確認伝言がある時だけ時刻入力の上に表示） -->
+        <div id="dispatch-memo-banner" class="hidden rounded-2xl bg-rose-50/95 border border-rose-200 p-4 shadow-[0_6px_20px_rgba(225,29,72,0.10)] space-y-2.5">
+          <div class="flex items-center justify-between gap-2">
+            <span class="inline-flex items-center gap-1.5 text-[11px] font-black text-rose-700 bg-rose-100/90 px-2.5 py-0.5 rounded-full">
+              <span class="w-2 h-2 rounded-full bg-rose-600 animate-ping"></span>
+              事務所からの重要連絡
+            </span>
+            <span id="dispatch-memo-time" class="text-[11px] font-bold text-rose-500 tabular-nums">--:--</span>
+          </div>
+          <p id="dispatch-memo-text" class="text-sm font-black text-zinc-900 leading-relaxed whitespace-pre-wrap"></p>
+          <button type="button" id="confirm-dispatch-memo-btn" class="w-full py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 active:scale-[0.98] text-white font-black text-xs shadow-xs transition">
+            ✅ 確認しました（了解）
+          </button>
+        </div>
 
         <div class="flex items-start justify-between gap-3">
           <div>
@@ -363,6 +385,20 @@
       </div>
     </div>
 
+    <!-- 8. モーダル4：運行携帯専用・全号車選択パネル -->
+    <div id="admin-car-modal" class="fixed inset-0 bg-zinc-950/35 backdrop-blur-xs z-40 hidden items-end sm:items-center justify-center p-0 sm:p-4">
+      <div class="bg-[#FCFCFD] w-full max-w-md rounded-t-[2rem] sm:rounded-[2rem] p-5 shadow-2xl border border-zinc-200/80 max-h-[82vh] flex flex-col animate-modal-in">
+        <div class="flex items-center justify-between pb-3 border-b border-zinc-200/75">
+          <div>
+            <h2 class="text-base font-black text-zinc-900">号車を選択（運行管理モード）</h2>
+            <p class="text-[11px] font-semibold text-zinc-400">タップすると対象号車の店舗一覧に切り替わります</p>
+          </div>
+          <button type="button" id="close-admin-car-modal-btn" class="w-8 h-8 rounded-full bg-white border border-zinc-200 text-zinc-500 flex items-center justify-center">✕</button>
+        </div>
+        <div id="admin-car-grid" class="flex-1 overflow-y-auto py-3 grid grid-cols-4 gap-2"></div>
+      </div>
+    </div>
+
     <!-- トースト通知 -->
     <div id="toast-banner" class="fixed top-20 left-1/2 -translate-x-1/2 z-50 hidden px-4 py-2.5 rounded-full bg-zinc-900 text-white text-xs font-extrabold shadow-xl whitespace-nowrap">
       通知メッセージ
@@ -419,6 +455,7 @@
 
     let arrivalLogs = [];
     let selectedStoreForModal = null;
+    let activeDispatchMemo = null;
     let hourWheelController = null;
     let minuteWheelController = null;
 
@@ -645,6 +682,29 @@
         noiseGain.connect(ctx.destination);
         whiteNoise.start(now);
         whiteNoise.stop(now + duration);
+      } catch (e) {}
+    }
+
+    // ★事務所からの緊急伝言通知音（優しい2音チャイム）
+    function triggerDispatchMemoAlertSound() {
+      try {
+        if (navigator.vibrate) navigator.vibrate([40, 60, 40]);
+        const ctx = getAudioCtx();
+        if (!ctx) return;
+        const now = ctx.currentTime;
+        [784, 1046.5].forEach((freq, idx) => {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(freq, now + idx * 0.14);
+          gain.gain.setValueAtTime(0.001, now + idx * 0.14);
+          gain.gain.linearRampToValueAtTime(0.11, now + idx * 0.14 + 0.02);
+          gain.gain.exponentialRampToValueAtTime(0.0008, now + idx * 0.14 + 0.32);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(now + idx * 0.14);
+          osc.stop(now + idx * 0.14 + 0.35);
+        });
       } catch (e) {}
     }
 
@@ -1157,6 +1217,19 @@
     function openArrivalModal(store, isLastStore) {
       selectedStoreForModal = { ...store, isLastStore };
 
+      // ★未確認の緊急伝言がある場合は、時刻入力モーダルの一番上に表示して音を鳴らす
+      const memoBanner = document.getElementById('dispatch-memo-banner');
+      if (memoBanner) {
+        if (activeDispatchMemo && activeDispatchMemo.message) {
+          document.getElementById('dispatch-memo-text').textContent = activeDispatchMemo.message;
+          document.getElementById('dispatch-memo-time').textContent = activeDispatchMemo.sentAt ? `${activeDispatchMemo.sentAt} 送信` : '';
+          memoBanner.classList.remove('hidden');
+          triggerDispatchMemoAlertSound();
+        } else {
+          memoBanner.classList.add('hidden');
+        }
+      }
+
       const activeCode = activeCourseType === '1' ? course1Code : course2Code;
       document.getElementById('modal-store-badge').textContent = `${activeCourseType}便（${activeCode}）• ${store.order}店舗目`;
       document.getElementById('modal-store-name').textContent = store.name;
@@ -1307,6 +1380,7 @@
           if (Array.isArray(data.course1Stores)) course1Stores = normalizeStoreArray(data.course1Stores);
           if (Array.isArray(data.course2Stores)) course2Stores = normalizeStoreArray(data.course2Stores);
           if (Array.isArray(data.existingLogs)) arrivalLogs = normalizeLogsArray(data.existingLogs);
+          activeDispatchMemo = data.dispatchMemo || null;
 
           setConnectionBadge('ok', 'GAS接続済');
           showToast('最新スケジュールを読み込みました');
@@ -1442,22 +1516,54 @@
       // 運行携帯（?admin=1）の場合のみ全号車切り替えUIを有効化（一般ドライバー画面は一切変化なし）
       if (isAdminMode) {
         document.getElementById('fixed-car-label').classList.add('hidden');
-        const switcher = document.getElementById('admin-car-switcher');
-        const adminSelect = document.getElementById('admin-car-select');
-        switcher.classList.remove('hidden');
-        switcher.classList.add('flex');
-        for (let c = 0; c <= 34; c++) {
-          const opt = document.createElement('option');
-          opt.value = String(c);
-          opt.textContent = `${c}号車`;
-          adminSelect.appendChild(opt);
+        const switcherBtn = document.getElementById('admin-car-switcher-btn');
+        const switcherLabel = document.getElementById('admin-car-btn-label');
+        const carModal = document.getElementById('admin-car-modal');
+        const carGrid = document.getElementById('admin-car-grid');
+
+        switcherBtn.classList.remove('hidden');
+        switcherBtn.classList.add('inline-flex');
+        switcherLabel.textContent = `${excelCarIndex}号車`;
+
+        function renderAdminCarButtons() {
+          carGrid.innerHTML = '';
+          for (let c = 0; c <= 34; c++) {
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            const isSelected = (c === excelCarIndex);
+            btn.className = isSelected
+              ? 'py-2.5 rounded-xl bg-violet-600 text-white font-black text-sm shadow-xs tabular-nums'
+              : 'py-2.5 rounded-xl bg-white border border-zinc-200/90 text-zinc-800 active:bg-violet-50 font-extrabold text-sm tabular-nums';
+            btn.textContent = `${c}号車`;
+            btn.addEventListener('click', () => {
+              excelCarIndex = c;
+              switcherLabel.textContent = `${c}号車`;
+              course1Code = String(100 + excelCarIndex);
+              course2Code = String(200 + excelCarIndex);
+              carModal.classList.add('hidden');
+              carModal.classList.remove('flex');
+              fetchSheetData();
+            });
+            carGrid.appendChild(btn);
+          }
         }
-        adminSelect.value = String(excelCarIndex);
-        adminSelect.addEventListener('change', (e) => {
-          excelCarIndex = parseInt(e.target.value, 10);
-          course1Code = String(100 + excelCarIndex);
-          course2Code = String(200 + excelCarIndex);
-          fetchSheetData();
+
+        switcherBtn.addEventListener('click', () => {
+          renderAdminCarButtons();
+          carModal.classList.remove('hidden');
+          carModal.classList.add('flex');
+        });
+
+        document.getElementById('close-admin-car-modal-btn').addEventListener('click', () => {
+          carModal.classList.add('hidden');
+          carModal.classList.remove('flex');
+        });
+
+        carModal.addEventListener('click', (e) => {
+          if (e.target.id === 'admin-car-modal') {
+            carModal.classList.add('hidden');
+            carModal.classList.remove('flex');
+          }
         });
       }
 
@@ -1510,6 +1616,33 @@
       document.getElementById('submit-arrival-btn').addEventListener('click', () => handleRecordSubmission('normal'));
       document.getElementById('submit-holiday-btn').addEventListener('click', () => handleRecordSubmission('holiday'));
       document.getElementById('submit-extra-btn').addEventListener('click', () => handleRecordSubmission('extra'));
+
+      // ★ドライバーが「✅ 確認しました（了解）」ボタンを押した時の処理
+      const confirmMemoBtn = document.getElementById('confirm-dispatch-memo-btn');
+      if (confirmMemoBtn) {
+        confirmMemoBtn.addEventListener('click', async () => {
+          if (!activeDispatchMemo) return;
+          const confirmedId = activeDispatchMemo.memoId;
+          activeDispatchMemo = null;
+          document.getElementById('dispatch-memo-banner').classList.add('hidden');
+          showToast('事務所へ「確認了解」を送信しました');
+
+          if (gasWebAppUrl) {
+            try {
+              await fetch(gasWebAppUrl, {
+                method: 'POST',
+                mode: 'no-cors',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  action: 'confirmMemo',
+                  excelCarIndex: excelCarIndex,
+                  memoId: confirmedId
+                })
+              });
+            } catch (e) {}
+          }
+        });
+      }
 
       document.getElementById('open-gas-modal-btn').addEventListener('click', () => {
         document.getElementById('gas-url-input').value = gasWebAppUrl;
