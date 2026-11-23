@@ -124,11 +124,11 @@
         <div class="flex items-center gap-2.5 min-w-0">
           <div id="car-badge-box" class="w-11 h-11 rounded-2xl bg-slate-900 text-white flex flex-col items-center justify-center shadow-sm shrink-0">
             <span class="text-[9px] font-bold tracking-widest text-slate-400 uppercase leading-none">CAR</span>
-            <span id="fixed-car-num" class="text-lg font-black tabular-nums leading-tight">15</span>
+            <span id="fixed-car-num" class="text-lg font-black tabular-nums leading-tight">--</span>
           </div>
           <div class="min-w-0">
             <div class="flex items-center gap-1.5">
-              <h1 id="fixed-car-label" class="text-lg font-black tracking-tight text-slate-900 leading-none">15号車</h1>
+              <h1 id="fixed-car-label" class="text-lg font-black tracking-tight text-slate-900 leading-none">--号車</h1>
               <!-- 運行携帯（?admin=1）専用：タップで号車選択パネルを開くボタン -->
               <button type="button" id="admin-car-switcher-btn" class="hidden items-center gap-1 bg-violet-100 active:bg-violet-200 text-violet-950 border border-violet-300 rounded-xl px-2.5 py-1 text-xs font-black shadow-2xs transition">
                 <span id="admin-car-btn-label">0号車</span>
@@ -142,7 +142,7 @@
             <div class="flex items-center gap-2 mt-1 text-xs font-semibold text-slate-500 tabular-nums">
               <span id="clock-display">--:--</span>
               <span class="text-slate-300">•</span>
-              <span id="fixed-course-summary" class="truncate max-w-[155px]">100 / 200コース</span>
+              <span id="fixed-course-summary" class="truncate max-w-[155px]">-- / --コース</span>
             </div>
           </div>
         </div>
@@ -178,18 +178,14 @@
 
     <!-- 2. ダッシュボード・サマリー -->
     <section class="px-5 pt-4 pb-2">
-      <div class="bg-white rounded-3xl p-4 shadow-[0_4px_20px_rgba(15,23,42,0.04)] border border-slate-100">
+      <div class="bg-white rounded-3xl p-4 shadow-[0_4px_20px_rgba(15,23,42,0.03)] border border-slate-100">
         <div class="flex items-center justify-between">
           <div>
-            <div class="text-[11px] font-bold text-slate-400 tracking-wide">配送稼働日</div>
-            <div class="flex items-center gap-2 mt-0.5">
-              <button type="button" id="prev-day-btn" class="w-7 h-7 rounded-full bg-slate-100 active:bg-slate-200 text-slate-600 flex items-center justify-center transition">
-                <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
-              </button>
-              <span id="delivery-date-label" class="text-base font-black text-slate-900 tabular-nums tracking-tight">--/--(-)</span>
-              <button type="button" id="next-day-btn" class="w-7 h-7 rounded-full bg-slate-100 active:bg-slate-200 text-slate-600 flex items-center justify-center transition">
-                <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
-              </button>
+            <div class="text-[11px] font-bold text-slate-400">配送稼働日</div>
+            <div class="flex items-center gap-1.5 mt-0.5">
+              <button type="button" id="prev-day-btn" class="w-7 h-7 rounded-xl bg-slate-100 hover:bg-slate-200 active:scale-95 flex items-center justify-center text-slate-700 font-black text-xs transition">◀</button>
+              <span id="delivery-date-label" class="text-base font-black text-slate-900 tabular-nums px-1">--/--(-)</span>
+              <button type="button" id="next-day-btn" class="w-7 h-7 rounded-xl bg-slate-100 hover:bg-slate-200 active:scale-95 flex items-center justify-center text-slate-700 font-black text-xs transition">▶</button>
             </div>
           </div>
 
@@ -259,8 +255,9 @@
               <span id="modal-last-badge" class="hidden text-[11px] font-extrabold text-emerald-800 bg-emerald-50 border border-emerald-200/80 px-2.5 py-0.5 rounded-full">最終店舗</span>
             </div>
             <h2 id="modal-store-name" class="text-2xl font-black text-zinc-900 tracking-tight leading-snug">店舗名</h2>
-            <div class="text-xs font-semibold text-zinc-400 mt-1 tabular-nums">
-              予定定時 <span id="modal-scheduled-time" class="text-zinc-800 font-extrabold">--:--</span>
+            <div class="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs font-semibold text-zinc-400 mt-1 tabular-nums">
+              <span>予定定時 <span id="modal-scheduled-time" class="text-zinc-800 font-extrabold">--:--</span></span>
+              <span id="modal-avg-time-wrap" class="hidden text-blue-600 font-extrabold">直近平均 <span id="modal-avg-time">--:--</span></span>
             </div>
           </div>
           <button type="button" id="close-arrival-modal-btn" class="w-9 h-9 rounded-full bg-white border border-zinc-200/90 text-zinc-500 hover:text-zinc-800 active:scale-95 flex items-center justify-center shrink-0 shadow-2xs">✕</button>
@@ -407,11 +404,29 @@
   </div>
 
   <script>
+    // ⑤ 起動直後にCAR15が出ないよう、URLパラメータ → localStorage保存値 の順で本来の号車番号を即座に確定
     const urlParams = new URLSearchParams(window.location.search);
-    const paramCar = parseInt(urlParams.get('car'), 10);
-    let excelCarIndex = (!isNaN(paramCar) && paramCar >= 0 && paramCar <= 34) ? paramCar : 15;
+    const paramCarRaw = urlParams.get('car');
+    const paramCar = paramCarRaw !== null ? parseInt(paramCarRaw, 10) : NaN;
+    const savedCarRaw = localStorage.getItem('store_arrival_car_index');
+    const savedCar = savedCarRaw !== null ? parseInt(savedCarRaw, 10) : NaN;
+
+    let excelCarIndex = (!isNaN(paramCar) && paramCar >= 0 && paramCar <= 34)
+      ? paramCar
+      : (!isNaN(savedCar) && savedCar >= 0 && savedCar <= 34)
+      ? savedCar
+      : 0;
+    if (!isNaN(paramCar) && paramCar >= 0 && paramCar <= 34) {
+      localStorage.setItem('store_arrival_car_index', String(paramCar));
+    }
+
     let isSingleCourseCar = (excelCarIndex === 14);
     const isAdminMode = (urlParams.get('admin') === '1');
+
+    // 初期描画の瞬間に本来のCARナンバーを即反映
+    document.getElementById('fixed-car-num').textContent = String(excelCarIndex).padStart(2, '0');
+    document.getElementById('fixed-car-label').textContent = `${excelCarIndex}号車`;
+    document.getElementById('fixed-course-summary').textContent = `${100 + excelCarIndex} / ${200 + excelCarIndex}コース`;
 
     // ★QRコードのURLパラメータ(?gas=...)があれば自動取得してスマホに永続保存（一発自動接続）
     const paramGasUrl = urlParams.get('gas');
@@ -432,6 +447,13 @@
         now.setDate(now.getDate() - 1);
       }
       return new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    }
+
+    // ⑥ 現在の稼働日（当日）より過去日（前日以前）かどうかを判定
+    function isPastDeliveryDate() {
+      const todayEff = getInitialDeliveryDate();
+      const currentTarget = new Date(deliveryDate.getFullYear(), deliveryDate.getMonth(), deliveryDate.getDate());
+      return currentTarget.getTime() < todayEff.getTime();
     }
 
     let deliveryDate = getInitialDeliveryDate();
@@ -708,7 +730,7 @@
       } catch (e) {}
     }
 
-    // ★iPhoneタイマー風 縦型ドラムホイール（慣性スクロール＆スナップ付き）
+    // ② iPhoneタイマー風 縦型ドラムホイール（前後回転エンドレス無限ループ＋慣性スクロール）
     function createDrumWheel({ viewportId, reelId, hiddenInputId, maxCount, onValueChange }) {
       const viewport = document.getElementById(viewportId);
       const reel = document.getElementById(reelId);
@@ -717,20 +739,25 @@
       const ITEM_HEIGHT = 44;
       const VIEWPORT_HEIGHT = 168;
       const CENTER_OFFSET = (VIEWPORT_HEIGHT - ITEM_HEIGHT) / 2;
+      const LOOP_CYCLES = 5; // 5周分並べて中央周回を使うことで上下どちらにも無限に回転可能
+      const TOTAL_ITEMS = maxCount * LOOP_CYCLES;
+      const BASE_CYCLE_OFFSET = maxCount * 2; // 中央（3周目）の開始インデックス
 
       reel.innerHTML = '';
       const itemEls = [];
-      for (let i = 0; i < maxCount; i++) {
+      for (let i = 0; i < TOTAL_ITEMS; i++) {
+        const val = i % maxCount;
         const div = document.createElement('div');
         div.className = 'wheel-item tabular-nums';
-        div.textContent = pad2(i);
-        div.dataset.index = String(i);
+        div.textContent = pad2(val);
+        div.dataset.virtualIndex = String(i);
+        div.dataset.value = String(val);
         reel.appendChild(div);
         itemEls.push(div);
       }
 
-      let currentOffset = 0;
-      let currentIndex = 0;
+      let currentOffset = -BASE_CYCLE_OFFSET * ITEM_HEIGHT;
+      let currentValue = 0;
       let isDragging = false;
       let startY = 0;
       let startOffset = 0;
@@ -739,37 +766,42 @@
       let velocity = 0;
       let animFrameId = null;
 
-      function clampOffset(offset) {
-        const minOffset = -(maxCount - 1) * ITEM_HEIGHT;
-        const maxOffset = 0;
-        if (offset > maxOffset) return maxOffset + (offset - maxOffset) * 0.28;
-        if (offset < minOffset) return minOffset + (offset - minOffset) * 0.28;
-        return offset;
+      // 無限ループを維持するため、端の周回に近づいたら見た目を変えずに中央周回へ座標を正規化
+      function normalizeInfiniteOffset(offset) {
+        const cyclePx = maxCount * ITEM_HEIGHT;
+        const minSafe = -(maxCount * 3.5) * ITEM_HEIGHT;
+        const maxSafe = -(maxCount * 1.5) * ITEM_HEIGHT;
+        let norm = offset;
+        while (norm > maxSafe) norm -= cyclePx;
+        while (norm < minSafe) norm += cyclePx;
+        return norm;
       }
 
       function renderWheel(offset, silent = false) {
-        currentOffset = offset;
-        reel.style.transform = `translate3d(0, ${CENTER_OFFSET + offset}px, 0)`;
+        currentOffset = normalizeInfiniteOffset(offset);
+        reel.style.transform = `translate3d(0, ${CENTER_OFFSET + currentOffset}px, 0)`;
 
-        const rawIdx = Math.round(-offset / ITEM_HEIGHT);
-        const clampedIdx = Math.max(0, Math.min(maxCount - 1, rawIdx));
+        const virtualFloat = -currentOffset / ITEM_HEIGHT;
+        const nearestVirtualIdx = Math.round(virtualFloat);
+        const modValue = ((nearestVirtualIdx % maxCount) + maxCount) % maxCount;
 
-        if (clampedIdx !== currentIndex) {
-          currentIndex = clampedIdx;
-          hiddenInput.value = pad2(currentIndex);
+        if (modValue !== currentValue) {
+          currentValue = modValue;
+          hiddenInput.value = pad2(currentValue);
           if (!silent) triggerDialWheelTick();
-          if (onValueChange) onValueChange(pad2(currentIndex));
+          if (onValueChange) onValueChange(pad2(currentValue));
         }
 
-        // 3D円筒遠近感（中央を1.0、上下に離れるほど縮小・回転）
-        for (let i = 0; i < maxCount; i++) {
-          const dist = i - (-offset / ITEM_HEIGHT);
-          if (Math.abs(dist) > 3.5) continue;
+        const startRender = Math.max(0, nearestVirtualIdx - 4);
+        const endRender = Math.min(TOTAL_ITEMS - 1, nearestVirtualIdx + 4);
+
+        for (let i = startRender; i <= endRender; i++) {
+          const dist = i - virtualFloat;
           const el = itemEls[i];
           const angle = Math.max(-65, Math.min(65, dist * 22));
           const scale = Math.max(0.76, 1 - Math.abs(dist) * 0.085);
           el.style.transform = `perspective(240px) rotateX(${-angle}deg) scale(${scale})`;
-          if (i === clampedIdx) {
+          if (i === nearestVirtualIdx) {
             el.classList.add('is-selected');
           } else {
             el.classList.remove('is-selected');
@@ -777,8 +809,9 @@
         }
       }
 
-      function animateToOffset(targetOffset, playFinishChime = true) {
+      function animateToVirtualIndex(targetVirtualIdx, playFinishChime = true) {
         cancelAnimationFrame(animFrameId);
+        const targetOffset = -targetVirtualIdx * ITEM_HEIGHT;
         function step() {
           const diff = targetOffset - currentOffset;
           if (Math.abs(diff) < 0.4) {
@@ -793,26 +826,17 @@
       }
 
       function snapToNearest() {
-        const minOffset = -(maxCount - 1) * ITEM_HEIGHT;
-        const bounded = Math.max(minOffset, Math.min(0, currentOffset));
-        const nearestIdx = Math.round(-bounded / ITEM_HEIGHT);
-        animateToOffset(-nearestIdx * ITEM_HEIGHT, true);
+        const nearestVirtualIdx = Math.round(-currentOffset / ITEM_HEIGHT);
+        animateToVirtualIndex(nearestVirtualIdx, true);
       }
 
       function startInertia(initialVel) {
         cancelAnimationFrame(animFrameId);
         let vel = initialVel;
-        const minOffset = -(maxCount - 1) * ITEM_HEIGHT;
 
         function inertiaStep() {
           vel *= 0.92;
-          let nextOffset = currentOffset + vel;
-
-          if (nextOffset > 0 || nextOffset < minOffset) {
-            snapToNearest();
-            return;
-          }
-
+          const nextOffset = currentOffset + vel;
           renderWheel(nextOffset, false);
 
           if (Math.abs(vel) < 0.7) {
@@ -848,22 +872,21 @@
         lastTouchTime = now;
 
         const deltaY = y - startY;
-        renderWheel(clampOffset(startOffset + deltaY), false);
+        renderWheel(startOffset + deltaY, false);
       }, { passive: true });
 
       viewport.addEventListener('touchend', (e) => {
         if (!isDragging) return;
         isDragging = false;
         const endY = (e.changedTouches && e.changedTouches[0]) ? e.changedTouches[0].clientY : lastTouchY;
-        // ほとんど動かずタップした場合は、タップした数字の位置へ移動
         if (Math.abs(endY - startY) < 6) {
           const targetEl = document.elementFromPoint(
             viewport.getBoundingClientRect().left + viewport.clientWidth / 2,
             endY
           );
-          if (targetEl && targetEl.dataset && targetEl.dataset.index !== undefined) {
-            const tappedIdx = parseInt(targetEl.dataset.index, 10);
-            animateToOffset(-tappedIdx * ITEM_HEIGHT, true);
+          if (targetEl && targetEl.dataset && targetEl.dataset.virtualIndex !== undefined) {
+            const tappedVirtualIdx = parseInt(targetEl.dataset.virtualIndex, 10);
+            animateToVirtualIndex(tappedVirtualIdx, true);
             return;
           }
         }
@@ -892,15 +915,15 @@
         if (dt > 0) velocity = ((e.clientY - lastTouchY) / dt) * 16;
         lastTouchY = e.clientY;
         lastTouchTime = now;
-        renderWheel(clampOffset(startOffset + (e.clientY - startY)), false);
+        renderWheel(startOffset + (e.clientY - startY), false);
       });
 
       window.addEventListener('mouseup', (e) => {
         if (!isDragging) return;
         isDragging = false;
-        if (Math.abs(e.clientY - startY) < 5 && e.target.dataset && e.target.dataset.index !== undefined) {
-          const tappedIdx = parseInt(e.target.dataset.index, 10);
-          animateToOffset(-tappedIdx * ITEM_HEIGHT, true);
+        if (Math.abs(e.clientY - startY) < 5 && e.target.dataset && e.target.dataset.virtualIndex !== undefined) {
+          const tappedVirtualIdx = parseInt(e.target.dataset.virtualIndex, 10);
+          animateToVirtualIndex(tappedVirtualIdx, true);
           return;
         }
         if (Math.abs(velocity) > 1.8) {
@@ -914,25 +937,32 @@
       viewport.addEventListener('wheel', (e) => {
         e.preventDefault();
         cancelAnimationFrame(animFrameId);
-        const minOffset = -(maxCount - 1) * ITEM_HEIGHT;
-        const next = Math.max(minOffset, Math.min(0, currentOffset - e.deltaY * 0.45));
-        renderWheel(next, false);
+        renderWheel(currentOffset - e.deltaY * 0.45, false);
         clearTimeout(wheelSnapTimer);
         wheelSnapTimer = setTimeout(() => snapToNearest(), 110);
       }, { passive: false });
 
       return {
         setValue(valStr, animate = false) {
-          const idx = Math.max(0, Math.min(maxCount - 1, parseInt(valStr, 10) || 0));
-          currentIndex = idx;
-          hiddenInput.value = pad2(idx);
+          const targetMod = ((parseInt(valStr, 10) || 0) % maxCount + maxCount) % maxCount;
+          const currentVirtualIdx = Math.round(-currentOffset / ITEM_HEIGHT);
+          const currentMod = ((currentVirtualIdx % maxCount) + maxCount) % maxCount;
+
+          // 最短回転方向（例：59→00は+1、00→59は-1）を計算
+          let diff = targetMod - currentMod;
+          if (diff > maxCount / 2) diff -= maxCount;
+          if (diff < -maxCount / 2) diff += maxCount;
+
           if (animate) {
-            animateToOffset(-idx * ITEM_HEIGHT, true);
+            animateToVirtualIndex(currentVirtualIdx + diff, true);
           } else {
             cancelAnimationFrame(animFrameId);
-            renderWheel(-idx * ITEM_HEIGHT, true);
+            const resetVirtualIdx = BASE_CYCLE_OFFSET + targetMod;
+            currentValue = targetMod;
+            hiddenInput.value = pad2(targetMod);
+            renderWheel(-resetVirtualIdx * ITEM_HEIGHT, true);
           }
-          if (onValueChange) onValueChange(pad2(idx));
+          if (onValueChange) onValueChange(pad2(targetMod));
         }
       };
     }
@@ -1039,12 +1069,16 @@
       }
 
       const activeCode = activeCourseType === '1' ? course1Code : course2Code;
-      document.getElementById('active-course-title').textContent = `ROUTE • ${activeCourseType}便（${activeCode}コース）`;
+      const pastLocked = isPastDeliveryDate();
+      document.getElementById('active-course-title').textContent = pastLocked
+        ? `ROUTE • ${activeCourseType}便（${activeCode}コース）🔒 過去日閲覧専用`
+        : `ROUTE • ${activeCourseType}便（${activeCode}コース）`;
     }
 
     function renderStoreList() {
       updateHeaderAndTabs();
 
+      const pastLocked = isPastDeliveryDate();
       const stores = activeCourseType === '1' ? course1Stores : course2Stores;
       const container = document.getElementById('store-list-container');
       container.innerHTML = '';
@@ -1060,6 +1094,15 @@
         document.getElementById('progress-total').textContent = '0';
         document.getElementById('progress-bar-fill').style.width = '0%';
         return;
+      }
+
+      if (pastLocked) {
+        const lockNotice = document.createElement('div');
+        lockNotice.className = 'bg-amber-50 border border-amber-200 text-amber-900 rounded-2xl px-4 py-2.5 text-xs font-extrabold flex items-center justify-between';
+        lockNotice.innerHTML = `
+          <span>🔒 配送稼働日前日以前のため入力ロック中（閲覧専用）</span>
+        `;
+        container.appendChild(lockNotice);
       }
 
       let doneCount = 0;
@@ -1115,38 +1158,37 @@
             rightHtml = `
               <div class="text-right shrink-0">
                 <span class="px-3 py-1 rounded-full bg-amber-100 text-amber-800 border border-amber-300 text-xs font-extrabold inline-block">休業</span>
-                ${isLastStore && log.drSentTime ? `<div class="text-[10px] font-bold text-slate-400 mt-1 tabular-nums">送信 ${log.drSentTime}</div>` : ''}
               </div>
             `;
           } else if (log.isExtraRun) {
             rightHtml = `
               <div class="text-right shrink-0">
                 <span class="px-3 py-1 rounded-full bg-violet-100 text-violet-800 border border-violet-300 text-xs font-extrabold inline-block">臨時便</span>
-                ${isLastStore && log.drSentTime ? `<div class="text-[10px] font-bold text-slate-400 mt-1 tabular-nums">送信 ${log.drSentTime}</div>` : ''}
               </div>
             `;
           } else {
-            const diffColor = log.isDelayed ? 'bg-rose-100 text-rose-700' : 'bg-emerald-100 text-emerald-700';
+            const diffBadgeClass = log.isDelayed
+              ? 'bg-rose-100 text-rose-700'
+              : 'bg-emerald-100 text-emerald-700';
             rightHtml = `
               <div class="text-right shrink-0">
-                <div class="text-lg font-black text-slate-900 tabular-nums leading-none">${log.arrival}</div>
-                <span class="inline-block mt-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold tabular-nums ${diffColor}">
-                  ${log.diffDisplay}
-                </span>
-                ${isLastStore && log.drSentTime ? `<div class="text-[10px] font-bold text-slate-400 mt-0.5 tabular-nums">最終送信 ${log.drSentTime}</div>` : ''}
+                <div class="text-base font-black text-slate-900 tabular-nums">${log.arrival}</div>
+                <span class="inline-block mt-0.5 px-2 py-0.5 rounded-full text-[10px] font-extrabold ${diffBadgeClass}">${log.diffDisplay}</span>
               </div>
             `;
           }
+        } else if (pastLocked) {
+          rightHtml = `<span class="px-3 py-1.5 rounded-xl bg-slate-100 text-slate-400 text-xs font-bold shrink-0">🔒 確定済</span>`;
         } else if (isNextTarget) {
           rightHtml = `<span class="px-4 py-2 rounded-2xl bg-blue-600 text-white text-xs font-black shadow-xs shrink-0">到着記録</span>`;
         } else {
-          rightHtml = `<span class="px-3 py-1.5 rounded-xl bg-slate-100 text-slate-600 text-xs font-bold shrink-0">入力</span>`;
+          rightHtml = `<span class="px-3 py-1.5 rounded-xl bg-slate-100 text-slate-500 text-xs font-bold shrink-0">待機中</span>`;
         }
 
         card.innerHTML = `
           <div class="min-w-0">
             <div class="flex items-center gap-1.5">
-              ${isNextTarget ? '<span class="text-[10px] font-black tracking-wider text-blue-600 uppercase">NEXT</span>' : ''}
+              ${!pastLocked && isNextTarget ? '<span class="text-[10px] font-black tracking-wider text-blue-600 uppercase">NEXT</span>' : ''}
               ${isLastStore ? '<span class="text-[10px] font-extrabold text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded-md">最終</span>' : ''}
             </div>
             <div class="text-base font-black ${log ? 'text-slate-500' : 'text-slate-900'} truncate mt-0.5">
@@ -1159,7 +1201,27 @@
           ${rightHtml}
         `;
 
-        card.addEventListener('click', () => openArrivalModal({ ...store, order: storeOrderNum }, isLastStore));
+        card.addEventListener('click', () => {
+          // ⑥ 配送稼働日前日以前は一切の入力・変更を禁止
+          if (isPastDeliveryDate()) {
+            showToast('🔒 過去日のため入力・変更はできません');
+            return;
+          }
+          // ③ 未入力店舗があった場合は次の店舗に進めない（完了済み店舗の再タップ修正は許可）
+          if (!log) {
+            const firstUnfinishedIdx = stores.findIndex((_, sIdx) => {
+              return !arrivalLogs.some(
+                (l) => l.courseType === activeCourseType && Number(l.order) === (sIdx + 1)
+              );
+            });
+            if (firstUnfinishedIdx !== -1 && firstUnfinishedIdx < idx) {
+              const missingStore = stores[firstUnfinishedIdx];
+              showToast(`⚠️ 先に「${firstUnfinishedIdx + 1}. ${missingStore.name}」を入力してください`);
+              return;
+            }
+          }
+          openArrivalModal({ ...store, order: storeOrderNum }, isLastStore);
+        });
 
         row.appendChild(timelineCol);
         row.appendChild(card);
@@ -1235,6 +1297,18 @@
       document.getElementById('modal-store-name').textContent = store.name;
       document.getElementById('modal-scheduled-time').textContent = store.scheduled || '--:--';
 
+      // ④ 直近の平均到着時間バッジの表示切替
+      const avgWrap = document.getElementById('modal-avg-time-wrap');
+      const avgTimeEl = document.getElementById('modal-avg-time');
+      if (avgWrap && avgTimeEl) {
+        if (store.avgArrival && store.avgArrival.includes(':')) {
+          avgTimeEl.textContent = store.avgArrival;
+          avgWrap.classList.remove('hidden');
+        } else {
+          avgWrap.classList.add('hidden');
+        }
+      }
+
       const lastBadge = document.getElementById('modal-last-badge');
       if (lastBadge) {
         if (isLastStore) lastBadge.classList.remove('hidden');
@@ -1244,7 +1318,12 @@
       const existingLog = arrivalLogs.find(
         (l) => l.courseType === activeCourseType && Number(l.order) === Number(store.order) && !l.isHoliday && !l.isExtraRun
       );
-      let initTime = existingLog ? existingLog.arrival : store.scheduled;
+      // ④ 修正時は既存記録時刻、新規入力時は「直近の平均到着時間」→「予定定時」→「現在時刻」の順でセット
+      let initTime = existingLog
+        ? existingLog.arrival
+        : (store.avgArrival && store.avgArrival.includes(':'))
+        ? store.avgArrival
+        : store.scheduled;
       if (!initTime || !initTime.includes(':')) {
         const now = new Date();
         initTime = `${pad2(now.getHours())}:${pad2(now.getMinutes())}`;
@@ -1273,6 +1352,13 @@
 
     async function handleRecordSubmission(mode) {
       if (!selectedStoreForModal) return;
+
+      // ⑥ 送信直前にも過去日チェックを実行（二重防御）
+      if (isPastDeliveryDate()) {
+        closeArrivalModal();
+        showToast('🔒 過去日のため入力・変更はできません');
+        return;
+      }
 
       const store = selectedStoreForModal;
       const isHoliday = (mode === 'holiday');
@@ -1351,20 +1437,26 @@
               ...logEntry
             })
           });
+          // ① アプリを開いたまま操作している場合でも、送信完了後に最新スケジュール＆伝言を自動更新
+          setTimeout(() => {
+            fetchSheetData(true);
+          }, 900);
         } catch (err) {
           console.error('GAS送信エラー:', err);
         }
       }
     }
 
-    async function fetchSheetData() {
+    async function fetchSheetData(silent = false) {
       if (!gasWebAppUrl) {
         setConnectionBadge('demo', 'デモ表示');
         renderStoreList();
         return;
       }
 
-      setConnectionBadge('loading', '読込中...');
+      if (!silent) {
+        setConnectionBadge('loading', '読込中...');
+      }
       try {
         const query = new URLSearchParams({
           action: 'getSchedule',
@@ -1383,7 +1475,9 @@
           activeDispatchMemo = data.dispatchMemo || null;
 
           setConnectionBadge('ok', 'GAS接続済');
-          showToast('最新スケジュールを読み込みました');
+          if (!silent) {
+            showToast('最新スケジュールを読み込みました');
+          }
         } else {
           setConnectionBadge('error', '読込エラー');
         }
@@ -1537,6 +1631,7 @@
             btn.textContent = `${c}号車`;
             btn.addEventListener('click', () => {
               excelCarIndex = c;
+              localStorage.setItem('store_arrival_car_index', String(c));
               switcherLabel.textContent = `${c}号車`;
               course1Code = String(100 + excelCarIndex);
               course2Code = String(200 + excelCarIndex);
