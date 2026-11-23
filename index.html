@@ -206,9 +206,9 @@
 
     <!-- 3. タイムライン形式・配送ルート一覧 -->
     <main class="flex-1 px-5 pt-2 pb-28">
-      <div class="flex items-center justify-between px-1 mb-2.5">
+      <div id="route-sub-header" class="flex items-center justify-between px-1 mb-2.5">
         <span id="active-course-title" class="text-xs font-extrabold text-slate-400 tracking-wider uppercase">ROUTE • 1便（100コース）</span>
-        <span class="text-[11px] font-semibold text-slate-400">タップして店着入力</span>
+        <span id="route-tap-hint" class="text-[11px] font-semibold text-slate-400">タップして店着入力</span>
       </div>
 
       <div id="store-list-container" class="relative space-y-3"></div>
@@ -519,6 +519,7 @@
 
     function formatDiffDisplay(diff) {
       if (diff === 0) return '定時ぴったり (±0分)';
+      if (diff >= 31) return `⚠️ +${diff}分 延着`;
       if (diff > 0) return `+${diff}分 遅れ`;
       return `${diff}分 早着`;
     }
@@ -561,7 +562,7 @@
         const arr = l.arrival ?? l.arrivalTime ?? l.actualTime ?? l.value ?? '';
         const isHol = Boolean(l.isHoliday || arr === '休業');
         const isExt = Boolean(l.isExtraRun || arr === '臨時便');
-        const diff = (isHol || isExt) ? 0 : (l.diffMinutes ?? calculateTimeDiffMinutes(sched, arr));
+        const diff = (isHol || isExt) ? 0 : calculateTimeDiffMinutes(sched, arr);
         const isDel = Boolean(l.isDelayed || (!isHol && !isExt && diff >= 31));
         return {
           ...l,
@@ -571,7 +572,7 @@
           scheduled: sched,
           arrival: arr,
           diffMinutes: diff,
-          diffDisplay: isHol ? '休業' : isExt ? '臨時便' : (l.diffDisplay || formatDiffDisplay(diff)),
+          diffDisplay: isHol ? '休業' : isExt ? '臨時便' : formatDiffDisplay(diff),
           isDelayed: isDel,
           isHoliday: isHol,
           isExtraRun: isExt
@@ -1070,272 +1071,225 @@
 
       const activeCode = activeCourseType === '1' ? course1Code : course2Code;
       const pastLocked = isPastDeliveryDate();
-      document.getElementById('active-course-title').textContent = pastLocked
-        ? `ROUTE • ${activeCourseType}便（${activeCode}コース）🔒 過去日閲覧専用`
-        : `ROUTE • ${activeCourseType}便（${activeCode}コース）`;
+      const routeSubHeader = document.getElementById('route-sub-header');
+      if (routeSubHeader) {
+        if (pastLocked) {
+          routeSubHeader.classList.add('hidden');
+        } else {
+          routeSubHeader.classList.remove('hidden');
+          document.getElementById('active-course-title').textContent = `ROUTE • ${activeCourseType}便（${activeCode}コース）`;
+        }
+      }
     }
 
     function renderStoreList() {
       updateHeaderAndTabs();
 
-      const pastLocked = isPastDeliveryDate();
       const stores = activeCourseType === '1' ? course1Stores : course2Stores;
       const container = document.getElementById('store-list-container');
       container.innerHTML = '';
 
-      if (!stores || stores.length === 0) {
-        container.innerHTML = `
-          <div class="bg-white rounded-3xl p-8 text-center border border-slate-100 shadow-2xs">
-            <div class="text-sm font-black text-slate-700">店舗データが見つかりません</div>
-            <div class="text-xs text-slate-400 mt-1">スプレッドシートの「${excelCarIndex}号車」行または日付を確認してください</div>
-          </div>
-        `;
-        document.getElementById('progress-done').textContent = '0';
-        document.getElementById('progress-total').textContent = '0';
-        document.getElementById('progress-bar-fill').style.width = '0%';
+      const logsForCourse = arrivalLogs.filter((l) => l.courseType === activeCourseType);
+      const doneCount = logsForCourse.length;
+      const totalCount = stores.length;
+
+      document.getElementById('progress-done').textContent = String(doneCount);
+      document.getElementById('progress-total').textContent = String(totalCount);
+      const pct = totalCount > 0 ? Math.round((doneCount / totalCount) * 100) : 0;
+      document.getElementById('progress-bar-fill').style.width = `${pct}%`;
+      document.getElementById('history-count').textContent = String(arrivalLogs.length);
+
+      const pastLocked = isPastDeliveryDate();
+      if (pastLocked) {
+        const lockBanner = document.createElement('div');
+        lockBanner.className = 'mb-3 rounded-2xl bg-amber-50 border border-amber-200 px-4 py-3 text-xs font-extrabold text-amber-900 flex items-center gap-2';
+        lockBanner.innerHTML = '<span>🔒 過去日のため閲覧専用です（入力・変更はできません）</span>';
+        container.appendChild(lockBanner);
+      }
+
+      if (stores.length === 0) {
+        const empty = document.createElement('div');
+        empty.className = 'bg-white rounded-3xl p-8 text-center border border-slate-100 text-xs font-bold text-slate-400';
+        empty.textContent = 'この便の店舗データはありません';
+        container.appendChild(empty);
         return;
       }
 
-      if (pastLocked) {
-        const lockNotice = document.createElement('div');
-        lockNotice.className = 'bg-amber-50 border border-amber-200 text-amber-900 rounded-2xl px-4 py-2.5 text-xs font-extrabold flex items-center justify-between';
-        lockNotice.innerHTML = `
-          <span>🔒 配送稼働日前日以前のため入力ロック中（閲覧専用）</span>
-        `;
-        container.appendChild(lockNotice);
+      // 最初の未入力店舗（NEXT）を特定
+      let firstUnrecordedOrder = null;
+      for (let i = 0; i < stores.length; i++) {
+        const matched = logsForCourse.find((l) => Number(l.order) === Number(stores[i].order));
+        if (!matched) {
+          firstUnrecordedOrder = Number(stores[i].order);
+          break;
+        }
       }
 
-      let doneCount = 0;
-      let firstUnfinishedFound = false;
-
       stores.forEach((store, idx) => {
-        const storeOrderNum = idx + 1;
         const isLastStore = (idx === stores.length - 1);
-        const log = arrivalLogs.find(
-          (l) => l.courseType === activeCourseType && Number(l.order) === storeOrderNum
-        );
-        if (log) doneCount++;
+        const storeWithFlag = { ...store, isLastStore };
+        const existingLog = logsForCourse.find((l) => Number(l.order) === Number(store.order));
+        const isNext = (!pastLocked && !existingLog && Number(store.order) === firstUnrecordedOrder);
 
-        const isNextTarget = !log && !firstUnfinishedFound;
-        if (isNextTarget) firstUnfinishedFound = true;
+        const card = document.createElement('div');
+        if (existingLog) {
+          card.className = 'bg-white rounded-3xl p-4 border border-slate-200/80 shadow-[0_2px_10px_rgba(15,23,42,0.02)] flex items-center justify-between gap-3 active:scale-[0.99] transition cursor-pointer';
+        } else if (isNext) {
+          card.className = 'bg-white rounded-3xl p-4 border-2 border-blue-500 shadow-[0_8px_24px_rgba(37,99,235,0.12)] flex items-center justify-between gap-3 active:scale-[0.99] transition cursor-pointer';
+        } else {
+          card.className = 'bg-white/90 rounded-3xl p-4 border border-slate-200/70 flex items-center justify-between gap-3 active:scale-[0.99] transition cursor-pointer';
+        }
 
-        const row = document.createElement('div');
-        row.className = 'relative flex items-stretch gap-3';
+        const left = document.createElement('div');
+        left.className = 'min-w-0 flex-1';
 
-        const lineHtml = !isLastStore
-          ? `<div class="w-0.5 flex-1 my-1 ${log ? 'bg-emerald-400' : 'bg-slate-200'}"></div>`
-          : `<div class="flex-1"></div>`;
+        const topRow = document.createElement('div');
+        topRow.className = 'flex items-center gap-1.5 mb-1';
 
-        const nodeHtml = log
-          ? `<div class="w-7 h-7 rounded-full bg-emerald-500 text-white flex items-center justify-center shadow-2xs shrink-0">
-               <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
-             </div>`
-          : isNextTarget
-          ? `<div class="w-7 h-7 rounded-full bg-blue-600 text-white text-xs font-black flex items-center justify-center ring-4 ring-blue-100 shrink-0 tabular-nums">
-               ${storeOrderNum}
-             </div>`
-          : `<div class="w-7 h-7 rounded-full bg-white border-2 border-slate-200 text-slate-400 text-xs font-extrabold flex items-center justify-center shrink-0 tabular-nums">
-               ${storeOrderNum}
-             </div>`;
+        const numBadge = document.createElement('span');
+        numBadge.className = existingLog
+          ? 'text-[10px] font-black px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 tabular-nums'
+          : isNext
+          ? 'text-[10px] font-black px-2 py-0.5 rounded-full bg-blue-600 text-white tabular-nums'
+          : 'text-[10px] font-black px-2 py-0.5 rounded-full bg-slate-100 text-slate-500 tabular-nums';
+        numBadge.textContent = isNext ? `NEXT • ${store.order}店舗目` : `${store.order}店舗目`;
+        topRow.appendChild(numBadge);
 
-        const timelineCol = document.createElement('div');
-        timelineCol.className = 'flex flex-col items-center pt-3.5';
-        timelineCol.innerHTML = `${nodeHtml}${lineHtml}`;
+        if (isLastStore) {
+          const lastBadge = document.createElement('span');
+          lastBadge.className = 'text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200/80';
+          lastBadge.textContent = '最終';
+          topRow.appendChild(lastBadge);
+        }
 
-        const card = document.createElement('button');
-        card.type = 'button';
-        card.className = `flex-1 text-left rounded-3xl p-4 transition-all active:scale-[0.985] flex items-center justify-between gap-3 ${
-          log
-            ? 'bg-white/70 border border-slate-200/60'
-            : isNextTarget
-            ? 'bg-white shadow-[0_12px_30px_rgba(37,99,235,0.10)] border border-blue-200/80 ring-1 ring-blue-500/10'
-            : 'bg-white border border-slate-100 shadow-[0_2px_10px_rgba(15,23,42,0.03)]'
-        }`;
+        const nameEl = document.createElement('div');
+        nameEl.className = existingLog
+          ? 'text-base font-black text-slate-600 truncate'
+          : 'text-base font-black text-slate-900 truncate';
+        nameEl.textContent = store.name;
 
-        let rightHtml = '';
-        if (log) {
-          if (log.isHoliday) {
-            rightHtml = `
-              <div class="text-right shrink-0">
-                <span class="px-3 py-1 rounded-full bg-amber-100 text-amber-800 border border-amber-300 text-xs font-extrabold inline-block">休業</span>
-              </div>
+        const subRow = document.createElement('div');
+        subRow.className = 'flex items-center gap-2.5 text-xs font-bold text-slate-400 mt-0.5 tabular-nums';
+        subRow.innerHTML = `<span>定時 ${store.scheduled || '--:--'}</span>` +
+          (store.avgArrival ? `<span class="text-blue-500/90">平均 ${store.avgArrival}</span>` : '');
+
+        left.appendChild(topRow);
+        left.appendChild(nameEl);
+        left.appendChild(subRow);
+
+        const right = document.createElement('div');
+        right.className = 'shrink-0 text-right';
+
+        if (existingLog) {
+          if (existingLog.isHoliday) {
+            right.innerHTML = `
+              <span class="inline-block px-3 py-1.5 rounded-2xl bg-amber-100 text-amber-900 text-xs font-black">休業</span>
             `;
-          } else if (log.isExtraRun) {
-            rightHtml = `
-              <div class="text-right shrink-0">
-                <span class="px-3 py-1 rounded-full bg-violet-100 text-violet-800 border border-violet-300 text-xs font-extrabold inline-block">臨時便</span>
-              </div>
+          } else if (existingLog.isExtraRun) {
+            right.innerHTML = `
+              <span class="inline-block px-3 py-1.5 rounded-2xl bg-violet-100 text-violet-900 text-xs font-black">臨時便</span>
             `;
           } else {
-            const diffBadgeClass = log.isDelayed
-              ? 'bg-rose-100 text-rose-700'
-              : 'bg-emerald-100 text-emerald-700';
-            rightHtml = `
-              <div class="text-right shrink-0">
-                <div class="text-base font-black text-slate-900 tabular-nums">${log.arrival}</div>
-                <span class="inline-block mt-0.5 px-2 py-0.5 rounded-full text-[10px] font-extrabold ${diffBadgeClass}">${log.diffDisplay}</span>
-              </div>
+            const diff = Number(existingLog.diffMinutes || 0);
+            let badgeClass = 'bg-emerald-100/90 text-emerald-800';
+            if (diff >= 31) badgeClass = 'bg-rose-100 text-rose-800';
+            else if (diff > 0) badgeClass = 'bg-amber-100 text-amber-900';
+
+            right.innerHTML = `
+              <div class="text-base font-black text-slate-900 tabular-nums leading-tight">${existingLog.arrival}</div>
+              <span class="inline-block mt-0.5 px-2 py-0.5 rounded-full text-[10px] font-black tabular-nums ${badgeClass}">
+                ${formatDiffDisplay(diff)}
+              </span>
             `;
           }
         } else if (pastLocked) {
-          rightHtml = `<span class="px-3 py-1.5 rounded-xl bg-slate-100 text-slate-400 text-xs font-bold shrink-0">🔒 確定済</span>`;
-        } else if (isNextTarget) {
-          rightHtml = `<span class="px-4 py-2 rounded-2xl bg-blue-600 text-white text-xs font-black shadow-xs shrink-0">到着記録</span>`;
+          right.innerHTML = `
+            <span class="inline-block px-3 py-1.5 rounded-2xl bg-slate-100 text-slate-400 text-xs font-extrabold">未入力</span>
+          `;
+        } else if (isNext) {
+          right.innerHTML = `
+            <span class="inline-block px-3.5 py-2 rounded-2xl bg-blue-600 text-white text-xs font-black shadow-xs">到着記録</span>
+          `;
         } else {
-          rightHtml = `<span class="px-3 py-1.5 rounded-xl bg-slate-100 text-slate-500 text-xs font-bold shrink-0">待機中</span>`;
+          right.innerHTML = `
+            <span class="inline-block px-3 py-1.5 rounded-2xl bg-slate-100 text-slate-600 text-xs font-extrabold">入力</span>
+          `;
         }
 
-        card.innerHTML = `
-          <div class="min-w-0">
-            <div class="flex items-center gap-1.5">
-              ${!pastLocked && isNextTarget ? '<span class="text-[10px] font-black tracking-wider text-blue-600 uppercase">NEXT</span>' : ''}
-              ${isLastStore ? '<span class="text-[10px] font-extrabold text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded-md">最終</span>' : ''}
-            </div>
-            <div class="text-base font-black ${log ? 'text-slate-500' : 'text-slate-900'} truncate mt-0.5">
-              ${store.name}
-            </div>
-            <div class="text-xs font-semibold text-slate-400 mt-1 tabular-nums">
-              定時 <span class="text-slate-700 font-extrabold">${store.scheduled || '--:--'}</span>
-            </div>
-          </div>
-          ${rightHtml}
-        `;
+        card.appendChild(left);
+        card.appendChild(right);
 
         card.addEventListener('click', () => {
-          // ⑥ 配送稼働日前日以前は一切の入力・変更を禁止
           if (isPastDeliveryDate()) {
             showToast('🔒 過去日のため入力・変更はできません');
             return;
           }
-          // ③ 未入力店舗があった場合は次の店舗に進めない（完了済み店舗の再タップ修正は許可）
-          if (!log) {
-            const firstUnfinishedIdx = stores.findIndex((_, sIdx) => {
-              return !arrivalLogs.some(
-                (l) => l.courseType === activeCourseType && Number(l.order) === (sIdx + 1)
-              );
-            });
-            if (firstUnfinishedIdx !== -1 && firstUnfinishedIdx < idx) {
-              const missingStore = stores[firstUnfinishedIdx];
-              showToast(`⚠️ 先に「${firstUnfinishedIdx + 1}. ${missingStore.name}」を入力してください`);
-              return;
-            }
+          // ③ 未入力店舗がある場合は次の店舗へ進めない（送信済みの再編集は許可）
+          if (!existingLog && firstUnrecordedOrder !== null && Number(store.order) > firstUnrecordedOrder) {
+            const pendingStore = stores.find((s) => Number(s.order) === firstUnrecordedOrder);
+            const pendingName = pendingStore ? pendingStore.name : `${firstUnrecordedOrder}店舗目`;
+            showToast(`⚠️ 先に「${pendingName}」の到着記録を入力してください`);
+            return;
           }
-          openArrivalModal({ ...store, order: storeOrderNum }, isLastStore);
+          openArrivalModal(storeWithFlag, existingLog);
         });
 
-        row.appendChild(timelineCol);
-        row.appendChild(card);
-        container.appendChild(row);
-      });
-
-      document.getElementById('progress-done').textContent = String(doneCount);
-      document.getElementById('progress-total').textContent = String(stores.length);
-      const pct = stores.length > 0 ? Math.round((doneCount / stores.length) * 100) : 0;
-      document.getElementById('progress-bar-fill').style.width = `${pct}%`;
-      document.getElementById('history-count').textContent = String(arrivalLogs.length);
-    }
-
-    function renderHistoryList() {
-      const container = document.getElementById('history-list-container');
-      container.innerHTML = '';
-
-      if (arrivalLogs.length === 0) {
-        container.innerHTML = `<div class="py-10 text-center text-xs font-bold text-zinc-400">まだ送信履歴はありません</div>`;
-        return;
-      }
-
-      arrivalLogs.slice().reverse().forEach((item) => {
-        const courseCode = item.courseType === '1' ? course1Code : course2Code;
-        const badgeText = `${courseCode}-${item.order}`;
-
-        let statusHtml = '';
-        if (item.isHoliday) {
-          statusHtml = `<span class="px-2.5 py-1 rounded-full bg-amber-100 text-amber-800 border border-amber-300 text-xs font-extrabold">休業</span>`;
-        } else if (item.isExtraRun) {
-          statusHtml = `<span class="px-2.5 py-1 rounded-full bg-violet-100 text-violet-800 border border-violet-300 text-xs font-extrabold">臨時便</span>`;
-        } else {
-          const badgeCls = item.isDelayed ? 'bg-rose-100 text-rose-700' : 'bg-emerald-100 text-emerald-700';
-          statusHtml = `
-            <div class="text-right">
-              <div class="text-base font-black text-zinc-900 tabular-nums">${item.arrival}</div>
-              <span class="inline-block px-2 py-0.5 rounded-full text-[10px] font-extrabold ${badgeCls}">${item.diffDisplay}</span>
-            </div>
-          `;
-        }
-
-        const el = document.createElement('div');
-        el.className = 'bg-white border border-zinc-200/80 rounded-2xl px-3.5 py-2.5 flex items-center justify-between gap-2.5 shadow-2xs';
-        el.innerHTML = `
-          <div class="flex items-center gap-2.5 min-w-0">
-            <span class="px-2.5 py-1 rounded-xl bg-zinc-900 text-white text-sm font-black tabular-nums shrink-0">${badgeText}</span>
-            <span class="text-base font-black text-zinc-900 truncate">${item.storeName}</span>
-          </div>
-          <div class="shrink-0">${statusHtml}</div>
-        `;
-        container.appendChild(el);
+        container.appendChild(card);
       });
     }
 
-    function openArrivalModal(store, isLastStore) {
-      selectedStoreForModal = { ...store, isLastStore };
-
-      // ★未確認の緊急伝言がある場合は、時刻入力モーダルの一番上に表示して音を鳴らす
-      const memoBanner = document.getElementById('dispatch-memo-banner');
-      if (memoBanner) {
-        if (activeDispatchMemo && activeDispatchMemo.message) {
-          document.getElementById('dispatch-memo-text').textContent = activeDispatchMemo.message;
-          document.getElementById('dispatch-memo-time').textContent = activeDispatchMemo.sentAt ? `${activeDispatchMemo.sentAt} 送信` : '';
-          memoBanner.classList.remove('hidden');
-          triggerDispatchMemoAlertSound();
-        } else {
-          memoBanner.classList.add('hidden');
-        }
-      }
-
+    function openArrivalModal(store, existingLog) {
+      selectedStoreForModal = store;
       const activeCode = activeCourseType === '1' ? course1Code : course2Code;
       document.getElementById('modal-store-badge').textContent = `${activeCourseType}便（${activeCode}）• ${store.order}店舗目`;
       document.getElementById('modal-store-name').textContent = store.name;
       document.getElementById('modal-scheduled-time').textContent = store.scheduled || '--:--';
 
-      // ④ 直近の平均到着時間バッジの表示切替
-      const avgWrap = document.getElementById('modal-avg-time-wrap');
-      const avgTimeEl = document.getElementById('modal-avg-time');
-      if (avgWrap && avgTimeEl) {
-        if (store.avgArrival && store.avgArrival.includes(':')) {
-          avgTimeEl.textContent = store.avgArrival;
-          avgWrap.classList.remove('hidden');
-        } else {
-          avgWrap.classList.add('hidden');
-        }
-      }
-
       const lastBadge = document.getElementById('modal-last-badge');
-      if (lastBadge) {
-        if (isLastStore) lastBadge.classList.remove('hidden');
-        else lastBadge.classList.add('hidden');
+      if (store.isLastStore) {
+        lastBadge.classList.remove('hidden');
+      } else {
+        lastBadge.classList.add('hidden');
       }
 
-      const existingLog = arrivalLogs.find(
-        (l) => l.courseType === activeCourseType && Number(l.order) === Number(store.order) && !l.isHoliday && !l.isExtraRun
-      );
-      // ④ 修正時は既存記録時刻、新規入力時は「直近の平均到着時間」→「予定定時」→「現在時刻」の順でセット
-      let initTime = existingLog
-        ? existingLog.arrival
-        : (store.avgArrival && store.avgArrival.includes(':'))
-        ? store.avgArrival
-        : store.scheduled;
-      if (!initTime || !initTime.includes(':')) {
+      const avgWrap = document.getElementById('modal-avg-time-wrap');
+      const avgText = document.getElementById('modal-avg-time');
+      if (store.avgArrival) {
+        avgWrap.classList.remove('hidden');
+        avgText.textContent = store.avgArrival;
+      } else {
+        avgWrap.classList.add('hidden');
+      }
+
+      // 事務所からの未確認伝言バナー表示制御
+      const memoBanner = document.getElementById('dispatch-memo-banner');
+      if (activeDispatchMemo && activeDispatchMemo.message) {
+        document.getElementById('dispatch-memo-text').textContent = activeDispatchMemo.message;
+        document.getElementById('dispatch-memo-time').textContent = activeDispatchMemo.sentAt ? `${activeDispatchMemo.sentAt} 送信` : '';
+        memoBanner.classList.remove('hidden');
+        triggerDispatchMemoAlertSound();
+      } else {
+        memoBanner.classList.add('hidden');
+      }
+
+      // ④ 初期表示時刻：既存修正ならその時刻、新規入力なら直近平均到着時間 → 予定定時 → 現在時刻の順でセット
+      let initialTimeStr = '';
+      if (existingLog && existingLog.arrival && existingLog.arrival.includes(':')) {
+        initialTimeStr = existingLog.arrival;
+      } else if (store.avgArrival && store.avgArrival.includes(':')) {
+        initialTimeStr = store.avgArrival;
+      } else if (store.scheduled && store.scheduled.includes(':')) {
+        initialTimeStr = store.scheduled;
+      } else {
         const now = new Date();
-        initTime = `${pad2(now.getHours())}:${pad2(now.getMinutes())}`;
+        initialTimeStr = `${pad2(now.getHours())}:${pad2(now.getMinutes())}`;
       }
-      const [hh, mm] = initTime.split(':');
-      const hVal = pad2(parseInt(hh, 10) || 0);
-      const mVal = pad2(parseInt(mm, 10) || 0);
-      document.getElementById('select-hour').value = hVal;
-      document.getElementById('select-minute').value = mVal;
-      if (hourWheelController) hourWheelController.setValue(hVal, false);
-      if (minuteWheelController) minuteWheelController.setValue(mVal, false);
 
+      const [initH, initM] = initialTimeStr.split(':');
+      document.getElementById('select-hour').value = pad2(initH);
+      document.getElementById('select-minute').value = pad2(initM);
+      if (hourWheelController) hourWheelController.setValue(initH, false);
+      if (minuteWheelController) minuteWheelController.setValue(initM, false);
       updateModalDiffPreview();
 
       const modal = document.getElementById('arrival-modal');
@@ -1350,64 +1304,72 @@
       selectedStoreForModal = null;
     }
 
+    function renderHistoryList() {
+      const container = document.getElementById('history-list-container');
+      container.innerHTML = '';
+
+      if (!arrivalLogs || arrivalLogs.length === 0) {
+        container.innerHTML = '<div class="text-center text-xs font-bold text-zinc-400 py-8">本日の送信履歴はまだありません</div>';
+        return;
+      }
+
+      arrivalLogs.forEach((log) => {
+        const row = document.createElement('div');
+        row.className = 'bg-white border border-zinc-200/80 rounded-2xl p-3 flex items-center justify-between gap-2';
+        const cCode = log.courseType === '1' ? course1Code : course2Code;
+        const statusStr = log.isHoliday
+          ? '<span class="text-amber-700 font-black">休業</span>'
+          : log.isExtraRun
+          ? '<span class="text-violet-700 font-black">臨時便</span>'
+          : `<span class="font-black text-zinc-900 tabular-nums">${log.arrival}</span> <span class="text-[11px] font-bold text-zinc-500">(${formatDiffDisplay(Number(log.diffMinutes || 0))})</span>`;
+
+        row.innerHTML = `
+          <div class="min-w-0">
+            <div class="text-[10px] font-extrabold text-zinc-400">${log.courseType}便（${cCode}）• ${log.order}店舗目</div>
+            <div class="text-sm font-black text-zinc-900 truncate">${log.storeName}</div>
+          </div>
+          <div class="text-right shrink-0 text-xs">${statusStr}</div>
+        `;
+        container.appendChild(row);
+      });
+    }
+
     async function handleRecordSubmission(mode) {
       if (!selectedStoreForModal) return;
-
-      // ⑥ 送信直前にも過去日チェックを実行（二重防御）
       if (isPastDeliveryDate()) {
-        closeArrivalModal();
         showToast('🔒 過去日のため入力・変更はできません');
         return;
       }
 
+      triggerSendWhooshTone();
+
       const store = selectedStoreForModal;
       const isHoliday = (mode === 'holiday');
       const isExtraRun = (mode === 'extra');
-
       const h = document.getElementById('select-hour').value;
       const m = document.getElementById('select-minute').value;
-      const arrivalStr = `${h}:${m}`;
-
-      if (!isHoliday && !isExtraRun && Number(store.order) === 1 && store.scheduled) {
-        const diff = calculateTimeDiffMinutes(store.scheduled, arrivalStr);
-        if (diff <= -180) {
-          showToast('⚠️ 1店舗目の定時より3時間以上早い時刻は送信できません');
-          return;
-        }
-      }
-
-      triggerSendWhooshTone();
-
-      const diff = (isHoliday || isExtraRun) ? 0 : calculateTimeDiffMinutes(store.scheduled, arrivalStr);
-      const isDelayed = (!isHoliday && !isExtraRun && diff >= 31);
-      const diffDisplay = isHoliday ? '休業' : isExtraRun ? '臨時便' : formatDiffDisplay(diff);
-
+      const arrivalStr = isHoliday ? '休業' : isExtraRun ? '臨時便' : `${h}:${m}`;
+      const diffMin = (isHoliday || isExtraRun) ? 0 : calculateTimeDiffMinutes(store.scheduled, arrivalStr);
       const now = new Date();
-      const drSentTime = store.isLastStore ? `${pad2(now.getHours())}:${pad2(now.getMinutes())}` : '';
-      const dateStr = getFormattedDeliveryDateKey();
+      const drSentTime = `${pad2(now.getHours())}:${pad2(now.getMinutes())}`;
 
       const logEntry = {
-        dateKey: dateStr,
-        deliveryDate: dateStr,
-        carIndex: excelCarIndex,
+        deliveryDate: getFormattedDeliveryDateKey(),
         excelCarIndex: excelCarIndex,
         courseType: activeCourseType,
-        courseCode: activeCourseType === '1' ? course1Code : course2Code,
-        order: Number(store.order),
-        storeOrder: Number(store.order),
+        storeOrder: store.order,
+        order: store.order,
         storeName: store.name,
         scheduled: store.scheduled,
-        scheduledTime: store.scheduled,
-        arrival: isHoliday ? '休業' : isExtraRun ? '' : arrivalStr,
-        arrivalTime: isHoliday ? '休業' : isExtraRun ? '' : arrivalStr,
-        diffMinutes: diff,
-        diffDisplay,
-        sheetDiffText: (isHoliday || isExtraRun) ? '' : (diff === 0 ? '±0' : diff > 0 ? `+${diff}` : `${diff}`),
-        isDelayed,
-        isHoliday,
-        isExtraRun,
+        arrivalTime: arrivalStr,
+        arrival: arrivalStr,
+        diffMinutes: diffMin,
+        diffDisplay: isHoliday ? '休業' : isExtraRun ? '臨時便' : formatDiffDisplay(diffMin),
+        isDelayed: (!isHoliday && !isExtraRun && diffMin >= 31),
+        isHoliday: isHoliday,
+        isExtraRun: isExtraRun,
         isLastStore: Boolean(store.isLastStore),
-        drSentTime
+        drSentTime: store.isLastStore ? drSentTime : ''
       };
 
       arrivalLogs = arrivalLogs.filter(
@@ -1416,9 +1378,19 @@
       arrivalLogs.push(logEntry);
 
       closeArrivalModal();
+
+      // ③ 1便の最終店舗を送信完了したら、2便がある号車の場合は自動的に2便へ切り替え
+      const switchedToCourse2 = (activeCourseType === '1' && Boolean(store.isLastStore) && !isSingleCourseCar && course2Stores.length > 0);
+      if (switchedToCourse2) {
+        activeCourseType = '2';
+      }
+
+      saveScheduleCacheToLocal();
       renderStoreList();
 
-      if (isHoliday) {
+      if (switchedToCourse2) {
+        showToast(`🚚 1便完了！2便（${course2Code}コース）へ切り替えました`);
+      } else if (isHoliday) {
         showToast(`${store.name} を「休業」として送信しました`);
       } else if (isExtraRun) {
         showToast(`${store.name} を「臨時便」として送信しました`);
@@ -1447,6 +1419,39 @@
       }
     }
 
+    // ④ ローカルキャッシュ保存＆即座復元（体感読込み速度を0.01秒に高速化）
+    function getScheduleCacheKey() {
+      return `store_schedule_cache_${excelCarIndex}_${getFormattedDeliveryDateKey()}`;
+    }
+
+    function saveScheduleCacheToLocal() {
+      try {
+        localStorage.setItem(getScheduleCacheKey(), JSON.stringify({
+          course1Code,
+          course2Code,
+          course1Stores,
+          course2Stores,
+          arrivalLogs
+        }));
+      } catch (e) {}
+    }
+
+    function restoreScheduleCacheFromLocal() {
+      try {
+        const raw = localStorage.getItem(getScheduleCacheKey());
+        if (!raw) return false;
+        const cached = JSON.parse(raw);
+        if (cached.course1Code) course1Code = String(cached.course1Code);
+        if (cached.course2Code) course2Code = String(cached.course2Code);
+        if (Array.isArray(cached.course1Stores)) course1Stores = normalizeStoreArray(cached.course1Stores);
+        if (Array.isArray(cached.course2Stores)) course2Stores = normalizeStoreArray(cached.course2Stores);
+        if (Array.isArray(cached.arrivalLogs)) arrivalLogs = normalizeLogsArray(cached.arrivalLogs);
+        return true;
+      } catch (e) {
+        return false;
+      }
+    }
+
     async function fetchSheetData(silent = false) {
       if (!gasWebAppUrl) {
         setConnectionBadge('demo', 'デモ表示');
@@ -1454,7 +1459,13 @@
         return;
       }
 
-      if (!silent) {
+      // ④ 端末キャッシュがあれば即座に描画してから裏側で最新データへ同期
+      const hasCached = restoreScheduleCacheFromLocal();
+      if (hasCached) {
+        renderStoreList();
+      }
+
+      if (!silent && !hasCached) {
         setConnectionBadge('loading', '読込中...');
       }
       try {
@@ -1474,8 +1485,9 @@
           if (Array.isArray(data.existingLogs)) arrivalLogs = normalizeLogsArray(data.existingLogs);
           activeDispatchMemo = data.dispatchMemo || null;
 
+          saveScheduleCacheToLocal();
           setConnectionBadge('ok', 'GAS接続済');
-          if (!silent) {
+          if (!silent && !hasCached) {
             showToast('最新スケジュールを読み込みました');
           }
         } else {
