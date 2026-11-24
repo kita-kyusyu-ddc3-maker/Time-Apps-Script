@@ -2205,24 +2205,107 @@
         modal.classList.remove('flex');
       });
 
-      document.getElementById('confirm-chat-delete-btn').addEventListener('click', () => {
-        if (pendingDeleteMsgKey) {
-          const deletedIds = JSON.parse(localStorage.getItem('store_deleted_chat_ids') || '[]');
-          if (!deletedIds.includes(pendingDeleteMsgKey)) {
-            deletedIds.push(pendingDeleteMsgKey);
-            localStorage.setItem('store_deleted_chat_ids', JSON.stringify(deletedIds));
-          }
-          chatMessagesList = chatMessagesList.filter(
-            (m) => String(m.id || `${m.sender}_${m.time}_${m.text}`) !== pendingDeleteMsgKey
-          );
-          updateChatUnreadBadge();
-          renderChatMessages();
-          showToast('メッセージを削除しました');
+      document.getElementById('open-chat-screen-btn').addEventListener('click', () => {
+        document.getElementById('chat-header-title').textContent = `事務所連絡（${excelCarIndex}号車）`;
+        renderChatMessages();
+        const screen = document.getElementById('chat-sub-screen');
+        screen.classList.remove('hidden');
+        screen.classList.add('flex');
+        syncChatViewportHeight();
+        if (gasWebAppUrl) fetchSheetData(true);
+      });
+
+      document.getElementById('close-chat-screen-btn').addEventListener('click', () => {
+        const screen = document.getElementById('chat-sub-screen');
+        screen.classList.add('hidden');
+        screen.classList.remove('flex');
+        screen.style.height = '';
+        screen.style.top = '';
+      });
+
+      document.getElementById('chat-camera-btn').addEventListener('click', () => {
+        document.getElementById('chat-camera-input').click();
+      });
+
+      document.getElementById('chat-camera-input').addEventListener('change', (e) => {
+        const file = e.target.files && e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+          const img = new Image();
+          img.onload = () => {
+            const canvas = document.createElement('canvas');
+            const maxDim = 640;
+            let w = img.width;
+            let h = img.height;
+            if (w > maxDim || h > maxDim) {
+              if (w > h) { h = Math.round(h * maxDim / w); w = maxDim; }
+              else { w = Math.round(w * maxDim / h); h = maxDim; }
+            }
+            canvas.width = w;
+            canvas.height = h;
+            canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+            pendingChatImageBase64 = canvas.toDataURL('image/jpeg', 0.65);
+            document.getElementById('chat-photo-thumb').src = pendingChatImageBase64;
+            document.getElementById('chat-photo-preview-bar').classList.remove('hidden');
+          };
+          img.src = ev.target.result;
+        };
+        reader.readAsDataURL(file);
+      });
+
+      document.getElementById('chat-remove-photo-btn').addEventListener('click', () => {
+        pendingChatImageBase64 = '';
+        document.getElementById('chat-camera-input').value = '';
+        document.getElementById('chat-photo-preview-bar').classList.add('hidden');
+      });
+
+      async function sendDriverChatMessage() {
+        const inputEl = document.getElementById('chat-message-input');
+        const text = inputEl.value.trim();
+        if (!text && !pendingChatImageBase64) return;
+        triggerSendWhooshTone();
+        const now = new Date();
+        const timeStr = `${pad2(now.getHours())}:${pad2(now.getMinutes())}`;
+        const imgToSend = pendingChatImageBase64;
+        chatMessagesList.push({
+          id: 'DRV_LOCAL_' + Date.now(),
+          sender: 'driver',
+          text: text,
+          time: timeStr,
+          confirmed: true,
+          imageData: imgToSend
+        });
+        inputEl.value = '';
+        pendingChatImageBase64 = '';
+        document.getElementById('chat-camera-input').value = '';
+        document.getElementById('chat-photo-preview-bar').classList.add('hidden');
+        renderChatMessages();
+        showToast('事務所へメッセージを送信しました');
+        if (gasWebAppUrl) {
+          try {
+            await fetch(gasWebAppUrl, {
+              method: 'POST',
+              mode: 'no-cors',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                action: 'sendDriverChat',
+                excelCarIndex: excelCarIndex,
+                message: text,
+                imageData: imgToSend,
+                sentAt: timeStr
+              })
+            });
+          } catch (err) {}
         }
-        pendingDeleteMsgKey = '';
-        const modal = document.getElementById('chat-delete-modal');
-        modal.classList.add('hidden');
-        modal.classList.remove('flex');
+      }
+
+      document.getElementById('chat-send-btn').addEventListener('click', sendDriverChatMessage);
+      document.getElementById('chat-message-input').addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && !e.isComposing) {
+          e.preventDefault();
+          sendDriverChatMessage();
+        }
       });
 
       // スマホでキーボードを開いたときに入力欄の下1/3が隠れないよう画面高さを自動追従
