@@ -90,11 +90,22 @@
       height: 44px;
       display: flex;
       align-items: center;
+      justify-content: center;
+      font-size: 1.55rem;
+      font-weight: 800;
+      color: #a1a1aa;
+      transition: color 0.12s ease;
+    }
+    .wheel-item.is-selected {
+      color: #18181b;
+      font-size: 1.85rem;
+      font-weight: 900;
+    }
     /* LINE風吹き出しのしっぽデザイン（上部からカーブして尖る本物のLINE形状） */
     .line-bubble-office {
       position: relative;
       border-radius: 18px;
-      margin-left: 6px;
+      margin-left: 8px;
     }
     .line-bubble-office::before {
       content: '';
@@ -119,7 +130,7 @@
     .line-bubble-driver {
       position: relative;
       border-radius: 18px;
-      margin-right: 6px;
+      margin-right: 8px;
     }
     .line-bubble-driver::before {
       content: '';
@@ -437,24 +448,32 @@
 
       <div id="chat-messages-container" class="flex-1 overflow-y-auto px-4 pt-3 pb-6 space-y-3.5 bg-[#8CABD9]/35 flex flex-col"></div>
 
-      <div id="chat-photo-preview-bar" class="hidden bg-white border-t border-slate-200 px-4 py-2 flex items-center justify-between shrink-0">
+      <div id="chat-photo-preview-bar" class="hidden bg-slate-100 border-t border-slate-200 px-3 py-2 flex items-center justify-between gap-2 shrink-0">
         <div class="flex items-center gap-2">
-          <img id="chat-photo-thumb" src="" alt="プレビュー" class="w-12 h-12 rounded-xl object-cover border border-slate-200" />
-          <span class="text-xs font-extrabold text-slate-600">添付写真（送信待機中）</span>
+          <img id="chat-photo-thumb" src="" alt="添付プレビュー" class="w-12 h-12 rounded-xl object-cover border border-slate-300" />
+          <span class="text-xs font-extrabold text-slate-700">送信する写真（添付中）</span>
         </div>
-        <button type="button" id="chat-remove-photo-btn" class="text-xs font-black text-rose-600 bg-rose-50 px-2.5 py-1 rounded-lg">削除</button>
+        <button type="button" id="chat-remove-photo-btn" class="px-2.5 py-1 rounded-lg bg-slate-200 hover:bg-slate-300 text-slate-800 text-xs font-black">削除 ✕</button>
       </div>
 
-      <div id="chat-input-footer" class="bg-white border-t border-slate-200 px-3 pt-3 pb-[calc(0.9rem+env(safe-area-inset-bottom))] flex items-center gap-2 shrink-0">
+      <div id="chat-input-footer" class="bg-white border-t border-slate-200 px-3 pt-3 pb-[calc(0.9rem+env(safe-area-inset-bottom))] flex items-center gap-1.5 shrink-0">
         <input type="file" id="chat-camera-input" accept="image/*" capture="environment" class="hidden" />
-        <button type="button" id="chat-camera-btn" title="カメラ撮影・画像添付" class="w-11 h-11 rounded-full bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-700 flex items-center justify-center shrink-0 transition">
+        <button type="button" id="chat-camera-btn" title="カメラ撮影・画像添付" class="w-10 h-10 rounded-full bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-700 flex items-center justify-center shrink-0 transition">
           <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
             <circle cx="12" cy="13" r="4"/>
           </svg>
         </button>
-        <input type="text" id="chat-message-input" placeholder="メッセージを入力（🎤音声入力OK）" class="flex-1 bg-slate-100 border border-slate-300 rounded-full px-4 py-3 text-base font-bold text-slate-900 leading-normal focus:bg-white focus:border-blue-500 focus:outline-none" />
-        <button type="button" id="chat-send-btn" title="送信" class="w-11 h-11 rounded-full bg-blue-600 hover:bg-blue-700 active:scale-95 text-white flex items-center justify-center shrink-0 shadow-xs transition">
+        <input type="text" id="chat-message-input" placeholder="メッセージを入力" class="flex-1 min-w-0 bg-slate-100 border border-slate-300 rounded-full px-3.5 py-2.5 text-base font-bold text-slate-900 leading-normal focus:bg-white focus:border-blue-500 focus:outline-none" />
+        <button type="button" id="chat-mic-btn" title="音声入力" class="w-10 h-10 rounded-full bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-700 flex items-center justify-center shrink-0 transition">
+          <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="9" y="2" width="6" height="11" rx="3"/>
+            <path d="M5 10a7 7 0 0 0 14 0"/>
+            <line x1="12" y1="19" x2="12" y2="22"/>
+            <line x1="8" y1="22" x2="16" y2="22"/>
+          </svg>
+        </button>
+        <button type="button" id="chat-send-btn" title="送信" class="w-10 h-10 rounded-full bg-blue-600 hover:bg-blue-700 active:scale-95 text-white flex items-center justify-center shrink-0 shadow-xs transition">
           <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
             <line x1="22" y1="2" x2="11" y2="13"/>
             <polygon points="22 2 15 22 11 13 2 9 22 2"/>
@@ -2331,6 +2350,54 @@
         if (e.key === 'Enter' && !e.isComposing) {
           e.preventDefault();
           sendDriverChatMessage();
+        }
+      });
+
+      // 縦型マイクアイコン押下時の音声入力処理
+      const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+      let activeRecognition = null;
+      document.getElementById('chat-mic-btn').addEventListener('click', () => {
+        const micBtn = document.getElementById('chat-mic-btn');
+        const inputEl = document.getElementById('chat-message-input');
+        if (!SpeechRec) {
+          inputEl.focus();
+          showToast('キーボード右下の🎤マークから音声入力できます');
+          return;
+        }
+        if (activeRecognition) {
+          activeRecognition.stop();
+          activeRecognition = null;
+          micBtn.classList.remove('bg-rose-500', 'text-white', 'animate-pulse');
+          micBtn.classList.add('bg-slate-100', 'text-slate-700');
+          return;
+        }
+        try {
+          const rec = new SpeechRec();
+          rec.lang = 'ja-JP';
+          rec.interimResults = false;
+          rec.maxAlternatives = 1;
+          activeRecognition = rec;
+          micBtn.classList.remove('bg-slate-100', 'text-slate-700');
+          micBtn.classList.add('bg-rose-500', 'text-white', 'animate-pulse');
+          showToast('🎤 お話しください...');
+
+          rec.onresult = (event) => {
+            const transcript = event.results[0][0].transcript;
+            if (transcript) {
+              inputEl.value = inputEl.value ? `${inputEl.value} ${transcript}` : transcript;
+            }
+          };
+          rec.onerror = () => {
+            showToast('音声を認識できませんでした');
+          };
+          rec.onend = () => {
+            activeRecognition = null;
+            micBtn.classList.remove('bg-rose-500', 'text-white', 'animate-pulse');
+            micBtn.classList.add('bg-slate-100', 'text-slate-700');
+          };
+          rec.start();
+        } catch (err) {
+          inputEl.focus();
         }
       });
 
