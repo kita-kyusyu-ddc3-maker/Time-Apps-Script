@@ -90,56 +90,56 @@
       height: 44px;
       display: flex;
       align-items: center;
-      justify-content: center;
-      font-size: 1.85rem;
-      font-weight: 800;
-      color: #71717a;
-      transition: color 0.1s ease, transform 0.1s ease;
-      transform-origin: center center;
-    }
-    .wheel-item.is-selected {
-      color: #09090b;
-      font-weight: 900;
-    }
-    @keyframes sheetSlideUp {
-      from { transform: translateY(32px); opacity: 0; }
-      to { transform: translateY(0); opacity: 1; }
-    }
-    .animate-modal-in {
-      animation: sheetSlideUp 0.24s cubic-bezier(0.22, 1, 0.36, 1) forwards;
-    }
-    /* LINE風吹き出しのしっぽデザイン */
+    /* LINE風吹き出しのしっぽデザイン（上部からカーブして尖る本物のLINE形状） */
     .line-bubble-office {
       position: relative;
-      border-radius: 18px 18px 18px 4px;
+      border-radius: 18px;
+      margin-left: 6px;
     }
     .line-bubble-office::before {
       content: '';
       position: absolute;
-      left: -6px;
-      bottom: 2px;
+      left: -8px;
+      top: 0px;
+      width: 16px;
+      height: 16px;
+      background: #ffffff;
+      border-bottom-left-radius: 16px;
+    }
+    .line-bubble-office::after {
+      content: '';
+      position: absolute;
+      left: -12px;
+      top: -2px;
       width: 12px;
       height: 12px;
-      background: #ffffff;
-      border-left: 1px solid #e2e8f0;
-      border-bottom: 1px solid #e2e8f0;
-      border-bottom-left-radius: 10px;
-      transform: rotate(35deg);
+      background: #c7d6ec;
+      border-bottom-right-radius: 12px;
     }
     .line-bubble-driver {
       position: relative;
-      border-radius: 18px 18px 4px 18px;
+      border-radius: 18px;
+      margin-right: 6px;
     }
     .line-bubble-driver::before {
       content: '';
       position: absolute;
-      right: -5px;
-      bottom: 2px;
+      right: -8px;
+      top: 0px;
+      width: 16px;
+      height: 16px;
+      background: #2563eb;
+      border-bottom-right-radius: 16px;
+    }
+    .line-bubble-driver::after {
+      content: '';
+      position: absolute;
+      right: -12px;
+      top: -2px;
       width: 12px;
       height: 12px;
-      background: #2563eb;
-      border-bottom-right-radius: 10px;
-      transform: rotate(-35deg);
+      background: #c7d6ec;
+      border-bottom-left-radius: 12px;
     }
     ::-webkit-scrollbar {
       width: 0px;
@@ -2199,6 +2199,32 @@
       }
 
       document.getElementById('cancel-chat-delete-btn').addEventListener('click', () => {
+        pendingDeleteMsgKey = '';
+        const modal = document.getElementById('chat-delete-modal');
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+      });
+
+      document.getElementById('confirm-chat-delete-btn').addEventListener('click', () => {
+        if (pendingDeleteMsgKey) {
+          const deletedIds = JSON.parse(localStorage.getItem('store_deleted_chat_ids') || '[]');
+          if (!deletedIds.includes(pendingDeleteMsgKey)) {
+            deletedIds.push(pendingDeleteMsgKey);
+            localStorage.setItem('store_deleted_chat_ids', JSON.stringify(deletedIds));
+          }
+          chatMessagesList = (Array.isArray(chatMessagesList) ? chatMessagesList : []).filter(
+            (m) => String(m.id || `${m.sender}_${m.time}_${m.text}`) !== pendingDeleteMsgKey
+          );
+          if (activeDispatchMemo) {
+            const memoKey = String(activeDispatchMemo.memoId || `office_${activeDispatchMemo.sentAt}_${activeDispatchMemo.message}`);
+            if (memoKey === pendingDeleteMsgKey) {
+              activeDispatchMemo = null;
+            }
+          }
+          updateChatUnreadBadge();
+          renderChatMessages();
+          showToast('メッセージを削除しました');
+        }
         pendingDeleteMsgKey = '';
         const modal = document.getElementById('chat-delete-modal');
         modal.classList.add('hidden');
