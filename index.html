@@ -108,6 +108,39 @@
     .animate-modal-in {
       animation: sheetSlideUp 0.24s cubic-bezier(0.22, 1, 0.36, 1) forwards;
     }
+    /* LINE風吹き出しのしっぽデザイン */
+    .line-bubble-office {
+      position: relative;
+      border-radius: 18px 18px 18px 4px;
+    }
+    .line-bubble-office::before {
+      content: '';
+      position: absolute;
+      left: -6px;
+      bottom: 2px;
+      width: 12px;
+      height: 12px;
+      background: #ffffff;
+      border-left: 1px solid #e2e8f0;
+      border-bottom: 1px solid #e2e8f0;
+      border-bottom-left-radius: 10px;
+      transform: rotate(35deg);
+    }
+    .line-bubble-driver {
+      position: relative;
+      border-radius: 18px 18px 4px 18px;
+    }
+    .line-bubble-driver::before {
+      content: '';
+      position: absolute;
+      right: -5px;
+      bottom: 2px;
+      width: 12px;
+      height: 12px;
+      background: #2563eb;
+      border-bottom-right-radius: 10px;
+      transform: rotate(-35deg);
+    }
     ::-webkit-scrollbar {
       width: 0px;
       background: transparent;
@@ -218,59 +251,14 @@
     <!-- 4. フローティング・ボトムバー -->
     <div class="fixed bottom-4 left-0 right-0 z-20 flex justify-center px-5 pointer-events-none">
       <div class="w-full max-w-md flex items-center justify-between bg-slate-900/95 backdrop-blur-md text-white px-4 py-3 rounded-2xl shadow-[0_12px_30px_rgba(15,23,42,0.22)] pointer-events-auto">
-        <div class="flex items-center gap-2 min-w-0">
+        <button type="button" id="open-history-btn" class="bg-white/15 hover:bg-white/25 active:scale-95 text-white text-xs font-extrabold px-3.5 py-2 rounded-xl transition flex items-center gap-2">
           <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0"></span>
-          <span class="text-xs font-bold text-slate-200 truncate">送信ログ</span>
-        </div>
-        <div class="flex items-center gap-2.5 shrink-0">
-          <button type="button" id="open-history-btn" class="bg-white/15 hover:bg-white/25 active:scale-95 text-white text-xs font-extrabold px-3 py-1.5 rounded-xl transition flex items-center gap-1.5">
-            <span>履歴を見る</span>
-            <span id="history-count" class="bg-slate-600 text-white text-[11px] font-black px-1.5 py-0.2 rounded-md tabular-nums">0</span>
-          </button>
-          <button type="button" id="open-chat-screen-btn" class="bg-blue-600 hover:bg-blue-500 active:scale-95 text-white text-xs font-extrabold px-3 py-1.5 rounded-xl transition flex items-center gap-1.5 shadow-xs">
-            <span>メッセージ受信</span>
-            <span id="chat-unread-count" class="bg-rose-500 text-white text-[11px] font-black px-1.5 py-0.2 rounded-md tabular-nums">0</span>
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <!-- 4-B. サブ画面：LINE風メッセージ画面（全画面オーバーレイ切替） -->
-    <div id="chat-sub-screen" class="fixed inset-0 z-40 hidden flex-col bg-[#E2E8F0] max-w-md mx-auto shadow-2xl">
-      <!-- ヘッダー -->
-      <div class="bg-slate-900 text-white px-4 pt-4 pb-3 flex items-center justify-between gap-2 shrink-0">
-        <button type="button" id="close-chat-screen-btn" class="bg-white/15 hover:bg-white/25 active:scale-95 text-white text-xs font-black px-3 py-1.5 rounded-xl transition">
-          ← 店着画面へ
+          <span>送信履歴を見る</span>
+          <span id="history-count" class="bg-slate-600 text-white text-[11px] font-black px-1.5 py-0.2 rounded-md tabular-nums">0</span>
         </button>
-        <div class="flex items-center gap-2 min-w-0">
-          <span id="chat-header-title" class="text-sm font-black truncate">事務所連絡（--号車）</span>
-          <a id="chat-office-call-link" href="tel:" title="事務所へ電話" class="w-8 h-8 rounded-full bg-white/15 hover:bg-white/25 active:scale-95 flex items-center justify-center text-white shrink-0 transition">
-            <svg class="w-4 h-4" viewBox="0 0 256 256" fill="none" stroke="currentColor" stroke-width="22" stroke-linecap="round" stroke-linejoin="round"><path d="M222.37,158.46l-47.11-21.11-.13-.06a16,16,0,0,0-15.17,1.4,8.12,8.12,0,0,0-.75.56L134.87,160c-15.42-7.49-31.34-23.29-38.83-38.51l20.78-24.71c.2-.25.39-.5.57-.77a16,16,0,0,0,1.32-15.06l0-.12L97.54,33.64a16,16,0,0,0-16.62-9.52A56.26,56.26,0,0,0,32,80c0,79.4,64.6,144,144,144a56.26,56.26,0,0,0,55.88-48.92A16,16,0,0,0,222.37,158.46Z"/></svg>
-          </a>
-        </div>
-      </div>
-
-      <!-- チャット吹き出し一覧 -->
-      <div id="chat-messages-container" class="flex-1 overflow-y-auto px-4 py-4 space-y-3"></div>
-
-      <!-- 選択画像プレビュー（カメラ選択時のみ表示） -->
-      <div id="chat-photo-preview-bar" class="hidden bg-white border-t border-slate-200 px-4 py-2 flex items-center justify-between gap-2">
-        <div class="flex items-center gap-2 min-w-0">
-          <img id="chat-photo-thumb" src="" alt="添付画像" class="w-10 h-10 rounded-lg object-cover border border-slate-300" />
-          <span class="text-xs font-extrabold text-slate-700 truncate">写真を添付中</span>
-        </div>
-        <button type="button" id="chat-remove-photo-btn" class="text-xs font-black text-rose-600 px-2 py-1">削除</button>
-      </div>
-
-      <!-- 下部入力欄（カメラマーク＋メッセージを入力＋紙飛行機） -->
-      <div class="bg-white border-t border-slate-200 px-3 py-2.5 flex items-center gap-2 shrink-0">
-        <input type="file" id="chat-camera-input" accept="image/*" capture="environment" class="hidden" />
-        <button type="button" id="chat-camera-btn" title="カメラ・写真添付" class="w-10 h-10 rounded-full bg-slate-100 hover:bg-slate-200 active:scale-95 border border-slate-300 text-slate-700 flex items-center justify-center shrink-0 transition">
-          <svg class="w-5 h-5" viewBox="0 0 256 256" fill="none" stroke="currentColor" stroke-width="22" stroke-linecap="round" stroke-linejoin="round"><path d="M208,208H48a16,16,0,0,1-16-16V80A16,16,0,0,1,48,64H80L96,40h64l16,24h32a16,16,0,0,1,16,16V192A16,16,0,0,1,208,208Z"/><circle cx="128" cy="132" r="36"/></svg>
-        </button>
-        <input type="text" id="chat-message-input" placeholder="メッセージを入力" class="flex-1 bg-slate-100 border border-slate-300 rounded-full px-4 py-2.5 text-sm font-bold text-slate-900 placeholder-slate-400 focus:outline-none focus:border-blue-600 focus:bg-white" />
-        <button type="button" id="chat-send-btn" title="送信" class="w-10 h-10 rounded-full bg-blue-600 hover:bg-blue-700 active:scale-95 text-white flex items-center justify-center shrink-0 shadow-xs transition">
-          <svg class="w-4 h-4" viewBox="0 0 256 256" fill="none" stroke="currentColor" stroke-width="22" stroke-linecap="round" stroke-linejoin="round"><path d="M227.32,28.68a16,16,0,0,0-15.66-4.08l-.15,0L19.57,82.84a16,16,0,0,0-2.49,29.8L102,154l41.3,84.87A15.86,15.86,0,0,0,157.74,248q.69,0,1.38-.06a15.88,15.88,0,0,0,14-11.51l58.2-191.94c0-.05,0-.1,0-.15A16,16,0,0,0,227.32,28.68Z"/><line x1="102" y1="154" x2="227" y2="29"/></svg>
+        <button type="button" id="open-chat-screen-btn" class="bg-blue-600 hover:bg-blue-500 active:scale-95 text-white text-xs font-extrabold px-3.5 py-2 rounded-xl transition flex items-center gap-1.5 shadow-xs">
+          <span>メッセージ受信</span>
+          <span id="chat-unread-count" class="bg-rose-500 text-white text-[11px] font-black px-1.5 py-0.2 rounded-md tabular-nums">0</span>
         </button>
       </div>
     </div>
@@ -279,21 +267,6 @@
     <div id="arrival-modal" class="fixed inset-0 bg-zinc-950/35 backdrop-blur-xs z-40 hidden items-end sm:items-center justify-center p-0 sm:p-4">
       <div class="bg-[#FCFCFD] w-full max-w-md rounded-t-[2rem] sm:rounded-[2rem] p-6 shadow-[0_20px_50px_rgba(24,24,27,0.16)] border-t sm:border border-zinc-200/80 space-y-5 animate-modal-in max-h-[92vh] overflow-y-auto">
         <div class="w-10 h-1 bg-zinc-200 rounded-full mx-auto -mt-2 mb-1 sm:hidden"></div>
-
-        <!-- ★事務所からの緊急伝言カード（未確認伝言がある時だけ時刻入力の上に表示） -->
-        <div id="dispatch-memo-banner" class="hidden rounded-2xl bg-rose-50/95 border border-rose-200 p-4 shadow-[0_6px_20px_rgba(225,29,72,0.10)] space-y-2.5">
-          <div class="flex items-center justify-between gap-2">
-            <span class="inline-flex items-center gap-1.5 text-[11px] font-black text-rose-700 bg-rose-100/90 px-2.5 py-0.5 rounded-full">
-              <span class="w-2 h-2 rounded-full bg-rose-600 animate-ping"></span>
-              事務所からの重要連絡
-            </span>
-            <span id="dispatch-memo-time" class="text-[11px] font-bold text-rose-500 tabular-nums">--:--</span>
-          </div>
-          <p id="dispatch-memo-text" class="text-sm font-black text-zinc-900 leading-relaxed whitespace-pre-wrap"></p>
-          <button type="button" id="confirm-dispatch-memo-btn" class="w-full py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 active:scale-[0.98] text-white font-black text-xs shadow-xs transition">
-            ✅ 確認しました（了解）
-          </button>
-        </div>
 
         <div class="flex items-start justify-between gap-3">
           <div>
@@ -445,6 +418,60 @@
           <button type="button" id="close-admin-car-modal-btn" class="w-8 h-8 rounded-full bg-white border border-zinc-200 text-zinc-500 flex items-center justify-center">✕</button>
         </div>
         <div id="admin-car-grid" class="flex-1 overflow-y-auto py-3 grid grid-cols-4 gap-2"></div>
+      </div>
+    </div>
+
+    <!-- 9. サブ画面：LINE風メッセージ画面 -->
+    <div id="chat-sub-screen" class="fixed inset-0 z-50 bg-[#F8FAFC] hidden flex-col max-w-md mx-auto">
+      <div class="bg-slate-900 text-white px-4 py-3.5 flex items-center justify-between gap-2 shrink-0 shadow-sm">
+        <button type="button" id="close-chat-screen-btn" class="bg-white/15 hover:bg-white/25 active:scale-95 text-white text-sm font-black px-3.5 py-2 rounded-xl transition shrink-0">
+          ← 店着画面へ
+        </button>
+        <h2 id="chat-header-title" class="text-base font-black tracking-tight truncate">事務所連絡</h2>
+        <a id="chat-office-call-link" href="#" title="運行携帯へ電話" class="w-10 h-10 rounded-full bg-[#22c55e] hover:bg-[#16a34a] active:scale-95 text-white flex items-center justify-center shrink-0 shadow-sm transition">
+          <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
+          </svg>
+        </a>
+      </div>
+
+      <div id="chat-messages-container" class="flex-1 overflow-y-auto px-4 pt-3 pb-6 space-y-3.5 bg-[#8CABD9]/35 flex flex-col"></div>
+
+      <div id="chat-photo-preview-bar" class="hidden bg-white border-t border-slate-200 px-4 py-2 flex items-center justify-between shrink-0">
+        <div class="flex items-center gap-2">
+          <img id="chat-photo-thumb" src="" alt="プレビュー" class="w-12 h-12 rounded-xl object-cover border border-slate-200" />
+          <span class="text-xs font-extrabold text-slate-600">添付写真（送信待機中）</span>
+        </div>
+        <button type="button" id="chat-remove-photo-btn" class="text-xs font-black text-rose-600 bg-rose-50 px-2.5 py-1 rounded-lg">削除</button>
+      </div>
+
+      <div id="chat-input-footer" class="bg-white border-t border-slate-200 px-3 pt-3 pb-[calc(0.9rem+env(safe-area-inset-bottom))] flex items-center gap-2 shrink-0">
+        <input type="file" id="chat-camera-input" accept="image/*" capture="environment" class="hidden" />
+        <button type="button" id="chat-camera-btn" title="カメラ撮影・画像添付" class="w-11 h-11 rounded-full bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-700 flex items-center justify-center shrink-0 transition">
+          <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+            <circle cx="12" cy="13" r="4"/>
+          </svg>
+        </button>
+        <input type="text" id="chat-message-input" placeholder="メッセージを入力（🎤音声入力OK）" class="flex-1 bg-slate-100 border border-slate-300 rounded-full px-4 py-3 text-base font-bold text-slate-900 leading-normal focus:bg-white focus:border-blue-500 focus:outline-none" />
+        <button type="button" id="chat-send-btn" title="送信" class="w-11 h-11 rounded-full bg-blue-600 hover:bg-blue-700 active:scale-95 text-white flex items-center justify-center shrink-0 shadow-xs transition">
+          <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="22" y1="2" x2="11" y2="13"/>
+            <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- 長押しメッセージ削除確認ポップアップ -->
+    <div id="chat-delete-modal" class="fixed inset-0 bg-zinc-950/45 backdrop-blur-xs z-[60] hidden items-center justify-center p-5">
+      <div class="bg-white w-full max-w-xs rounded-3xl p-5 shadow-2xl border border-slate-200 space-y-4 text-center animate-modal-in">
+        <div class="text-base font-black text-slate-900">このメッセージを削除しますか？</div>
+        <p id="chat-delete-preview" class="text-xs font-bold text-slate-500 bg-slate-50 rounded-xl p-2.5 line-clamp-2 break-words"></p>
+        <div class="grid grid-cols-2 gap-2.5">
+          <button type="button" id="cancel-chat-delete-btn" class="py-3 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-black text-sm">キャンセル</button>
+          <button type="button" id="confirm-chat-delete-btn" class="py-3 rounded-2xl bg-rose-600 hover:bg-rose-700 text-white font-black text-sm">削除する</button>
+        </div>
       </div>
     </div>
 
@@ -1340,17 +1367,6 @@
         avgWrap.classList.add('hidden');
       }
 
-      // 事務所からの未確認伝言バナー表示制御
-      const memoBanner = document.getElementById('dispatch-memo-banner');
-      if (activeDispatchMemo && activeDispatchMemo.message) {
-        document.getElementById('dispatch-memo-text').textContent = activeDispatchMemo.message;
-        document.getElementById('dispatch-memo-time').textContent = activeDispatchMemo.sentAt ? `${activeDispatchMemo.sentAt} 送信` : '';
-        memoBanner.classList.remove('hidden');
-        triggerDispatchMemoAlertSound();
-      } else {
-        memoBanner.classList.add('hidden');
-      }
-
       // ④ 初期表示時刻：既存修正ならその時刻、新規入力なら直近平均到着時間 → 予定定時 → 現在時刻の順でセット
       let initialTimeStr = '';
       if (existingLog && existingLog.arrival && existingLog.arrival.includes(':')) {
@@ -1849,33 +1865,6 @@
       document.getElementById('submit-holiday-btn').addEventListener('click', () => handleRecordSubmission('holiday'));
       document.getElementById('submit-extra-btn').addEventListener('click', () => handleRecordSubmission('extra'));
 
-      // ★ドライバーが「✅ 確認しました（了解）」ボタンを押した時の処理
-      const confirmMemoBtn = document.getElementById('confirm-dispatch-memo-btn');
-      if (confirmMemoBtn) {
-        confirmMemoBtn.addEventListener('click', async () => {
-          if (!activeDispatchMemo) return;
-          const confirmedId = activeDispatchMemo.memoId;
-          activeDispatchMemo = null;
-          document.getElementById('dispatch-memo-banner').classList.add('hidden');
-          showToast('事務所へ「確認了解」を送信しました');
-
-          if (gasWebAppUrl) {
-            try {
-              await fetch(gasWebAppUrl, {
-                method: 'POST',
-                mode: 'no-cors',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  action: 'confirmMemo',
-                  excelCarIndex: excelCarIndex,
-                  memoId: confirmedId
-                })
-              });
-            } catch (e) {}
-          }
-        });
-      }
-
       document.getElementById('open-gas-modal-btn').addEventListener('click', () => {
         document.getElementById('gas-url-input').value = gasWebAppUrl;
         const phoneInput = document.getElementById('office-phone-input');
@@ -2020,9 +2009,8 @@
       function updateChatUnreadBadge() {
         const badgeEl = document.getElementById('chat-unread-count');
         if (!badgeEl) return;
-        let unread = (Array.isArray(chatMessagesList) ? chatMessagesList : []).filter(
-          (m) => String(m.sender) === 'office' && !m.confirmed
-        ).length;
+        const list = Array.isArray(chatMessagesList) ? chatMessagesList : [];
+        let unread = list.filter((m) => String(m.sender) === 'office' && !m.confirmed).length;
         if (unread === 0 && activeDispatchMemo && activeDispatchMemo.message) {
           unread = 1;
         }
@@ -2039,41 +2027,84 @@
         if (!container) return;
         container.innerHTML = '';
 
-        const list = Array.isArray(chatMessagesList) ? [...chatMessagesList] : [];
+        // タイムライン上部中央にLINE風の日付ピルバッジを表示
+        const datePillWrap = document.createElement('div');
+        datePillWrap.className = 'flex justify-center my-1';
+        const datePill = document.createElement('span');
+        datePill.className = 'px-3.5 py-1 rounded-full bg-slate-900/35 text-white text-xs font-extrabold tracking-wide backdrop-blur-xs';
+        datePill.textContent = getFormattedDeliveryDateWithDay();
+        datePillWrap.appendChild(datePill);
+        container.appendChild(datePillWrap);
+
+        const deletedIds = JSON.parse(localStorage.getItem('store_deleted_chat_ids') || '[]');
+        const list = (Array.isArray(chatMessagesList) ? [...chatMessagesList] : [])
+          .filter((m) => !deletedIds.includes(String(m.id || `${m.sender}_${m.time}_${m.text}`)));
+
         if (list.length === 0 && activeDispatchMemo && activeDispatchMemo.message) {
-          list.push({
-            id: activeDispatchMemo.memoId,
-            sender: 'office',
-            text: activeDispatchMemo.message,
-            time: activeDispatchMemo.sentAt || '',
-            confirmed: false,
-            imageData: ''
-          });
+          const memoKey = String(activeDispatchMemo.memoId || `office_${activeDispatchMemo.sentAt}_${activeDispatchMemo.message}`);
+          if (!deletedIds.includes(memoKey)) {
+            list.push({
+              id: activeDispatchMemo.memoId,
+              sender: 'office',
+              text: activeDispatchMemo.message,
+              time: activeDispatchMemo.sentAt || '',
+              confirmed: false,
+              imageData: ''
+            });
+          }
         }
 
         if (list.length === 0) {
-          container.innerHTML = '<div class="text-center text-xs font-extrabold text-slate-400 py-10">事務所とのメッセージ履歴はまだありません</div>';
+          const emptyMsg = document.createElement('div');
+          emptyMsg.className = 'text-center text-base font-extrabold text-slate-600 py-12';
+          emptyMsg.textContent = '事務所とのメッセージ履歴はまだありません';
+          container.appendChild(emptyMsg);
           return;
         }
 
         list.forEach((msg) => {
           const isOffice = String(msg.sender) === 'office';
+          const msgKey = String(msg.id || `${msg.sender}_${msg.time}_${msg.text}`);
           const wrap = document.createElement('div');
-          wrap.className = isOffice ? 'flex flex-col items-start max-w-[85%]' : 'flex flex-col items-end self-end max-w-[85%] ml-auto';
+          wrap.className = isOffice ? 'flex flex-col items-start max-w-[88%]' : 'flex flex-col items-end self-end max-w-[88%] ml-auto';
 
-          const meta = document.createElement('div');
-          meta.className = 'text-[10px] font-extrabold text-slate-500 mb-1 px-1';
-          meta.textContent = isOffice ? `事務所 • ${msg.time || ''}` : `${excelCarIndex}号車 • ${msg.time || ''}`;
-          wrap.appendChild(meta);
+          const senderLabel = document.createElement('div');
+          senderLabel.className = 'text-xs font-extrabold text-slate-600 mb-1 px-1';
+          senderLabel.textContent = isOffice ? '事務所' : `${excelCarIndex}号車`;
+          wrap.appendChild(senderLabel);
+
+          const rowLine = document.createElement('div');
+          rowLine.className = isOffice ? 'flex items-end gap-1.5 max-w-full' : 'flex items-end justify-end gap-1.5 max-w-full';
 
           const bubble = document.createElement('div');
           bubble.className = isOffice
-            ? 'bg-white border border-slate-200 rounded-2xl rounded-tl-xs p-3 shadow-2xs space-y-2'
-            : 'bg-blue-600 text-white rounded-2xl rounded-tr-xs p-3 shadow-xs space-y-2';
+            ? 'line-bubble-office bg-white border border-slate-200 px-3.5 py-2.5 shadow-xs space-y-2 select-none'
+            : 'line-bubble-driver bg-blue-600 text-white px-3.5 py-2.5 shadow-xs space-y-2 select-none';
+
+          // 長押し（650ms）で削除確認モーダルを表示
+          let pressTimer = null;
+          const startLongPress = () => {
+            pressTimer = setTimeout(() => {
+              if (navigator.vibrate) navigator.vibrate(25);
+              openChatDeleteConfirm(msgKey, msg.text || '（添付写真）');
+            }, 650);
+          };
+          const cancelLongPress = () => {
+            if (pressTimer) {
+              clearTimeout(pressTimer);
+              pressTimer = null;
+            }
+          };
+          bubble.addEventListener('touchstart', startLongPress, { passive: true });
+          bubble.addEventListener('touchend', cancelLongPress);
+          bubble.addEventListener('touchmove', cancelLongPress);
+          bubble.addEventListener('mousedown', startLongPress);
+          bubble.addEventListener('mouseup', cancelLongPress);
+          bubble.addEventListener('mouseleave', cancelLongPress);
 
           if (msg.text) {
             const p = document.createElement('div');
-            p.className = 'text-sm font-bold leading-relaxed whitespace-pre-wrap break-words';
+            p.className = 'text-base font-bold leading-relaxed whitespace-pre-wrap break-words';
             p.textContent = msg.text;
             bubble.appendChild(p);
           }
@@ -2082,7 +2113,7 @@
             const img = document.createElement('img');
             img.src = msg.imageData;
             img.alt = '添付写真';
-            img.className = 'max-w-full max-h-48 rounded-xl border border-slate-200/60 object-cover';
+            img.className = 'max-w-full max-h-52 rounded-xl border border-slate-200/60 object-cover';
             bubble.appendChild(img);
           }
 
@@ -2136,110 +2167,88 @@
             bubble.appendChild(okBtn);
           }
 
-          wrap.appendChild(bubble);
+          const timeTag = document.createElement('span');
+          timeTag.className = 'text-[11px] font-extrabold text-slate-600 tabular-nums shrink-0 pb-0.5';
+          timeTag.textContent = msg.time || '';
+
+          if (isOffice) {
+            rowLine.appendChild(bubble);
+            rowLine.appendChild(timeTag);
+          } else {
+            rowLine.appendChild(timeTag);
+            rowLine.appendChild(bubble);
+          }
+
+          wrap.appendChild(rowLine);
           container.appendChild(wrap);
         });
 
         container.scrollTop = container.scrollHeight;
       }
 
-      async function sendDriverChatMessage() {
-        const input = document.getElementById('chat-message-input');
-        const text = input ? input.value.trim() : '';
-        if (!text && !pendingChatImageBase64) return;
-
-        const now = new Date();
-        const sentAt = `${pad2(now.getHours())}:${pad2(now.getMinutes())}`;
-        const newMsg = {
-          id: 'DRV_' + now.getTime(),
-          sender: 'driver',
-          text: text,
-          time: sentAt,
-          confirmed: true,
-          imageData: pendingChatImageBase64 || ''
-        };
-
-        chatMessagesList.push(newMsg);
-        if (input) input.value = '';
-        const imgPayload = pendingChatImageBase64;
-        pendingChatImageBase64 = '';
-        const previewBar = document.getElementById('chat-photo-preview-bar');
-        if (previewBar) previewBar.classList.add('hidden');
-
-        renderChatMessages();
-        triggerSendWhooshTone();
-
-        if (gasWebAppUrl) {
-          try {
-            await fetch(gasWebAppUrl, {
-              method: 'POST',
-              mode: 'no-cors',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                action: 'sendDriverChat',
-                excelCarIndex: excelCarIndex,
-                message: text,
-                imageData: imgPayload,
-                sentAt: sentAt
-              })
-            });
-          } catch (e) {}
+      let pendingDeleteMsgKey = '';
+      function openChatDeleteConfirm(msgKey, previewText) {
+        pendingDeleteMsgKey = msgKey;
+        const modal = document.getElementById('chat-delete-modal');
+        const previewEl = document.getElementById('chat-delete-preview');
+        if (previewEl) previewEl.textContent = previewText;
+        if (modal) {
+          modal.classList.remove('hidden');
+          modal.classList.add('flex');
         }
       }
 
-      document.getElementById('open-chat-screen-btn').addEventListener('click', () => {
-        document.getElementById('chat-header-title').textContent = `事務所連絡（${excelCarIndex}号車）`;
-        renderChatMessages();
+      document.getElementById('cancel-chat-delete-btn').addEventListener('click', () => {
+        pendingDeleteMsgKey = '';
+        const modal = document.getElementById('chat-delete-modal');
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+      });
+
+      document.getElementById('confirm-chat-delete-btn').addEventListener('click', () => {
+        if (pendingDeleteMsgKey) {
+          const deletedIds = JSON.parse(localStorage.getItem('store_deleted_chat_ids') || '[]');
+          if (!deletedIds.includes(pendingDeleteMsgKey)) {
+            deletedIds.push(pendingDeleteMsgKey);
+            localStorage.setItem('store_deleted_chat_ids', JSON.stringify(deletedIds));
+          }
+          chatMessagesList = chatMessagesList.filter(
+            (m) => String(m.id || `${m.sender}_${m.time}_${m.text}`) !== pendingDeleteMsgKey
+          );
+          updateChatUnreadBadge();
+          renderChatMessages();
+          showToast('メッセージを削除しました');
+        }
+        pendingDeleteMsgKey = '';
+        const modal = document.getElementById('chat-delete-modal');
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+      });
+
+      // スマホでキーボードを開いたときに入力欄の下1/3が隠れないよう画面高さを自動追従
+      function syncChatViewportHeight() {
         const screen = document.getElementById('chat-sub-screen');
-        screen.classList.remove('hidden');
-        screen.classList.add('flex');
+        if (!screen || screen.classList.contains('hidden')) return;
+        if (window.visualViewport) {
+          screen.style.height = `${window.visualViewport.height}px`;
+          screen.style.top = `${window.visualViewport.offsetTop}px`;
+        }
+        const container = document.getElementById('chat-messages-container');
+        if (container) container.scrollTop = container.scrollHeight;
+      }
+      if (window.visualViewport) {
+        window.visualViewport.addEventListener('resize', syncChatViewportHeight);
+        window.visualViewport.addEventListener('scroll', syncChatViewportHeight);
+      }
+      document.getElementById('chat-message-input').addEventListener('focus', () => {
+        setTimeout(syncChatViewportHeight, 120);
+        setTimeout(syncChatViewportHeight, 350);
       });
-
-      document.getElementById('close-chat-screen-btn').addEventListener('click', () => {
+      document.getElementById('chat-message-input').addEventListener('blur', () => {
         const screen = document.getElementById('chat-sub-screen');
-        screen.classList.add('hidden');
-        screen.classList.remove('flex');
-        updateChatUnreadBadge();
-      });
-
-      document.getElementById('chat-camera-btn').addEventListener('click', () => {
-        document.getElementById('chat-camera-input').click();
-      });
-
-      document.getElementById('chat-camera-input').addEventListener('change', (e) => {
-        const file = e.target.files && e.target.files[0];
-        if (!file) return;
-        const reader = new FileReader();
-        reader.onload = (ev) => {
-          const img = new Image();
-          img.onload = () => {
-            const canvas = document.createElement('canvas');
-            const maxW = 640;
-            const scale = Math.min(1, maxW / img.width);
-            canvas.width = Math.round(img.width * scale);
-            canvas.height = Math.round(img.height * scale);
-            const ctx = canvas.getContext('2d');
-            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-            pendingChatImageBase64 = canvas.toDataURL('image/jpeg', 0.65);
-            document.getElementById('chat-photo-thumb').src = pendingChatImageBase64;
-            document.getElementById('chat-photo-preview-bar').classList.remove('hidden');
-          };
-          img.src = ev.target.result;
-        };
-        reader.readAsDataURL(file);
-        e.target.value = '';
-      });
-
-      document.getElementById('chat-remove-photo-btn').addEventListener('click', () => {
-        pendingChatImageBase64 = '';
-        document.getElementById('chat-photo-preview-bar').classList.add('hidden');
-      });
-
-      document.getElementById('chat-send-btn').addEventListener('click', sendDriverChatMessage);
-      document.getElementById('chat-message-input').addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') {
-          e.preventDefault();
-          sendDriverChatMessage();
+        if (screen) {
+          screen.style.height = '';
+          screen.style.top = '';
         }
       });
 
