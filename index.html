@@ -389,6 +389,11 @@
           <button type="button" id="save-gas-url-btn" class="w-full py-3 rounded-xl bg-zinc-900 active:scale-[0.99] text-white font-extrabold text-xs shadow-xs transition">
             接続を保存してデータ読込
           </button>
+
+          <div class="pt-1">
+            <label class="block text-[11px] font-extrabold text-zinc-600 mb-1">運行携帯 電話番号（電話マーク発信先）</label>
+            <input type="tel" id="office-phone-input" placeholder="090-0000-0000" class="w-full bg-white border border-zinc-200 rounded-xl px-3.5 py-2.5 text-sm font-mono font-bold text-zinc-800 focus:border-zinc-900 focus:outline-none" />
+          </div>
         </div>
 
         <!-- ★追加：他端末導入用の号車別QRコード発行セクション -->
@@ -480,19 +485,24 @@
     if (paramGasUrl && paramGasUrl.startsWith('http')) {
       localStorage.setItem('store_arrival_gas_url', paramGasUrl.trim());
     }
+    const paramOfficePhone = urlParams.get('tel');
+    if (paramOfficePhone) {
+      localStorage.setItem('store_arrival_office_phone', paramOfficePhone.trim());
+    }
 
     // 自分自身のGASウェブアプリURLを自動検出
     const AUTO_GAS_URL = (typeof google !== 'undefined' && google.script && google.script.run)
       ? window.location.href.split('?')[0]
       : '';
     let gasWebAppUrl = localStorage.getItem('store_arrival_gas_url') || AUTO_GAS_URL;
+    let officePhoneNumber = localStorage.getItem('store_arrival_office_phone') || '';
 
-    // ① 配送当日の日付（0:00〜11:59は前日扱い、12:00〜23:59は当日扱い）
-    function getInitialDeliveryDate() {
-      const now = new Date();
-      if (now.getHours() < 12) {
-        now.setDate(now.getDate() - 1);
-      }
+    function updateOfficeCallLink() {
+      const linkEl = document.getElementById('chat-office-call-link');
+      if (!linkEl) return;
+      const cleanNum = String(officePhoneNumber || '').replace(/[^0-9+*#]/g, '');
+      linkEl.href = cleanNum ? `tel:${cleanNum}` : '#';
+    }
       return new Date(now.getFullYear(), now.getMonth(), now.getDate());
     }
 
@@ -1691,6 +1701,7 @@
 
     document.addEventListener('DOMContentLoaded', () => {
       generateAppIcons();
+      updateOfficeCallLink();
       initTimeSelectOptions();
       updateClock();
       setInterval(updateClock, 10000);
@@ -1861,6 +1872,8 @@
 
       document.getElementById('open-gas-modal-btn').addEventListener('click', () => {
         document.getElementById('gas-url-input').value = gasWebAppUrl;
+        const phoneInput = document.getElementById('office-phone-input');
+        if (phoneInput) phoneInput.value = officePhoneNumber;
         initQrCarSelector();
         const modal = document.getElementById('gas-modal');
         modal.classList.remove('hidden');
@@ -1877,10 +1890,26 @@
         gasWebAppUrl = document.getElementById('gas-url-input').value.trim();
         localStorage.setItem('store_arrival_gas_url', gasWebAppUrl);
 
+        const phoneInput = document.getElementById('office-phone-input');
+        if (phoneInput) {
+          officePhoneNumber = phoneInput.value.trim();
+          localStorage.setItem('store_arrival_office_phone', officePhoneNumber);
+          updateOfficeCallLink();
+        }
+
         const modal = document.getElementById('gas-modal');
         modal.classList.add('hidden');
         modal.classList.remove('flex');
         fetchSheetData();
+      });
+
+      // ★電話マークタップ時の発信処理（未登録なら番号登録を案内）
+      document.getElementById('chat-office-call-link').addEventListener('click', (e) => {
+        const cleanNum = String(officePhoneNumber || '').replace(/[^0-9+*#]/g, '');
+        if (!cleanNum) {
+          e.preventDefault();
+          showToast('⚠️ 歯車（⚙）から運行携帯の電話番号を登録してください');
+        }
       });
 
       // ★QRコード発行＆配布URLコピー処理
@@ -1905,6 +1934,8 @@
 
       function renderQrCodeForSelectedCar() {
         const inputUrl = document.getElementById('gas-url-input').value.trim() || gasWebAppUrl;
+        const phoneInput = document.getElementById('office-phone-input');
+        const currentPhone = (phoneInput ? phoneInput.value.trim() : '') || officePhoneNumber;
         const targetVal = document.getElementById('qr-car-select').value;
         const previewBox = document.getElementById('qr-preview-box');
 
@@ -1915,9 +1946,11 @@
 
         const basePageUrl = window.location.href.split('?')[0];
         const isTargetAdmin = (targetVal === 'admin');
-        const shareParams = isTargetAdmin
-          ? new URLSearchParams({ car: '0', admin: '1', gas: inputUrl })
-          : new URLSearchParams({ car: targetVal, gas: inputUrl });
+        const shareObj = isTargetAdmin
+          ? { car: '0', admin: '1', gas: inputUrl }
+          : { car: targetVal, gas: inputUrl };
+        if (currentPhone) shareObj.tel = currentPhone;
+        const shareParams = new URLSearchParams(shareObj);
         currentInviteUrl = `${basePageUrl}?${shareParams.toString()}`;
 
         document.getElementById('qr-target-label').textContent = isTargetAdmin
