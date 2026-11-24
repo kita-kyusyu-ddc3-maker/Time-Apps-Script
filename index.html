@@ -11,6 +11,7 @@
   <link id="app-favicon" rel="icon" type="image/png" href="" />
   <title>店着管理</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Noto+Sans+JP:wght@400;500;700;900&display=swap" rel="stylesheet">
@@ -404,7 +405,7 @@
           </div>
           <div id="qr-preview-box" class="hidden bg-white border border-zinc-200/90 rounded-2xl p-4 flex flex-col items-center text-center space-y-2.5 shadow-2xs">
             <div id="qr-target-label" class="text-sm font-black text-zinc-900">15号車 専用QRコード</div>
-            <img id="qr-code-image" src="" alt="QRコード" class="w-48 h-48 rounded-xl border border-zinc-100 bg-white p-1" />
+            <div id="qr-code-canvas" class="w-48 h-48 rounded-xl border border-zinc-100 bg-white p-2 flex items-center justify-center"></div>
             <div id="qr-url-text" class="w-full bg-zinc-50 border border-zinc-200 rounded-lg px-2.5 py-1.5 text-[10px] font-mono text-zinc-600 break-all select-all"></div>
             <p class="text-[11px] font-bold text-zinc-500 leading-relaxed">
               スマホのカメラで読み取り後、<br>ブラウザメニューから「ホーム画面に追加」してください
@@ -1875,8 +1876,18 @@
           ? '★運行管理用（全号車切替）QRコード'
           : `${targetVal}号車 専用QRコード`;
         document.getElementById('qr-url-text').textContent = currentInviteUrl;
-        document.getElementById('qr-code-image').src =
-          `https://api.qrserver.com/v1/create-qr-code/?size=240x240&margin=8&data=${encodeURIComponent(currentInviteUrl)}`;
+        const qrContainer = document.getElementById('qr-code-canvas');
+        qrContainer.innerHTML = '';
+        if (typeof QRCode !== 'undefined') {
+          new QRCode(qrContainer, {
+            text: currentInviteUrl,
+            width: 176,
+            height: 176,
+            colorDark: '#0f172a',
+            colorLight: '#ffffff',
+            correctLevel: QRCode.CorrectLevel.M
+          });
+        }
         previewBox.classList.remove('hidden');
       }
 
