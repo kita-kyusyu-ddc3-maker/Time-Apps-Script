@@ -1182,30 +1182,39 @@
 
         const card = document.createElement('div');
         if (existingLog) {
-          card.className = 'bg-white rounded-3xl p-4 border border-slate-200/80 shadow-[0_2px_10px_rgba(15,23,42,0.02)] flex items-center justify-between gap-3 active:scale-[0.99] transition cursor-pointer';
+          card.className = 'bg-slate-50/65 rounded-3xl p-4 border border-slate-200/75 flex items-center justify-between gap-3 active:scale-[0.99] transition cursor-pointer';
         } else if (isNext) {
           card.className = 'bg-white rounded-3xl p-4 border-2 border-blue-500 shadow-[0_8px_24px_rgba(37,99,235,0.12)] flex items-center justify-between gap-3 active:scale-[0.99] transition cursor-pointer';
         } else {
           card.className = 'bg-white/90 rounded-3xl p-4 border border-slate-200/70 flex items-center justify-between gap-3 active:scale-[0.99] transition cursor-pointer';
         }
 
+        // 左端の丸型番号／レ点サークルアイコン（緑の〇に緑のレ点／青の〇に青の数字）
+        const circleIcon = document.createElement('div');
+        if (existingLog) {
+          circleIcon.className = 'w-9 h-9 rounded-full bg-emerald-50/60 border-2 border-emerald-500 text-emerald-600 flex items-center justify-center shrink-0';
+          circleIcon.innerHTML = '<svg class="w-4 h-4 text-emerald-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
+        } else if (isNext) {
+          circleIcon.className = 'w-9 h-9 rounded-full bg-blue-50/70 border-2 border-blue-600 text-blue-600 font-black text-sm tabular-nums flex items-center justify-center shrink-0';
+          circleIcon.textContent = String(store.order);
+        } else {
+          circleIcon.className = 'w-9 h-9 rounded-full bg-slate-50 border-2 border-slate-200 text-slate-400 font-black text-sm tabular-nums flex items-center justify-center shrink-0';
+          circleIcon.textContent = String(store.order);
+        }
+
         const left = document.createElement('div');
         left.className = 'min-w-0 flex-1';
 
         const topRow = document.createElement('div');
-        topRow.className = 'flex items-center gap-1.5 mb-1';
+        topRow.className = 'flex items-center gap-1.5 mb-0.5';
 
         const numBadge = document.createElement('span');
         numBadge.className = existingLog
-          ? 'inline-flex items-center gap-1 text-[10px] font-black px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200/80 tabular-nums'
+          ? 'text-[10px] font-black px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200/80 tabular-nums'
           : isNext
           ? 'text-[10px] font-black px-2 py-0.5 rounded-full bg-blue-600 text-white tabular-nums'
           : 'text-[10px] font-black px-2 py-0.5 rounded-full bg-slate-100 text-slate-500 tabular-nums';
-        numBadge.innerHTML = existingLog
-          ? `<svg class="w-3 h-3 text-emerald-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg><span>${store.order}店舗目</span>`
-          : isNext
-          ? `NEXT • ${store.order}店舗目`
-          : `${store.order}店舗目`;
+        numBadge.textContent = isNext ? `NEXT • ${store.order}店舗目` : `${store.order}店舗目`;
         topRow.appendChild(numBadge);
 
         if (isLastStore) {
@@ -1217,7 +1226,7 @@
 
         const nameEl = document.createElement('div');
         nameEl.className = existingLog
-          ? 'text-base font-black text-slate-600 truncate'
+          ? 'text-base font-black text-slate-800 truncate'
           : 'text-base font-black text-slate-900 truncate';
         nameEl.textContent = store.name;
 
@@ -1269,6 +1278,7 @@
           `;
         }
 
+        card.appendChild(circleIcon);
         card.appendChild(left);
         card.appendChild(right);
 
@@ -1766,8 +1776,40 @@
         fetchSheetData();
       });
 
+      let lastReloadTapTime = 0;
       document.getElementById('reload-sheet-btn').addEventListener('click', () => {
-        fetchSheetData();
+        const nowTap = Date.now();
+        if (nowTap - lastReloadTapTime < 700) {
+          const url = new URL(window.location.href);
+          url.searchParams.set('v', String(nowTap));
+          window.location.replace(url.toString());
+          return;
+        }
+        lastReloadTapTime = nowTap;
+
+        const reloadBtn = document.getElementById('reload-sheet-btn');
+        const reloadIcon = reloadBtn.querySelector('svg');
+        if (reloadIcon) {
+          reloadIcon.style.transition = 'transform 0.55s cubic-bezier(0.22, 1, 0.36, 1)';
+          reloadIcon.style.transform = 'rotate(360deg)';
+        }
+        reloadBtn.classList.add('ring-2', 'ring-blue-400', 'bg-blue-50', 'text-blue-600');
+        fetchSheetData().then(() => {
+          updateChatUnreadBadge();
+          const badgeEl = document.getElementById('chat-unread-count');
+          if (badgeEl) {
+            badgeEl.style.transition = 'transform 0.25s ease';
+            badgeEl.style.transform = 'scale(1.35)';
+            setTimeout(() => { badgeEl.style.transform = 'scale(1)'; }, 250);
+          }
+          setTimeout(() => {
+            if (reloadIcon) {
+              reloadIcon.style.transition = 'none';
+              reloadIcon.style.transform = 'rotate(0deg)';
+            }
+            reloadBtn.classList.remove('ring-2', 'ring-blue-400', 'bg-blue-50', 'text-blue-600');
+          }, 550);
+        });
       });
 
       document.getElementById('close-arrival-modal-btn').addEventListener('click', closeArrivalModal);
@@ -1939,131 +1981,175 @@
       function updateChatUnreadBadge() {
         const badgeEl = document.getElementById('chat-unread-count');
         if (!badgeEl) return;
-        let unread = chatMessagesList.filter((m) => m.sender === 'office' && !m.confirmed).length;
+        let unread = (Array.isArray(chatMessagesList) ? chatMessagesList : []).filter(
+          (m) => String(m.sender) === 'office' && !m.confirmed
+        ).length;
         if (unread === 0 && activeDispatchMemo && activeDispatchMemo.message) {
           unread = 1;
         }
         badgeEl.textContent = String(unread);
+        if (unread > 0) {
+          badgeEl.classList.add('animate-bounce');
+        } else {
+          badgeEl.classList.remove('animate-bounce');
+        }
       }
 
       function renderChatMessages() {
         const container = document.getElementById('chat-messages-container');
         if (!container) return;
-        document.getElementById('chat-header-title').textContent = `事務所連絡（${excelCarIndex}号車）`;
         container.innerHTML = '';
 
-        const items = [...chatMessagesList];
-        if (items.length === 0 && activeDispatchMemo && activeDispatchMemo.message) {
-          items.push({
-            id: activeDispatchMemo.memoId || 'MEMO_1',
+        const list = Array.isArray(chatMessagesList) ? [...chatMessagesList] : [];
+        if (list.length === 0 && activeDispatchMemo && activeDispatchMemo.message) {
+          list.push({
+            id: activeDispatchMemo.memoId,
             sender: 'office',
             text: activeDispatchMemo.message,
             time: activeDispatchMemo.sentAt || '',
-            confirmed: false
+            confirmed: false,
+            imageData: ''
           });
         }
 
-        if (items.length === 0) {
-          container.innerHTML = '<div class="text-center text-xs font-bold text-slate-400 py-10">現在メッセージはありません</div>';
+        if (list.length === 0) {
+          container.innerHTML = '<div class="text-center text-xs font-extrabold text-slate-400 py-10">事務所とのメッセージ履歴はまだありません</div>';
           return;
         }
 
-        items.forEach((msg) => {
-          if (msg.sender === 'office') {
-            const wrap = document.createElement('div');
-            wrap.className = 'flex flex-col items-start max-w-[85%]';
+        list.forEach((msg) => {
+          const isOffice = String(msg.sender) === 'office';
+          const wrap = document.createElement('div');
+          wrap.className = isOffice ? 'flex flex-col items-start max-w-[85%]' : 'flex flex-col items-end self-end max-w-[85%] ml-auto';
 
-            const senderLabel = document.createElement('span');
-            senderLabel.className = 'text-[10px] font-extrabold text-slate-500 mb-1';
-            senderLabel.textContent = `事務所 • ${msg.time || ''}`;
+          const meta = document.createElement('div');
+          meta.className = 'text-[10px] font-extrabold text-slate-500 mb-1 px-1';
+          meta.textContent = isOffice ? `事務所 • ${msg.time || ''}` : `${excelCarIndex}号車 • ${msg.time || ''}`;
+          wrap.appendChild(meta);
 
-            const bubble = document.createElement('div');
-            bubble.className = msg.confirmed
-              ? 'bg-white border border-slate-300 rounded-tl-xs rounded-2xl p-3 shadow-2xs space-y-2'
-              : 'bg-white border-2 border-rose-500 rounded-tl-xs rounded-2xl p-3 shadow-xs space-y-2';
+          const bubble = document.createElement('div');
+          bubble.className = isOffice
+            ? 'bg-white border border-slate-200 rounded-2xl rounded-tl-xs p-3 shadow-2xs space-y-2'
+            : 'bg-blue-600 text-white rounded-2xl rounded-tr-xs p-3 shadow-xs space-y-2';
 
-            const textEl = document.createElement('div');
-            textEl.className = 'text-xs font-black text-slate-900 leading-relaxed whitespace-pre-wrap';
-            textEl.textContent = msg.text;
-            bubble.appendChild(textEl);
+          if (msg.text) {
+            const p = document.createElement('div');
+            p.className = 'text-sm font-bold leading-relaxed whitespace-pre-wrap break-words';
+            p.textContent = msg.text;
+            bubble.appendChild(p);
+          }
 
-            const confirmBtn = document.createElement('button');
-            confirmBtn.type = 'button';
+          if (msg.imageData) {
+            const img = document.createElement('img');
+            img.src = msg.imageData;
+            img.alt = '添付写真';
+            img.className = 'max-w-full max-h-48 rounded-xl border border-slate-200/60 object-cover';
+            bubble.appendChild(img);
+          }
+
+          if (isOffice) {
+            const okBtn = document.createElement('button');
+            okBtn.type = 'button';
             if (msg.confirmed) {
-              confirmBtn.className = 'w-full py-1.5 px-3 rounded-xl bg-emerald-600 text-white text-xs font-black flex items-center justify-center gap-1.5';
-              confirmBtn.innerHTML = '<svg class="w-4 h-4 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg><span>確認しました</span>';
-              confirmBtn.disabled = true;
+              okBtn.className = 'w-full py-1.5 px-3.5 rounded-full bg-slate-100 border border-slate-200 text-slate-700 font-black text-xs flex items-center justify-between gap-2';
+              okBtn.innerHTML = '<span>確認しました。</span><span class="px-2.5 py-0.5 rounded-full bg-emerald-500 text-white text-[11px] font-black tracking-wider">OK</span>';
             } else {
-              confirmBtn.className = 'w-full py-1.5 px-3 rounded-xl bg-rose-600 hover:bg-rose-700 active:scale-95 text-white text-xs font-black flex items-center justify-center gap-1.5 transition';
-              confirmBtn.innerHTML = '<span>確認しました。</span>';
-              confirmBtn.addEventListener('click', async () => {
-                // タップした瞬間に緑のレ点が付いて送信の形へ即時切り替え
-                msg.confirmed = true;
-                if (activeDispatchMemo && (!msg.id || activeDispatchMemo.memoId === msg.id)) {
-                  activeDispatchMemo = null;
-                }
-                confirmBtn.disabled = true;
-                confirmBtn.className = 'w-full py-1.5 px-3 rounded-xl bg-emerald-600 text-white text-xs font-black flex items-center justify-center gap-1.5 transition';
-                confirmBtn.innerHTML = '<svg class="w-4 h-4 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg><span>確認しました</span>';
-                updateChatUnreadBadge();
-                showToast('✓ 確認しました（事務所へ送信）');
+              okBtn.className = 'w-full py-1.5 px-3.5 rounded-full bg-rose-50 hover:bg-rose-100/80 active:scale-95 border border-rose-200 text-rose-900 font-black text-xs flex items-center justify-between gap-2 shadow-2xs transition';
+              okBtn.innerHTML = '<span>確認しました。</span><span class="ok-pill px-2.5 py-0.5 rounded-full bg-slate-300 text-slate-600 text-[11px] font-black tracking-wider transition-colors duration-200">OK</span>';
+              okBtn.addEventListener('click', () => {
+                if (okBtn.dataset.sending === '1') return;
+                okBtn.dataset.sending = '1';
 
-                if (gasWebAppUrl) {
-                  try {
-                    await fetch(gasWebAppUrl, {
-                      method: 'POST',
-                      mode: 'no-cors',
-                      headers: { 'Content-Type': 'application/json' },
-                      body: JSON.stringify({
-                        action: 'confirmMemo',
-                        excelCarIndex: excelCarIndex,
-                        memoId: msg.id || ''
-                      })
-                    });
-                  } catch (e) {}
+                const okPill = okBtn.querySelector('.ok-pill');
+                if (okPill) {
+                  okPill.classList.remove('bg-slate-300', 'text-slate-600');
+                  okPill.classList.add('bg-emerald-500', 'text-white', 'scale-110');
                 }
+                okBtn.classList.remove('bg-rose-50', 'border-rose-200', 'text-rose-900');
+                okBtn.classList.add('bg-emerald-50', 'border-emerald-300', 'text-emerald-900');
+                triggerDialSelectChime();
+
+                setTimeout(async () => {
+                  msg.confirmed = true;
+                  if (activeDispatchMemo && (!msg.id || activeDispatchMemo.memoId === msg.id)) {
+                    activeDispatchMemo = null;
+                  }
+                  updateChatUnreadBadge();
+                  renderChatMessages();
+                  showToast('事務所へ「確認しました」を送信しました');
+                  if (gasWebAppUrl) {
+                    try {
+                      await fetch(gasWebAppUrl, {
+                        method: 'POST',
+                        mode: 'no-cors',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                          action: 'confirmMemo',
+                          excelCarIndex: excelCarIndex,
+                          memoId: msg.id || ''
+                        })
+                      });
+                    } catch (e) {}
+                  }
+                }, 380);
               });
             }
-            bubble.appendChild(confirmBtn);
-
-            wrap.appendChild(senderLabel);
-            wrap.appendChild(bubble);
-            container.appendChild(wrap);
-          } else {
-            const wrap = document.createElement('div');
-            wrap.className = 'flex flex-col items-end self-end ml-auto max-w-[85%]';
-
-            const senderLabel = document.createElement('span');
-            senderLabel.className = 'text-[10px] font-extrabold text-slate-500 mb-1';
-            senderLabel.textContent = `${excelCarIndex}号車 • ${msg.time || ''}`;
-
-            const bubble = document.createElement('div');
-            bubble.className = 'bg-blue-600 text-white rounded-tr-xs rounded-2xl p-3 text-xs font-bold leading-relaxed shadow-xs space-y-1.5';
-
-            if (msg.imageData) {
-              const img = document.createElement('img');
-              img.src = msg.imageData;
-              img.alt = '送信画像';
-              img.className = 'max-w-full rounded-xl border border-blue-400';
-              bubble.appendChild(img);
-            }
-            if (msg.text) {
-              const txt = document.createElement('div');
-              txt.className = 'whitespace-pre-wrap';
-              txt.textContent = msg.text;
-              bubble.appendChild(txt);
-            }
-
-            wrap.appendChild(senderLabel);
-            wrap.appendChild(bubble);
-            container.appendChild(wrap);
+            bubble.appendChild(okBtn);
           }
+
+          wrap.appendChild(bubble);
+          container.appendChild(wrap);
         });
 
         container.scrollTop = container.scrollHeight;
       }
 
+      async function sendDriverChatMessage() {
+        const input = document.getElementById('chat-message-input');
+        const text = input ? input.value.trim() : '';
+        if (!text && !pendingChatImageBase64) return;
+
+        const now = new Date();
+        const sentAt = `${pad2(now.getHours())}:${pad2(now.getMinutes())}`;
+        const newMsg = {
+          id: 'DRV_' + now.getTime(),
+          sender: 'driver',
+          text: text,
+          time: sentAt,
+          confirmed: true,
+          imageData: pendingChatImageBase64 || ''
+        };
+
+        chatMessagesList.push(newMsg);
+        if (input) input.value = '';
+        const imgPayload = pendingChatImageBase64;
+        pendingChatImageBase64 = '';
+        const previewBar = document.getElementById('chat-photo-preview-bar');
+        if (previewBar) previewBar.classList.add('hidden');
+
+        renderChatMessages();
+        triggerSendWhooshTone();
+
+        if (gasWebAppUrl) {
+          try {
+            await fetch(gasWebAppUrl, {
+              method: 'POST',
+              mode: 'no-cors',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                action: 'sendDriverChat',
+                excelCarIndex: excelCarIndex,
+                message: text,
+                imageData: imgPayload,
+                sentAt: sentAt
+              })
+            });
+          } catch (e) {}
+        }
+      }
+
       document.getElementById('open-chat-screen-btn').addEventListener('click', () => {
+        document.getElementById('chat-header-title').textContent = `事務所連絡（${excelCarIndex}号車）`;
         renderChatMessages();
         const screen = document.getElementById('chat-sub-screen');
         screen.classList.remove('hidden');
@@ -2074,6 +2160,7 @@
         const screen = document.getElementById('chat-sub-screen');
         screen.classList.add('hidden');
         screen.classList.remove('flex');
+        updateChatUnreadBadge();
       });
 
       document.getElementById('chat-camera-btn').addEventListener('click', () => {
@@ -2094,63 +2181,20 @@
             canvas.height = Math.round(img.height * scale);
             const ctx = canvas.getContext('2d');
             ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-            pendingChatImageBase64 = canvas.toDataURL('image/jpeg', 0.72);
+            pendingChatImageBase64 = canvas.toDataURL('image/jpeg', 0.65);
             document.getElementById('chat-photo-thumb').src = pendingChatImageBase64;
             document.getElementById('chat-photo-preview-bar').classList.remove('hidden');
           };
           img.src = ev.target.result;
         };
         reader.readAsDataURL(file);
+        e.target.value = '';
       });
 
       document.getElementById('chat-remove-photo-btn').addEventListener('click', () => {
         pendingChatImageBase64 = '';
-        document.getElementById('chat-camera-input').value = '';
         document.getElementById('chat-photo-preview-bar').classList.add('hidden');
       });
-
-      async function sendDriverChatMessage() {
-        const inputEl = document.getElementById('chat-message-input');
-        const msgText = inputEl.value.trim();
-        if (!msgText && !pendingChatImageBase64) return;
-
-        triggerSendWhooshTone();
-        const now = new Date();
-        const timeStr = `${pad2(now.getHours())}:${pad2(now.getMinutes())}`;
-        const newEntry = {
-          id: 'DRV_' + now.getTime(),
-          sender: 'driver',
-          text: msgText,
-          imageData: pendingChatImageBase64,
-          time: timeStr,
-          confirmed: true
-        };
-
-        chatMessagesList.push(newEntry);
-        inputEl.value = '';
-        const sentImg = pendingChatImageBase64;
-        pendingChatImageBase64 = '';
-        document.getElementById('chat-camera-input').value = '';
-        document.getElementById('chat-photo-preview-bar').classList.add('hidden');
-        renderChatMessages();
-
-        if (gasWebAppUrl) {
-          try {
-            await fetch(gasWebAppUrl, {
-              method: 'POST',
-              mode: 'no-cors',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                action: 'sendDriverChat',
-                excelCarIndex: excelCarIndex,
-                message: msgText,
-                imageData: sentImg,
-                sentAt: timeStr
-              })
-            });
-          } catch (e) {}
-        }
-      }
 
       document.getElementById('chat-send-btn').addEventListener('click', sendDriverChatMessage);
       document.getElementById('chat-message-input').addEventListener('keydown', (e) => {
@@ -2161,6 +2205,13 @@
       });
 
       fetchSheetData();
+
+      // ★アプリを開いている間、15秒ごとに事務所からの新着メッセージを自動チェック
+      setInterval(() => {
+        if (gasWebAppUrl && document.visibilityState === 'visible') {
+          fetchSheetData(true);
+        }
+      }, 15000);
     });
   </script>
 </body>
