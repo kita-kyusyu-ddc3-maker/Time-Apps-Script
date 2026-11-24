@@ -1586,9 +1586,10 @@
         const query = new URLSearchParams({
           action: 'getSchedule',
           deliveryDate: getFormattedDeliveryDateKey(),
-          excelCarIndex: String(excelCarIndex)
+          excelCarIndex: String(excelCarIndex),
+          _t: String(Date.now())
         });
-        const res = await fetch(`${gasWebAppUrl}?${query.toString()}`);
+        const res = await fetch(`${gasWebAppUrl}?${query.toString()}`, { cache: 'no-store' });
         const data = await res.json();
 
         if (data && data.status === 'ok') {
@@ -1608,13 +1609,9 @@
             showToast('最新スケジュールを読み込みました');
           }
 
-          try {
-            updateChatUnreadBadge();
-            if (!document.getElementById('chat-sub-screen').classList.contains('hidden')) {
-              renderChatMessages();
-            }
-          } catch (uiErr) {
-            console.warn('チャットUI更新スキップ:', uiErr);
+          updateChatUnreadBadge();
+          if (!document.getElementById('chat-sub-screen').classList.contains('hidden')) {
+            renderChatMessages();
           }
         } else {
           setConnectionBadge('error', '読込エラー');
@@ -2028,10 +2025,20 @@
       function updateChatUnreadBadge() {
         const badgeEl = document.getElementById('chat-unread-count');
         if (!badgeEl) return;
+        const deletedIds = JSON.parse(localStorage.getItem('store_deleted_chat_ids') || '[]');
         const list = Array.isArray(chatMessagesList) ? chatMessagesList : [];
-        let unread = list.filter((m) => String(m.sender) === 'office' && !m.confirmed).length;
+        let unread = list.filter((m) => {
+          const msgKey = String(m.id || `${m.sender}_${m.time}_${m.text}`);
+          if (deletedIds.includes(msgKey)) return false;
+          const isFromOffice = String(m.sender || '').trim() === 'office';
+          const isUnconfirmed = !m.confirmed && String(m.confirmed) !== 'true' && String(m.confirmed) !== '確認済';
+          return isFromOffice && isUnconfirmed;
+        }).length;
         if (unread === 0 && activeDispatchMemo && activeDispatchMemo.message) {
-          unread = 1;
+          const memoKey = String(activeDispatchMemo.memoId || `office_${activeDispatchMemo.sentAt}_${activeDispatchMemo.message}`);
+          if (!deletedIds.includes(memoKey)) {
+            unread = 1;
+          }
         }
         badgeEl.textContent = String(unread);
         if (unread > 0) {
