@@ -1540,20 +1540,26 @@
           if (Array.isArray(data.chatMessages)) {
             chatMessagesList = data.chatMessages;
           }
-          updateChatUnreadBadge();
-          if (!document.getElementById('chat-sub-screen').classList.contains('hidden')) {
-            renderChatMessages();
-          }
 
           saveScheduleCacheToLocal();
           setConnectionBadge('ok', 'GAS接続済');
           if (!silent && !hasCached) {
             showToast('最新スケジュールを読み込みました');
           }
+
+          try {
+            updateChatUnreadBadge();
+            if (!document.getElementById('chat-sub-screen').classList.contains('hidden')) {
+              renderChatMessages();
+            }
+          } catch (uiErr) {
+            console.warn('チャットUI更新スキップ:', uiErr);
+          }
         } else {
           setConnectionBadge('error', '読込エラー');
         }
       } catch (e) {
+        console.error('GAS通信詳細:', e);
         setConnectionBadge('error', '通信エラー');
       }
       renderStoreList();
