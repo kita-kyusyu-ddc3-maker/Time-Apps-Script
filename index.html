@@ -1739,9 +1739,8 @@
             updateChatUnreadBadge(data);
           }
 
-          const chatScreenEl = document.getElementById('chat-sub-screen');
-          if (chatScreenEl && !chatScreenEl.classList.contains('hidden')) {
-            renderChatMessages();
+          if (typeof window.refreshLiveChatMessages === 'function') {
+            window.refreshLiveChatMessages();
           }
 
           const newScheduleSnapshot = JSON.stringify({
@@ -2462,6 +2461,13 @@
 
         container.scrollTop = container.scrollHeight;
       }
+
+      window.refreshLiveChatMessages = function() {
+        const chatScreenEl = document.getElementById('chat-sub-screen');
+        if (chatScreenEl && !chatScreenEl.classList.contains('hidden')) {
+          renderChatMessages();
+        }
+      };
 
       let pendingDeleteMsgKey = '';
       function openChatDeleteConfirm(msgKey, previewText) {
