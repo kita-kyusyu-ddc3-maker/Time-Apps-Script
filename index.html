@@ -2730,46 +2730,23 @@
         fetchSheetData();
       }
 
-      // ★アプリを開いている間、通信完了から必ず2.5秒後に次の新着チェックを連鎖実行（省電力停止＆ロック詰まり完全防止）
-      function scheduleNextAutoPoll() {
-        clearTimeout(autoPollTimerId);
-        const chatOpen = (() => {
-          const el = document.getElementById('chat-sub-screen');
-          return el && !el.classList.contains('hidden');
-        })();
-        const delayMs = chatOpen ? 2000 : 3000;
-        autoPollTimerId = setTimeout(async () => {
-          if (gasWebAppUrl && document.visibilityState === 'visible') {
-            await fetchSheetData(true);
-          }
-          scheduleNextAutoPoll();
-        }, delayMs);
-      }
-      scheduleNextAutoPoll();
-
-      // 予備の定期監視タイマー（万が一チェーンが途切れた場合の復帰用）
+      // ★アプリを開いている間、3秒ごとにシンプルに自動同期（競合なしの1本化）
       setInterval(() => {
         if (gasWebAppUrl && document.visibilityState === 'visible') {
-          if (Date.now() - lastFetchTimestamp > 5000) {
-            isFetchingSheetData = false;
-            fetchSheetData(true);
-            scheduleNextAutoPoll();
-          }
+          fetchSheetData(true);
         }
-      }, 4000);
+      }, 3000);
 
       // ★他のアプリやスリープから画面に戻った時に即座に裏側更新
       document.addEventListener('visibilitychange', () => {
         if (document.visibilityState === 'visible') {
           isFetchingSheetData = false;
           triggerSmartBackgroundSync(500);
-          scheduleNextAutoPoll();
         }
       });
       window.addEventListener('focus', () => {
         isFetchingSheetData = false;
         triggerSmartBackgroundSync(500);
-        scheduleNextAutoPoll();
       });
     });
   </script>
