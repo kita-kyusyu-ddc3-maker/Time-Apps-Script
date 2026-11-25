@@ -3,398 +3,554 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>店着時間記録アプリ</title>
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <meta name="apple-mobile-web-app-title" content="店着記録" />
-  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="店着管理" />
   <meta name="theme-color" content="#0f172a" />
-  <link id="dynamic-favicon" rel="icon" type="image/png" />
-  <link id="dynamic-apple-icon" rel="apple-touch-icon" />
-  <link id="dynamic-manifest" rel="manifest" />
+  <link id="app-apple-touch-icon" rel="apple-touch-icon" sizes="180x180" href="" />
+  <link id="app-favicon" rel="icon" type="image/png" href="" />
+  <title>店着管理</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+JP:wght@400;500;700;900&display=swap" rel="stylesheet" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Noto+Sans+JP:wght@400;500;700;900&display=swap" rel="stylesheet">
   <style>
+    html, body {
+      max-width: 100%;
+      overflow-x: hidden;
+      overscroll-behavior-x: none;
+      position: relative;
+    }
     body {
-      font-family: 'Inter', 'Noto Sans JP', sans-serif;
-      background-color: #f1f5f9;
-      color: #0f172a;
+      font-family: 'Inter', 'Noto Sans JP', -apple-system, BlinkMacSystemFont, sans-serif;
       -webkit-tap-highlight-color: transparent;
-      overscroll-behavior-y: contain;
+      user-select: none;
+      background-color: #f1f5f9;
     }
     .tabular-nums {
       font-variant-numeric: tabular-nums;
     }
-    .no-scrollbar::-webkit-scrollbar {
-      display: none;
+    select.clean-select {
+      appearance: none;
+      -webkit-appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='%2327272a' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 0.9rem center;
+      background-size: 1rem;
     }
-    .no-scrollbar {
-      -ms-overflow-style: none;
-      scrollbar-width: none;
+    /* iPhoneタイマー風 ドラムロール（ピッカーホイール） */
+    .wheel-viewport {
+      position: relative;
+      height: 168px;
+      overflow: hidden;
+      touch-action: none;
+      user-select: none;
+      -webkit-user-select: none;
+      cursor: grab;
     }
-    @keyframes slideUp {
-      from { transform: translateY(100%); opacity: 0.5; }
-      to { transform: translateY(0); opacity: 1; }
+    .wheel-viewport:active {
+      cursor: grabbing;
     }
-    .animate-slide-up {
-      animation: slideUp 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    .wheel-mask {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      z-index: 20;
+      background: linear-gradient(
+        to bottom,
+        rgba(255, 255, 255, 0.96) 0%,
+        rgba(255, 255, 255, 0.72) 22%,
+        rgba(255, 255, 255, 0.0) 38%,
+        rgba(255, 255, 255, 0.0) 62%,
+        rgba(255, 255, 255, 0.72) 78%,
+        rgba(255, 255, 255, 0.96) 100%
+      );
     }
-    @keyframes pulseSoft {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.45; }
+    .wheel-highlight-bar {
+      position: absolute;
+      left: 8px;
+      right: 8px;
+      top: 50%;
+      height: 44px;
+      transform: translateY(-50%);
+      border-radius: 14px;
+      background: rgba(241, 245, 249, 0.85);
+      border-top: 1px solid rgba(203, 213, 225, 0.8);
+      border-bottom: 1px solid rgba(203, 213, 225, 0.8);
+      pointer-events: none;
+      z-index: 5;
     }
-    .animate-pulse-soft {
-      animation: pulseSoft 1.8s infinite;
-    }
-    .wheel-col {
-      scroll-snap-type: y mandatory;
-      -webkit-overflow-scrolling: touch;
+    .wheel-reel {
+      position: relative;
+      z-index: 10;
+      will-change: transform;
     }
     .wheel-item {
-      scroll-snap-align: center;
       height: 44px;
       display: flex;
       align-items: center;
       justify-content: center;
-      transition: transform 0.12s ease, color 0.12s ease, opacity 0.12s ease;
-      user-select: none;
+      font-size: 1.55rem;
+      font-weight: 800;
+      color: #a1a1aa;
+      transition: color 0.12s ease;
+    }
+    .wheel-item.is-selected {
+      color: #18181b;
+      font-size: 1.85rem;
+      font-weight: 900;
+    }
+    /* LINE風吹き出しのしっぽデザイン（上部からカーブして尖る本物のLINE形状） */
+    .line-bubble-office {
+      position: relative;
+      border-radius: 18px;
+      margin-left: 8px;
+    }
+    .line-bubble-office::before {
+      content: '';
+      position: absolute;
+      left: -8px;
+      top: 0px;
+      width: 16px;
+      height: 16px;
+      background: #ffffff;
+      border-bottom-left-radius: 16px;
+    }
+    .line-bubble-office::after {
+      content: '';
+      position: absolute;
+      left: -12px;
+      top: -2px;
+      width: 12px;
+      height: 12px;
+      background: #c7d6ec;
+      border-bottom-right-radius: 12px;
+    }
+    .line-bubble-driver {
+      position: relative;
+      border-radius: 18px;
+      margin-right: 8px;
+    }
+    .line-bubble-driver::before {
+      content: '';
+      position: absolute;
+      right: -8px;
+      top: 0px;
+      width: 16px;
+      height: 16px;
+      background: #2563eb;
+      border-bottom-right-radius: 16px;
+    }
+    .line-bubble-driver::after {
+      content: '';
+      position: absolute;
+      right: -12px;
+      top: -2px;
+      width: 12px;
+      height: 12px;
+      background: #c7d6ec;
+      border-bottom-left-radius: 12px;
+    }
+    ::-webkit-scrollbar {
+      width: 0px;
+      background: transparent;
     }
   </style>
 </head>
-<body class="min-h-screen flex flex-col">
+<body class="text-slate-900 min-h-screen flex justify-center overflow-x-hidden">
 
-  <!-- 上部固定ヘッダー -->
-  <header class="sticky top-0 z-30 bg-slate-900 text-white shadow-md">
-    <div class="max-w-lg mx-auto px-3.5 pt-2.5 pb-2">
+  <!-- モバイルアプリシェル -->
+  <div class="w-full max-w-md bg-[#F8FAFC] min-h-screen flex flex-col relative shadow-[0_0_50px_rgba(15,23,42,0.08)] overflow-x-hidden">
+
+    <!-- 1. ミニマル・トップナビゲーション -->
+    <header class="sticky top-0 z-30 bg-[#F8FAFC]/85 backdrop-blur-xl px-5 pt-4 pb-3 border-b border-slate-200/60">
       <div class="flex items-center justify-between gap-2">
-        <div class="flex items-center gap-2 min-w-0">
-          <div class="w-8 h-8 rounded-xl bg-blue-600 flex items-center justify-center shrink-0 shadow-inner">
-            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M8 17h8M8 17a2 2 0 11-4 0 2 2 0 014 0zm8 0a2 2 0 104 0 2 2 0 00-4 0zM3 9h13l4 4v4h-2m-15 0H2v-6a2 2 0 012-2h11v8" />
-            </svg>
+        <div class="flex items-center gap-2.5 min-w-0">
+          <div id="car-badge-box" class="w-11 h-11 rounded-2xl bg-slate-900 text-white flex flex-col items-center justify-center shadow-sm shrink-0">
+            <span class="text-[9px] font-bold tracking-widest text-slate-400 uppercase leading-none">CAR</span>
+            <span id="fixed-car-num" class="text-lg font-black tabular-nums leading-tight">--</span>
           </div>
           <div class="min-w-0">
             <div class="flex items-center gap-1.5">
-              <span id="header-car-label" class="text-base font-extrabold tracking-tight truncate">15号車</span>
-              <span id="connection-badge" class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-bold bg-slate-800 text-slate-300 border border-slate-700">
-                <span id="connection-dot" class="w-1.5 h-1.5 rounded-full bg-slate-400"></span>
-                <span id="connection-text">未接続</span>
+              <h1 id="fixed-car-label" class="text-lg font-black tracking-tight text-slate-900 leading-none">--号車</h1>
+              <!-- 運行携帯（?admin=1）専用：タップで号車選択パネルを開くボタン -->
+              <button type="button" id="admin-car-switcher-btn" class="hidden items-center gap-1 bg-violet-100 active:bg-violet-200 text-violet-950 border border-violet-300 rounded-xl px-2.5 py-1 text-xs font-black shadow-2xs transition">
+                <span id="admin-car-btn-label">0号車</span>
+                <svg class="w-3.5 h-3.5 text-violet-700" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+              </button>
+              <span id="gas-status-pill" class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-200/70 text-slate-600 shrink-0">
+                <span id="gas-status-dot" class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+                <span id="gas-status-text">デモ表示</span>
               </span>
             </div>
-            <div id="header-date-clock" class="text-[11px] text-slate-400 tabular-nums truncate">読み込み中...</div>
+            <div class="flex items-center gap-2 mt-1 text-xs font-semibold text-slate-500 tabular-nums">
+              <span id="clock-display">--:--</span>
+              <span class="text-slate-300">•</span>
+              <span id="fixed-course-summary" class="truncate max-w-[155px]">-- / --コース</span>
+            </div>
           </div>
         </div>
 
         <div class="flex items-center gap-1.5 shrink-0">
-          <!-- 事務所電話発信ボタン -->
-          <a id="office-call-link" href="tel:" class="p-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 active:scale-95 transition text-white shadow-sm flex items-center justify-center" title="事務所へ電話">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.3" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
-            </svg>
-          </a>
-
-          <!-- メッセージ画面ボタン -->
-          <button id="open-chat-screen-btn" type="button" class="relative p-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 active:scale-95 transition text-slate-200 border border-slate-700" title="事務所連絡チャット">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
-            </svg>
-            <span id="chat-unread-badge" class="hidden absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-rose-500 text-white text-[10px] font-extrabold flex items-center justify-center shadow">1</span>
-          </button>
-
-          <!-- 更新ボタン（ダブルタップで強制リロード） -->
-          <button id="refresh-btn" type="button" class="p-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 active:scale-95 transition text-slate-200 border border-slate-700" title="データ更新（ダブルタップで再起動）">
-            <svg id="refresh-icon" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+          <button type="button" id="reload-sheet-btn" title="最新データ読込" class="w-10 h-10 rounded-full bg-white border border-slate-200/80 shadow-2xs active:scale-95 flex items-center justify-center text-slate-700 hover:text-blue-600 transition">
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/>
+              <path d="M21 3v5h-5"/>
             </svg>
           </button>
-
-          <!-- 設定歯車ボタン -->
-          <button id="open-settings-btn" type="button" class="p-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 active:scale-95 transition text-slate-200 border border-slate-700" title="接続・号車設定">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-              <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+          <button type="button" id="open-gas-modal-btn" title="GAS連携設定" class="w-10 h-10 rounded-full bg-white border border-slate-200/80 shadow-2xs active:scale-95 flex items-center justify-center text-slate-700 hover:text-blue-600 transition">
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="3"/>
+              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
             </svg>
           </button>
         </div>
       </div>
 
-      <!-- 1便 / 2便 切り替えタブ -->
-      <div class="grid grid-cols-2 gap-2 mt-2.5 bg-slate-800/90 p-1 rounded-2xl border border-slate-700/80">
-        <button id="tab-course-1" type="button" class="py-2 px-3 rounded-xl text-sm font-extrabold transition flex items-center justify-center gap-1.5 bg-blue-600 text-white shadow">
+      <!-- 便切替ピル・セグメントコントロール -->
+      <div id="course-tabs-grid" class="mt-3.5 bg-slate-200/70 p-1 rounded-2xl grid grid-cols-2 gap-1">
+        <button type="button" id="tab-course-1" class="py-2 px-3 rounded-xl text-xs font-extrabold transition-all flex items-center justify-center gap-1.5 bg-white text-slate-900 shadow-xs">
           <span>1便</span>
-          <span id="tab-course-1-code" class="text-xs opacity-90 font-bold">(115)</span>
-          <span id="tab-course-1-progress" class="ml-1 text-[11px] px-1.5 py-0.2 rounded-full bg-black/25 tabular-nums">0/0</span>
+          <span id="tab-course-1-code" class="text-blue-600 font-black">100コース</span>
         </button>
-        <button id="tab-course-2" type="button" class="py-2 px-3 rounded-xl text-sm font-extrabold transition flex items-center justify-center gap-1.5 text-slate-300 hover:text-white">
+        <button type="button" id="tab-course-2" class="py-2 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 text-slate-500 hover:text-slate-800">
           <span>2便</span>
-          <span id="tab-course-2-code" class="text-xs opacity-80 font-bold">(215)</span>
-          <span id="tab-course-2-progress" class="ml-1 text-[11px] px-1.5 py-0.2 rounded-full bg-slate-700 tabular-nums">0/0</span>
+          <span id="tab-course-2-code" class="font-extrabold">200コース</span>
         </button>
       </div>
-    </div>
-  </header>
+    </header>
 
-  <!-- 事務所からの未確認伝言バナー -->
-  <div id="dispatch-memo-banner" class="hidden max-w-lg mx-auto w-full px-3.5 pt-3">
-    <div class="bg-amber-50 border-2 border-amber-400 rounded-2xl p-3.5 shadow-sm">
-      <div class="flex items-start justify-between gap-2">
-        <div class="flex items-center gap-1.5 text-amber-800 font-extrabold text-xs">
-          <span class="px-2 py-0.5 rounded-full bg-amber-400 text-amber-950">事務所伝言</span>
-          <span id="dispatch-memo-time" class="tabular-nums opacity-80"></span>
-        </div>
-        <button id="confirm-memo-btn" type="button" class="px-3 py-1.5 rounded-xl bg-amber-600 hover:bg-amber-700 active:scale-95 text-white text-xs font-extrabold shadow-sm transition">
-          確認しました
-        </button>
-      </div>
-      <p id="dispatch-memo-text" class="mt-2 text-sm font-bold text-slate-900 whitespace-pre-wrap leading-relaxed"></p>
-    </div>
-  </div>
-
-  <!-- メイン店舗リスト -->
-  <main class="flex-1 max-w-lg mx-auto w-full px-3.5 py-3 pb-24">
-    <div class="flex items-center justify-between mb-2 px-0.5">
-      <div class="flex items-center gap-2">
-        <span id="current-course-heading" class="text-xs font-extrabold text-slate-500 uppercase tracking-wider">1便 納品先一覧</span>
-        <span id="delivery-date-chip" class="text-[11px] font-bold px-2 py-0.5 rounded-md bg-slate-200/80 text-slate-700 tabular-nums"></span>
-      </div>
-      <button id="open-history-btn" type="button" class="text-xs font-bold text-blue-600 hover:text-blue-700 flex items-center gap-1 py-1 px-2 rounded-lg hover:bg-blue-50 transition">
-        <span>送信履歴</span>
-        <span id="history-count-badge" class="px-1.5 py-0.2 rounded-full bg-blue-100 text-blue-700 tabular-nums">0</span>
-      </button>
-    </div>
-
-    <div id="store-list-container" class="space-y-2.5">
-      <!-- JSで動的描画 -->
-    </div>
-  </main>
-
-  <!-- トースト通知 -->
-  <div id="toast-box" class="fixed top-16 left-1/2 -translate-x-1/2 z-50 pointer-events-none transition-all duration-200 opacity-0 -translate-y-2">
-    <div id="toast-message" class="px-4 py-2.5 rounded-2xl bg-slate-900/95 text-white text-xs font-bold shadow-xl border border-slate-700 whitespace-nowrap"></div>
-  </div>
-
-  <!-- 店着時間入力モーダル -->
-  <div id="arrival-modal" class="fixed inset-0 z-40 hidden items-end sm:items-center justify-center bg-slate-950/60 backdrop-blur-[1px]">
-    <div class="w-full max-w-lg bg-white rounded-t-3xl sm:rounded-3xl shadow-2xl overflow-hidden animate-slide-up">
-      <div class="px-5 pt-4 pb-3 bg-slate-900 text-white flex items-center justify-between">
-        <div class="min-w-0 pr-2">
-          <div class="flex items-center gap-2">
-            <span id="modal-store-order" class="px-2 py-0.5 rounded-lg bg-blue-600 text-xs font-extrabold">1店舗目</span>
-            <span id="modal-store-sched" class="text-xs font-bold text-slate-300 tabular-nums">予定 00:00</span>
-          </div>
-          <h3 id="modal-store-name" class="text-lg font-extrabold truncate mt-1">店舗名</h3>
-        </div>
-        <button id="close-arrival-modal-btn" type="button" class="p-2 rounded-xl bg-slate-800 text-slate-300 hover:text-white">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
-          </svg>
-        </button>
-      </div>
-
-      <div class="p-5 space-y-4">
-        <!-- 時刻ドラムロール＆クイックボタン -->
-        <div>
-          <div class="flex items-center justify-between mb-1.5">
-            <span class="text-xs font-extrabold text-slate-500">実店着時間</span>
-            <div class="flex items-center gap-1.5">
-              <button id="set-now-time-btn" type="button" class="px-2.5 py-1 rounded-lg bg-blue-50 text-blue-700 text-xs font-extrabold border border-blue-200 active:scale-95 transition">現在時刻</button>
-              <button id="minus-5min-btn" type="button" class="px-2 py-1 rounded-lg bg-slate-100 text-slate-700 text-xs font-bold active:scale-95 transition">-5分</button>
-              <button id="plus-5min-btn" type="button" class="px-2 py-1 rounded-lg bg-slate-100 text-slate-700 text-xs font-bold active:scale-95 transition">+5分</button>
+    <!-- 2. ダッシュボード・サマリー -->
+    <section class="px-5 pt-4 pb-2">
+      <div class="bg-white rounded-3xl p-4 shadow-[0_4px_20px_rgba(15,23,42,0.03)] border border-slate-100">
+        <div class="flex items-center justify-between">
+          <div>
+            <div class="text-[11px] font-bold text-slate-400">配送稼働日</div>
+            <div class="flex items-center gap-1.5 mt-0.5">
+              <button type="button" id="prev-day-btn" class="w-7 h-7 rounded-xl bg-slate-100 hover:bg-slate-200 active:scale-95 flex items-center justify-center text-slate-700 font-black text-xs transition">◀</button>
+              <span id="delivery-date-label" class="text-base font-black text-slate-900 tabular-nums px-1">--/--(-)</span>
+              <button type="button" id="next-day-btn" class="w-7 h-7 rounded-xl bg-slate-100 hover:bg-slate-200 active:scale-95 flex items-center justify-center text-slate-700 font-black text-xs transition">▶</button>
             </div>
           </div>
 
-          <!-- ドラムロールピッカー -->
-          <div class="relative h-[132px] bg-slate-100 rounded-2xl border border-slate-200 overflow-hidden grid grid-cols-2">
-            <div class="pointer-events-none absolute inset-x-3 top-1/2 -translate-y-1/2 h-[44px] rounded-xl bg-white shadow-sm border border-blue-200/80 z-0"></div>
-            <div class="pointer-events-none absolute inset-x-0 top-0 h-9 bg-gradient-to-b from-slate-100 to-transparent z-10"></div>
-            <div class="pointer-events-none absolute inset-x-0 bottom-0 h-9 bg-gradient-to-t from-slate-100 to-transparent z-10"></div>
-
-            <div id="wheel-hour" class="wheel-col relative z-20 h-full overflow-y-auto no-scrollbar py-[44px]"></div>
-            <div id="wheel-minute" class="wheel-col relative z-20 h-full overflow-y-auto no-scrollbar py-[44px]"></div>
-            <div class="pointer-events-none absolute inset-0 flex items-center justify-center z-20 font-black text-slate-400 text-lg">:</div>
-          </div>
-
-          <!-- 予定との差分プレビュー -->
-          <div class="mt-2.5 flex items-center justify-between px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200/80">
-            <span class="text-xs font-bold text-slate-500">予定時刻との差</span>
-            <span id="modal-diff-preview" class="text-sm font-extrabold tabular-nums text-slate-800">±0分</span>
+          <div class="text-right">
+            <div class="text-[11px] font-bold text-slate-400">完了進捗</div>
+            <div class="text-lg font-black text-slate-900 tabular-nums mt-0.5">
+              <span id="progress-done" class="text-blue-600">0</span><span class="text-slate-300 mx-0.5">/</span><span id="progress-total">0</span>
+              <span class="text-xs font-bold text-slate-400 ml-0.5">店舗</span>
+            </div>
           </div>
         </div>
 
-        <!-- 最終店舗のみ表示：DR送信時刻 -->
-        <div id="dr-sent-section" class="hidden p-3.5 rounded-2xl bg-indigo-50/80 border border-indigo-200 space-y-2">
-          <div class="flex items-center justify-between">
-            <span class="text-xs font-extrabold text-indigo-900">最終店舗：DR送信時刻</span>
-            <button id="set-dr-now-btn" type="button" class="px-2.5 py-1 rounded-lg bg-indigo-600 text-white text-xs font-bold active:scale-95 transition">現在時刻をセット</button>
-          </div>
-          <input id="dr-sent-time-input" type="time" class="w-full px-3 py-2 rounded-xl bg-white border border-indigo-200 text-base font-extrabold text-slate-900 tabular-nums" />
+        <div class="mt-3 w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
+          <div id="progress-bar-fill" class="h-full bg-blue-600 rounded-full transition-all duration-500 ease-out" style="width: 0%;"></div>
         </div>
+      </div>
+    </section>
 
-        <!-- 特殊ステータス（休業・臨時便） -->
-        <div class="grid grid-cols-2 gap-2">
-          <button id="submit-holiday-btn" type="button" class="py-2.5 px-3 rounded-xl bg-amber-100 hover:bg-amber-200 text-amber-900 font-extrabold text-xs border border-amber-300 active:scale-95 transition">
-            店舗休業として記録
-          </button>
-          <button id="toggle-extra-btn" type="button" class="py-2.5 px-3 rounded-xl bg-purple-50 hover:bg-purple-100 text-purple-800 font-extrabold text-xs border border-purple-200 active:scale-95 transition">
-            臨時便フラグ：OFF
-          </button>
-        </div>
+    <!-- 3. タイムライン形式・配送ルート一覧 -->
+    <main class="flex-1 px-5 pt-2 pb-28">
+      <div id="route-sub-header" class="flex items-center justify-between px-1 mb-2.5">
+        <span id="active-course-title" class="text-xs font-extrabold text-slate-400 tracking-wider uppercase">ROUTE • 1便（100コース）</span>
+        <span id="route-tap-hint" class="text-[11px] font-semibold text-slate-400">タップして店着入力</span>
+      </div>
 
-        <!-- 送信メインボタン -->
-        <button id="submit-arrival-btn" type="button" class="w-full py-3.5 rounded-2xl bg-blue-600 hover:bg-blue-700 active:scale-[0.99] text-white font-extrabold text-base shadow-lg shadow-blue-600/25 transition flex items-center justify-center gap-2">
-          <span>この時間で記録を送信</span>
+      <div id="store-list-container" class="relative space-y-3"></div>
+    </main>
+
+    <!-- 4. フローティング・ボトムバー -->
+    <div class="fixed bottom-4 left-0 right-0 z-20 flex justify-center px-5 pointer-events-none">
+      <div class="w-full max-w-md flex items-center justify-between bg-slate-900/95 backdrop-blur-md text-white px-4 py-3 rounded-2xl shadow-[0_12px_30px_rgba(15,23,42,0.22)] pointer-events-auto">
+        <button type="button" id="open-history-btn" class="bg-white/15 hover:bg-white/25 active:scale-95 text-white text-xs font-extrabold px-3.5 py-2 rounded-xl transition flex items-center gap-2">
+          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0"></span>
+          <span>送信履歴を見る</span>
+          <span id="history-count" class="bg-slate-600 text-white text-[11px] font-black px-1.5 py-0.2 rounded-md tabular-nums">0</span>
+        </button>
+        <button type="button" id="open-chat-screen-btn" class="bg-blue-600 hover:bg-blue-500 active:scale-95 text-white text-xs font-extrabold px-3.5 py-2 rounded-xl transition flex items-center gap-1.5 shadow-xs">
+          <span>メッセージ受信</span>
+          <span id="chat-unread-count" class="bg-rose-500 text-white text-[11px] font-black px-1.5 py-0.2 rounded-md tabular-nums">0</span>
         </button>
       </div>
     </div>
-  </div>
 
-  <!-- 送信履歴モーダル -->
-  <div id="history-modal" class="fixed inset-0 z-40 hidden items-end sm:items-center justify-center bg-slate-950/60">
-    <div class="w-full max-w-lg bg-white rounded-t-3xl sm:rounded-3xl shadow-2xl max-h-[82vh] flex flex-col overflow-hidden animate-slide-up">
-      <div class="px-5 py-4 bg-slate-900 text-white flex items-center justify-between shrink-0">
-        <h3 class="text-base font-extrabold">本日の記録履歴</h3>
-        <button id="close-history-modal-btn" type="button" class="p-2 rounded-xl bg-slate-800 text-slate-300 hover:text-white">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
-          </svg>
-        </button>
+    <!-- 5. モーダル1：店着時間を入力する画面（シックな白デザイン） -->
+    <div id="arrival-modal" class="fixed inset-0 bg-zinc-950/35 backdrop-blur-xs z-40 hidden items-end sm:items-center justify-center p-0 sm:p-4">
+      <div class="bg-[#FCFCFD] w-full max-w-md rounded-t-[2rem] sm:rounded-[2rem] p-6 shadow-[0_20px_50px_rgba(24,24,27,0.16)] border-t sm:border border-zinc-200/80 space-y-5 animate-modal-in max-h-[92vh] overflow-y-auto">
+        <div class="w-10 h-1 bg-zinc-200 rounded-full mx-auto -mt-2 mb-1 sm:hidden"></div>
+
+        <div class="flex items-start justify-between gap-3">
+          <div>
+            <div class="flex items-center gap-2 mb-1">
+              <span id="modal-store-badge" class="text-[11px] font-extrabold text-zinc-700 bg-zinc-100 border border-zinc-200/80 px-2.5 py-0.5 rounded-full">1便 • 1店舗目</span>
+              <span id="modal-last-badge" class="hidden text-[11px] font-extrabold text-emerald-800 bg-emerald-50 border border-emerald-200/80 px-2.5 py-0.5 rounded-full">最終店舗</span>
+            </div>
+            <h2 id="modal-store-name" class="text-2xl font-black text-zinc-900 tracking-tight leading-snug">店舗名</h2>
+            <div class="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs font-semibold text-zinc-400 mt-1 tabular-nums">
+              <span>予定定時 <span id="modal-scheduled-time" class="text-zinc-800 font-extrabold">--:--</span></span>
+              <span id="modal-avg-time-wrap" class="hidden text-blue-600 font-extrabold">直近平均 <span id="modal-avg-time">--:--</span></span>
+            </div>
+          </div>
+          <button type="button" id="close-arrival-modal-btn" class="w-9 h-9 rounded-full bg-white border border-zinc-200/90 text-zinc-500 hover:text-zinc-800 active:scale-95 flex items-center justify-center shrink-0 shadow-2xs">✕</button>
+        </div>
+
+        <div class="space-y-4">
+          <div class="flex items-center justify-between px-1">
+            <span class="text-xs font-extrabold text-zinc-500 tracking-wide">到着時刻を選択</span>
+            <button type="button" id="set-now-btn" class="text-xs font-extrabold text-zinc-800 bg-white border border-zinc-200/90 hover:bg-zinc-50 active:scale-95 px-3 py-1.5 rounded-full transition shadow-2xs">
+              現在時刻
+            </button>
+          </div>
+
+          <div class="bg-white rounded-3xl px-3 py-2.5 border border-zinc-200/85 shadow-[0_2px_12px_rgba(24,24,27,0.04)] relative">
+            <div class="grid grid-cols-11 items-center">
+              <!-- 時 (HOUR) ドラムリール -->
+              <div class="col-span-5 flex flex-col items-center">
+                <span class="text-[10px] font-extrabold text-zinc-400 tracking-wider mb-0.5">時 (HOUR)</span>
+                <div id="wheel-hour-viewport" class="wheel-viewport w-full rounded-2xl">
+                  <div class="wheel-highlight-bar"></div>
+                  <div id="wheel-hour-reel" class="wheel-reel"></div>
+                  <div class="wheel-mask"></div>
+                </div>
+              </div>
+
+              <!-- 中央コロン -->
+              <div class="col-span-1 flex flex-col items-center justify-center pt-4">
+                <span class="text-2xl font-black text-zinc-800 pb-1">:</span>
+              </div>
+
+              <!-- 分 (MIN) ドラムリール -->
+              <div class="col-span-5 flex flex-col items-center">
+                <span class="text-[10px] font-extrabold text-zinc-400 tracking-wider mb-0.5">分 (MIN)</span>
+                <div id="wheel-minute-viewport" class="wheel-viewport w-full rounded-2xl">
+                  <div class="wheel-highlight-bar"></div>
+                  <div id="wheel-minute-reel" class="wheel-reel"></div>
+                  <div class="wheel-mask"></div>
+                </div>
+              </div>
+            </div>
+            <!-- 値保持用の隠しinput -->
+            <input type="hidden" id="select-hour" value="00" />
+            <input type="hidden" id="select-minute" value="00" />
+          </div>
+
+          <div id="modal-diff-preview" class="py-3 px-4 rounded-2xl bg-emerald-100/75 text-emerald-900 text-center font-extrabold text-xs tabular-nums transition-colors">
+            定時との差：±0分
+          </div>
+
+          <div class="flex flex-col gap-3">
+            <button type="button" id="submit-arrival-btn" class="w-full py-4 rounded-2xl bg-sky-200/70 hover:bg-sky-200/90 backdrop-blur-xs active:scale-[0.99] text-sky-900 font-black text-base transition">
+              入力時間を送信
+            </button>
+            <button type="button" id="submit-holiday-btn" class="w-full py-4 rounded-2xl bg-amber-200/70 hover:bg-amber-200/90 backdrop-blur-xs active:scale-[0.99] text-amber-900 font-black text-base transition">
+              「休業」として送信する
+            </button>
+            <button type="button" id="submit-extra-btn" class="w-full py-4 rounded-2xl bg-violet-200/70 hover:bg-violet-200/90 backdrop-blur-xs active:scale-[0.99] text-violet-900 font-black text-base transition">
+              「臨時便」として送信する
+            </button>
+          </div>
+        </div>
       </div>
-      <div id="history-list-container" class="p-4 overflow-y-auto space-y-2 flex-1"></div>
     </div>
-  </div>
 
-  <!-- 設定・QRコード発行モーダル -->
-  <div id="gas-modal" class="fixed inset-0 z-40 hidden items-end sm:items-center justify-center bg-slate-950/60">
-    <div class="w-full max-w-lg bg-white rounded-t-3xl sm:rounded-3xl shadow-2xl max-h-[90vh] flex flex-col overflow-hidden animate-slide-up">
-      <div class="px-5 py-4 bg-slate-900 text-white flex items-center justify-between shrink-0">
-        <h3 class="text-base font-extrabold">接続・号車設定</h3>
-        <button id="close-gas-modal-btn" type="button" class="p-2 rounded-xl bg-slate-800 text-slate-300 hover:text-white">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
-          </svg>
-        </button>
-      </div>
-
-      <div class="p-5 overflow-y-auto space-y-4 flex-1">
-        <div>
-          <label class="block text-xs font-extrabold text-slate-600 mb-1">担当号車</label>
-          <select id="setting-car-select" class="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-300 text-sm font-extrabold text-slate-900"></select>
+    <!-- 6. モーダル2：GAS連携モーダル -->
+    <div id="gas-modal" class="fixed inset-0 bg-zinc-950/35 backdrop-blur-xs z-40 hidden items-end sm:items-center justify-center p-0 sm:p-4">
+      <div class="bg-[#FCFCFD] w-full max-w-md rounded-t-[2rem] sm:rounded-[2rem] p-6 shadow-2xl border border-zinc-200/80 space-y-4 max-h-[90vh] overflow-y-auto animate-modal-in">
+        <div class="flex items-center justify-between">
+          <div>
+            <h2 class="text-base font-black text-zinc-900">GAS スプレッドシート連携</h2>
+            <p class="text-[11px] font-semibold text-zinc-400">接続先URLを設定します</p>
+          </div>
+          <button type="button" id="close-gas-modal-btn" class="w-8 h-8 rounded-full bg-white border border-zinc-200 text-zinc-500 flex items-center justify-center">✕</button>
         </div>
 
-        <div>
-          <label class="block text-xs font-extrabold text-slate-600 mb-1">GAS ウェブアプリURL（末尾 /exec）</label>
-          <input id="setting-gas-url" type="url" placeholder="https://script.google.com/macros/s/.../exec" class="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-300 text-xs font-mono text-slate-800" />
+        <div class="space-y-3">
+          <div>
+            <label class="block text-[11px] font-extrabold text-zinc-600 mb-1">GAS ウェブアプリURL</label>
+            <input type="url" id="gas-url-input" placeholder="https://script.google.com/macros/s/..." class="w-full bg-white border border-zinc-200 rounded-xl px-3.5 py-2.5 text-xs font-mono text-zinc-800 focus:border-zinc-900 focus:outline-none" />
+          </div>
+
+          <button type="button" id="save-gas-url-btn" class="w-full py-3 rounded-xl bg-zinc-900 active:scale-[0.99] text-white font-extrabold text-xs shadow-xs transition">
+            接続を保存してデータ読込
+          </button>
+
+          <div class="pt-1">
+            <label class="block text-[11px] font-extrabold text-zinc-600 mb-1">運行携帯 電話番号（電話マーク発信先）</label>
+            <input type="tel" id="office-phone-input" placeholder="090-0000-0000" class="w-full bg-white border border-zinc-200 rounded-xl px-3.5 py-2.5 text-sm font-mono font-bold text-zinc-800 focus:border-zinc-900 focus:outline-none" />
+          </div>
         </div>
 
-        <div>
-          <label class="block text-xs font-extrabold text-slate-600 mb-1">運行携帯 電話番号（電話マーク発信先）</label>
-          <input id="setting-office-phone" type="tel" placeholder="例: 090-1234-5678" class="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-300 text-sm font-bold text-slate-900" />
-        </div>
-
-        <button id="save-gas-settings-btn" type="button" class="w-full py-3 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-sm shadow-md transition">
-          接続を保存してデータ読込
-        </button>
-
-        <!-- 他端末導入用 QRコード発行 -->
-        <div class="pt-3 border-t border-slate-200 space-y-2.5">
-          <div class="text-xs font-extrabold text-slate-700">他端末導入用 QRコード発行</div>
-          <p class="text-[11px] text-slate-500 leading-relaxed">現在のGAS接続URLと運行電話番号を組み込んだ専用QRコードを発行します。</p>
-          <div class="flex gap-2">
-            <select id="qr-target-car-select" class="flex-1 px-3 py-2 rounded-xl bg-slate-50 border border-slate-300 text-sm font-bold text-slate-900"></select>
-            <button id="generate-qr-btn" type="button" class="px-4 py-2 rounded-xl bg-slate-800 text-white text-xs font-extrabold hover:bg-slate-700 transition">
+        <!-- ★追加：他端末導入用の号車別QRコード発行セクション -->
+        <div class="border-t border-zinc-200/80 pt-4 space-y-3">
+          <div>
+            <h3 class="text-sm font-black text-zinc-900">他端末導入用 QRコード発行</h3>
+            <p class="text-[11px] font-semibold text-zinc-400">号車を選んでQRコードをカメラで読み取ると、初期設定なしで自動接続されます</p>
+          </div>
+          <div class="flex items-center gap-2">
+            <select id="qr-car-select" class="clean-select flex-1 bg-white border border-zinc-200 rounded-xl px-3.5 py-2.5 text-sm font-black text-zinc-900 focus:border-zinc-900 focus:outline-none"></select>
+            <button type="button" id="generate-qr-btn" class="px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 active:scale-95 text-white font-extrabold text-xs shadow-xs transition shrink-0">
               QR表示
             </button>
           </div>
-          <div id="qr-display-area" class="hidden flex-col items-center p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-2">
-            <img id="qr-code-img" alt="QRコード" class="w-44 h-44 rounded-xl bg-white p-2 shadow-sm border border-slate-200" />
-            <div id="qr-target-label" class="text-xs font-extrabold text-slate-800"></div>
+          <div id="qr-preview-box" class="hidden bg-white border border-zinc-200/90 rounded-2xl p-4 flex flex-col items-center text-center space-y-2.5 shadow-2xs">
+            <div id="qr-target-label" class="text-sm font-black text-zinc-900">15号車 専用QRコード</div>
+            <div id="qr-code-canvas" class="w-48 h-48 rounded-xl border border-zinc-100 bg-white p-2 flex items-center justify-center"></div>
+            <div id="qr-url-text" class="w-full bg-zinc-50 border border-zinc-200 rounded-lg px-2.5 py-1.5 text-[10px] font-mono text-zinc-600 break-all select-all"></div>
+            <p class="text-[11px] font-bold text-zinc-500 leading-relaxed">
+              スマホのカメラで読み取り後、<br>ブラウザメニューから「ホーム画面に追加」してください
+            </p>
+            <button type="button" id="copy-invite-url-btn" class="w-full py-2 rounded-xl bg-zinc-100 hover:bg-zinc-200/80 active:scale-95 text-zinc-800 font-extrabold text-xs transition">
+              配布用URLをコピー
+            </button>
           </div>
         </div>
       </div>
     </div>
-  </div>
 
-  <!-- 事務所連絡チャットサブ画面 -->
-  <div id="chat-sub-screen" class="fixed inset-0 z-40 hidden flex-col bg-slate-100">
-    <div class="bg-slate-900 text-white px-4 py-3 flex items-center justify-between shrink-0 shadow">
-      <div class="flex items-center gap-2">
-        <button id="close-chat-screen-btn" type="button" class="px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-extrabold flex items-center gap-1">
-          <span>← 店着画面へ</span>
+    <!-- 7. モーダル3：送信履歴モーダル -->
+    <div id="history-modal" class="fixed inset-0 bg-zinc-950/35 backdrop-blur-xs z-40 hidden items-end sm:items-center justify-center p-0 sm:p-4">
+      <div class="bg-[#FCFCFD] w-full max-w-md rounded-t-[2rem] sm:rounded-[2rem] p-5 shadow-2xl border border-zinc-200/80 max-h-[82vh] flex flex-col animate-modal-in">
+        <div class="flex items-center justify-between pb-2.5 border-b border-zinc-200/75">
+          <h2 class="text-base font-black text-zinc-900">本日の送信履歴</h2>
+          <button type="button" id="close-history-modal-btn" class="w-8 h-8 rounded-full bg-white border border-zinc-200 text-zinc-500 flex items-center justify-center">✕</button>
+        </div>
+        <div id="history-list-container" class="flex-1 overflow-y-auto py-3 space-y-2"></div>
+      </div>
+    </div>
+
+    <!-- 8. モーダル4：運行携帯専用・全号車選択パネル -->
+    <div id="admin-car-modal" class="fixed inset-0 bg-zinc-950/35 backdrop-blur-xs z-40 hidden items-end sm:items-center justify-center p-0 sm:p-4">
+      <div class="bg-[#FCFCFD] w-full max-w-md rounded-t-[2rem] sm:rounded-[2rem] p-5 shadow-2xl border border-zinc-200/80 max-h-[82vh] flex flex-col animate-modal-in">
+        <div class="flex items-center justify-between pb-3 border-b border-zinc-200/75">
+          <div>
+            <h2 class="text-base font-black text-zinc-900">号車を選択（運行管理モード）</h2>
+            <p class="text-[11px] font-semibold text-zinc-400">タップすると対象号車の店舗一覧に切り替わります</p>
+          </div>
+          <button type="button" id="close-admin-car-modal-btn" class="w-8 h-8 rounded-full bg-white border border-zinc-200 text-zinc-500 flex items-center justify-center">✕</button>
+        </div>
+        <div id="admin-car-grid" class="flex-1 overflow-y-auto py-3 grid grid-cols-4 gap-2"></div>
+      </div>
+    </div>
+
+    <!-- 9. サブ画面：LINE風メッセージ画面 -->
+    <div id="chat-sub-screen" class="fixed inset-0 z-50 bg-[#F8FAFC] hidden flex-col max-w-md mx-auto">
+      <div class="bg-slate-900 text-white px-4 py-3.5 flex items-center justify-between gap-2 shrink-0 shadow-sm">
+        <button type="button" id="close-chat-screen-btn" class="bg-white/15 hover:bg-white/25 active:scale-95 text-white text-sm font-black px-3.5 py-2 rounded-xl transition shrink-0">
+          ← 店着画面へ
         </button>
-        <h2 id="chat-header-title" class="text-sm font-extrabold">事務所連絡</h2>
+        <h2 id="chat-header-title" class="text-base font-black tracking-tight truncate">事務所連絡</h2>
+        <a id="chat-office-call-link" href="#" title="運行携帯へ電話" class="w-10 h-10 rounded-full bg-[#22c55e] hover:bg-[#16a34a] active:scale-95 text-white flex items-center justify-center shrink-0 shadow-sm transition">
+          <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
+          </svg>
+        </a>
       </div>
-      <button id="refresh-chat-btn" type="button" class="p-2 rounded-xl bg-slate-800 text-slate-300 hover:text-white text-xs font-bold">更新</button>
-    </div>
 
-    <div id="chat-messages-container" class="flex-1 overflow-y-auto p-4 space-y-3"></div>
+      <div id="chat-messages-container" class="flex-1 overflow-y-auto px-4 pt-3 pb-6 space-y-3.5 bg-[#8CABD9]/35 flex flex-col"></div>
 
-    <!-- 画像プレビュー -->
-    <div id="chat-image-preview-bar" class="hidden px-4 py-2 bg-slate-200 border-t border-slate-300 flex items-center justify-between">
-      <div class="flex items-center gap-2">
-        <img id="chat-image-preview-thumb" alt="添付プレビュー" class="w-12 h-12 object-cover rounded-lg border border-slate-400" />
-        <span class="text-xs font-bold text-slate-700">画像を添付中</span>
+      <div id="chat-photo-preview-bar" class="hidden bg-slate-100 border-t border-slate-200 px-3 py-2 flex items-center justify-between gap-2 shrink-0">
+        <div class="flex items-center gap-2">
+          <img id="chat-photo-thumb" src="" alt="添付プレビュー" class="w-12 h-12 rounded-xl object-cover border border-slate-300" />
+          <span class="text-xs font-extrabold text-slate-700">送信する写真（添付中）</span>
+        </div>
+        <button type="button" id="chat-remove-photo-btn" class="px-2.5 py-1 rounded-lg bg-slate-200 hover:bg-slate-300 text-slate-800 text-xs font-black">削除 ✕</button>
       </div>
-      <button id="remove-chat-image-btn" type="button" class="px-2.5 py-1 rounded-lg bg-slate-700 text-white text-xs font-bold">取消</button>
+
+      <div id="chat-input-footer" class="bg-white border-t border-slate-200 px-3 pt-3 pb-[calc(0.9rem+env(safe-area-inset-bottom))] flex items-center gap-1.5 shrink-0">
+        <input type="file" id="chat-camera-input" accept="image/*" capture="environment" class="hidden" />
+        <button type="button" id="chat-camera-btn" title="カメラ撮影・画像添付" class="w-10 h-10 rounded-full bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-700 flex items-center justify-center shrink-0 transition">
+          <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+            <circle cx="12" cy="13" r="4"/>
+          </svg>
+        </button>
+        <input type="text" id="chat-message-input" placeholder="メッセージを入力" class="flex-1 min-w-0 bg-slate-100 border border-slate-300 rounded-full px-3.5 py-2.5 text-base font-bold text-slate-900 leading-normal focus:bg-white focus:border-blue-500 focus:outline-none" />
+        <button type="button" id="chat-mic-btn" title="音声入力" class="w-10 h-10 rounded-full bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-700 flex items-center justify-center shrink-0 transition">
+          <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="9" y="2" width="6" height="11" rx="3"/>
+            <path d="M5 10a7 7 0 0 0 14 0"/>
+            <line x1="12" y1="19" x2="12" y2="22"/>
+            <line x1="8" y1="22" x2="16" y2="22"/>
+          </svg>
+        </button>
+        <button type="button" id="chat-send-btn" title="送信" class="w-10 h-10 rounded-full bg-blue-600 hover:bg-blue-700 active:scale-95 text-white flex items-center justify-center shrink-0 shadow-xs transition">
+          <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="22" y1="2" x2="11" y2="13"/>
+            <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+          </svg>
+        </button>
+      </div>
     </div>
 
-    <div class="p-3 bg-white border-t border-slate-200 flex items-end gap-2 shrink-0">
-      <label class="p-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 cursor-pointer shrink-0">
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.1" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-          <path stroke-linecap="round" stroke-linejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
-        </svg>
-        <input id="chat-image-input" type="file" accept="image/*" class="hidden" />
-      </label>
-      <textarea id="chat-message-input" rows="1" placeholder="事務所へ連絡を入力..." class="flex-1 px-3.5 py-2.5 rounded-2xl bg-slate-100 border border-slate-300 text-sm focus:outline-none focus:border-blue-500 resize-none max-h-28"></textarea>
-      <button id="send-chat-btn" type="button" class="px-4 py-2.5 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-sm shrink-0 shadow-sm active:scale-95 transition">
-        送信
-      </button>
+    <!-- 長押しメッセージ削除確認ポップアップ -->
+    <div id="chat-delete-modal" class="fixed inset-0 bg-zinc-950/45 backdrop-blur-xs z-[60] hidden items-center justify-center p-5">
+      <div class="bg-white w-full max-w-xs rounded-3xl p-5 shadow-2xl border border-slate-200 space-y-4 text-center animate-modal-in">
+        <div class="text-base font-black text-slate-900">このメッセージを削除しますか？</div>
+        <p id="chat-delete-preview" class="text-xs font-bold text-slate-500 bg-slate-50 rounded-xl p-2.5 line-clamp-2 break-words"></p>
+        <div class="grid grid-cols-2 gap-2.5">
+          <button type="button" id="cancel-chat-delete-btn" class="py-3 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-black text-sm">キャンセル</button>
+          <button type="button" id="confirm-chat-delete-btn" class="py-3 rounded-2xl bg-rose-600 hover:bg-rose-700 text-white font-black text-sm">削除する</button>
+        </div>
+      </div>
     </div>
+
+    <!-- トースト通知 -->
+    <div id="toast-banner" class="fixed top-20 left-1/2 -translate-x-1/2 z-50 hidden px-4 py-2.5 rounded-full bg-zinc-900 text-white text-xs font-extrabold shadow-xl whitespace-nowrap">
+      通知メッセージ
+    </div>
+
   </div>
 
   <script>
-    const STORAGE_KEYS = {
-      CAR_INDEX: 'tenchaku_car_index_v2',
-      GAS_URL: 'tenchaku_gas_url_v2',
-      OFFICE_PHONE: 'tenchaku_office_phone_v2',
-      SCHEDULE_CACHE: 'tenchaku_schedule_cache_v2',
-      LAST_READ_CHAT_ID: 'tenchaku_last_read_chat_v2'
-    };
+    // ⑤ 起動直後にCAR15が出ないよう、URLパラメータ → localStorage保存値 の順で本来の号車番号を即座に確定
+    const urlParams = new URLSearchParams(window.location.search);
+    const paramCarRaw = urlParams.get('car');
+    const paramCar = paramCarRaw !== null ? parseInt(paramCarRaw, 10) : NaN;
+    const savedCarRaw = localStorage.getItem('store_arrival_car_index');
+    const savedCar = savedCarRaw !== null ? parseInt(savedCarRaw, 10) : NaN;
 
-    const DEMO_STORES_1 = [
-      { order: 1, name: 'サンプル店舗A', scheduled: '19:30', avgArrival: '19:15' },
-      { order: 2, name: 'サンプル店舗B', scheduled: '20:15', avgArrival: '20:00' },
-      { order: 3, name: 'サンプル店舗C', scheduled: '21:00', avgArrival: '20:45' }
-    ];
-    const DEMO_STORES_2 = [
-      { order: 1, name: 'サンプル2便店舗X', scheduled: '01:30', avgArrival: '01:10' },
-      { order: 2, name: 'サンプル2便店舗Y', scheduled: '02:20', avgArrival: '02:00' }
-    ];
-
-    let excelCarIndex = 15;
-    let gasWebAppUrl = '';
-    let officePhoneNumber = '';
-    let activeCourse = '1';
-    let course1Code = '115';
-    let course2Code = '215';
-    let course1Stores = [...DEMO_STORES_1];
-    let course2Stores = [...DEMO_STORES_2];
-    let arrivalLogs = [];
-    let activeDispatchMemo = null;
-    let chatMessagesList = [];
-    let selectedStoreForModal = null;
-    let modalExtraRunFlag = false;
-    let pendingChatImageBase64 = '';
-    let hourWheelController = null;
-    let minuteWheelController = null;
-    let isFetchingSheetData = false;
-    let hasLoadedOnce = false;
-
-    function pad2(n) {
-      return String(n).padStart(2, '0');
+    let excelCarIndex = (!isNaN(paramCar) && paramCar >= 0 && paramCar <= 34)
+      ? paramCar
+      : (!isNaN(savedCar) && savedCar >= 0 && savedCar <= 34)
+      ? savedCar
+      : 0;
+    if (!isNaN(paramCar) && paramCar >= 0 && paramCar <= 34) {
+      localStorage.setItem('store_arrival_car_index', String(paramCar));
     }
 
-    function getEffectiveDeliveryDateObj() {
+    let isSingleCourseCar = (excelCarIndex === 14);
+    const isAdminMode = (urlParams.get('admin') === '1');
+
+    // 初期描画の瞬間に本来のCARナンバーを即反映
+    document.getElementById('fixed-car-num').textContent = String(excelCarIndex).padStart(2, '0');
+    document.getElementById('fixed-car-label').textContent = `${excelCarIndex}号車`;
+    document.getElementById('fixed-course-summary').textContent = `${100 + excelCarIndex} / ${200 + excelCarIndex}コース`;
+
+    // ★QRコードのURLパラメータ(?gas=...)があれば自動取得してスマホに永続保存（一発自動接続）
+    const paramGasUrl = urlParams.get('gas');
+    if (paramGasUrl && paramGasUrl.startsWith('http')) {
+      localStorage.setItem('store_arrival_gas_url', paramGasUrl.trim());
+    }
+    const paramOfficePhone = urlParams.get('tel');
+    if (paramOfficePhone) {
+      localStorage.setItem('store_arrival_office_phone', paramOfficePhone.trim());
+    }
+
+    // 自分自身のGASウェブアプリURLを自動検出
+    const AUTO_GAS_URL = (typeof google !== 'undefined' && google.script && google.script.run)
+      ? window.location.href.split('?')[0]
+      : '';
+    let gasWebAppUrl = localStorage.getItem('store_arrival_gas_url') || AUTO_GAS_URL;
+    let officePhoneNumber = localStorage.getItem('store_arrival_office_phone') || '';
+
+    function updateOfficeCallLink() {
+      const linkEl = document.getElementById('chat-office-call-link');
+      if (!linkEl) return;
+      const cleanNum = String(officePhoneNumber || '').replace(/[^0-9+*#]/g, '');
+      linkEl.href = cleanNum ? `tel:${cleanNum}` : '#';
+    }
+
+    function getInitialDeliveryDate() {
       const now = new Date();
       if (now.getHours() < 12) {
         now.setDate(now.getDate() - 1);
@@ -402,345 +558,857 @@
       return new Date(now.getFullYear(), now.getMonth(), now.getDate());
     }
 
+    // ⑥ 現在の稼働日（当日）より過去日（前日以前）かどうかを判定
+    function isPastDeliveryDate() {
+      const todayEff = getInitialDeliveryDate();
+      const currentTarget = new Date(deliveryDate.getFullYear(), deliveryDate.getMonth(), deliveryDate.getDate());
+      return currentTarget.getTime() < todayEff.getTime();
+    }
+
+    let deliveryDate = getInitialDeliveryDate();
+    let activeCourseType = '1';
+    let course1Code = String(100 + excelCarIndex);
+    let course2Code = String(200 + excelCarIndex);
+    let course1Stores = [
+      { order: 1, name: '神戸三宮中央店', scheduled: '01:30' },
+      { order: 2, name: '元町駅前店', scheduled: '02:05' },
+      { order: 3, name: '兵庫駅南口店', scheduled: '02:40' },
+      { order: 4, name: '長田本町店', scheduled: '03:15' },
+      { order: 5, name: '須磨海浜公園店', scheduled: '03:50' },
+      { order: 6, name: '垂水駅前店', scheduled: '04:25' }
+    ];
+    let course2Stores = [
+      { order: 1, name: '芦屋川駅前店', scheduled: '06:15' },
+      { order: 2, name: '西宮北口店', scheduled: '06:50' },
+      { order: 3, name: '甲子園口店', scheduled: '07:25' },
+      { order: 4, name: '尼崎センタープール前店', scheduled: '08:05' }
+    ];
+
+    let arrivalLogs = [];
+    let selectedStoreForModal = null;
+    let activeDispatchMemo = null;
+    let chatMessagesList = [];
+    let pendingChatImageBase64 = '';
+    let hourWheelController = null;
+    let minuteWheelController = null;
+
+    function pad2(n) {
+      return String(n).padStart(2, '0');
+    }
+
     function getFormattedDeliveryDateKey() {
-      const d = getEffectiveDeliveryDateObj();
-      return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+      const y = deliveryDate.getFullYear();
+      const m = pad2(deliveryDate.getMonth() + 1);
+      const d = pad2(deliveryDate.getDate());
+      return `${y}-${m}-${d}`;
     }
 
-    function initFromUrlOrStorage() {
-      const params = new URLSearchParams(window.location.search);
-      const urlCar = params.get('car');
-      const urlGas = params.get('gas');
-      const urlPhone = params.get('phone');
-
-      if (urlCar !== null && !isNaN(Number(urlCar))) {
-        excelCarIndex = Number(urlCar);
-        localStorage.setItem(STORAGE_KEYS.CAR_INDEX, String(excelCarIndex));
-      } else {
-        const savedCar = localStorage.getItem(STORAGE_KEYS.CAR_INDEX);
-        if (savedCar !== null && !isNaN(Number(savedCar))) {
-          excelCarIndex = Number(savedCar);
-        }
-      }
-
-      if (urlGas) {
-        gasWebAppUrl = urlGas.trim();
-        localStorage.setItem(STORAGE_KEYS.GAS_URL, gasWebAppUrl);
-      } else {
-        gasWebAppUrl = (localStorage.getItem(STORAGE_KEYS.GAS_URL) || '').trim();
-      }
-
-      if (urlPhone) {
-        officePhoneNumber = urlPhone.trim();
-        localStorage.setItem(STORAGE_KEYS.OFFICE_PHONE, officePhoneNumber);
-      } else {
-        officePhoneNumber = (localStorage.getItem(STORAGE_KEYS.OFFICE_PHONE) || '').trim();
-      }
-
-      if (urlCar || urlGas || urlPhone) {
-        try {
-          window.history.replaceState({}, document.title, window.location.pathname);
-        } catch (e) {}
-      }
-
-      course1Code = String(100 + excelCarIndex);
-      course2Code = String(200 + excelCarIndex);
-      document.getElementById('header-car-label').textContent = excelCarIndex === 0 ? '0号車(管理)' : `${excelCarIndex}号車`;
-    }
-
-    function generateAppIcons() {
-      try {
-        const canvas = document.createElement('canvas');
-        canvas.width = 192;
-        canvas.height = 192;
-        const ctx = canvas.getContext('2d');
-        ctx.fillStyle = '#1d4ed8';
-        ctx.beginPath();
-        ctx.roundRect(0, 0, 192, 192, 42);
-        ctx.fill();
-
-        ctx.fillStyle = '#ffffff';
-        ctx.font = 'bold 74px sans-serif';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText('店着', 96, 100);
-
-        const pngUrl = canvas.toDataURL('image/png');
-        document.getElementById('dynamic-favicon').href = pngUrl;
-        document.getElementById('dynamic-apple-icon').href = pngUrl;
-      } catch (e) {}
-    }
-
-    function updateOfficeCallLink() {
-      const link = document.getElementById('office-call-link');
-      if (officePhoneNumber) {
-        link.href = `tel:${officePhoneNumber.replace(/[^0-9+]/g, '')}`;
-        link.classList.remove('opacity-50');
-      } else {
-        link.href = '#';
-        link.classList.add('opacity-50');
-      }
-    }
-
-    function showToast(msg) {
-      const box = document.getElementById('toast-box');
-      const text = document.getElementById('toast-message');
-      text.textContent = msg;
-      box.classList.remove('opacity-0', '-translate-y-2');
-      box.classList.add('opacity-100', 'translate-y-0');
-      clearTimeout(window._toastTimer);
-      window._toastTimer = setTimeout(() => {
-        box.classList.remove('opacity-100', 'translate-y-0');
-        box.classList.add('opacity-0', '-translate-y-2');
-      }, 2600);
-    }
-
-    function setConnectionBadge(status, label) {
-      const badge = document.getElementById('connection-badge');
-      const dot = document.getElementById('connection-dot');
-      const text = document.getElementById('connection-text');
-      text.textContent = label;
-
-      badge.className = 'inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-bold border';
-      dot.className = 'w-1.5 h-1.5 rounded-full';
-
-      if (status === 'ok') {
-        badge.classList.add('bg-emerald-950/90', 'text-emerald-300', 'border-emerald-700');
-        dot.classList.add('bg-emerald-400');
-      } else if (status === 'loading') {
-        badge.classList.add('bg-blue-950/90', 'text-blue-300', 'border-blue-700');
-        dot.classList.add('bg-blue-400', 'animate-pulse-soft');
-      } else if (status === 'error') {
-        badge.classList.add('bg-rose-950/90', 'text-rose-300', 'border-rose-700');
-        dot.classList.add('bg-rose-400');
-      } else {
-        badge.classList.add('bg-slate-800', 'text-slate-300', 'border-slate-700');
-        dot.classList.add('bg-slate-400');
-      }
-    }
-
-    function updateClock() {
-      const now = new Date();
+    function getFormattedDeliveryDateWithDay() {
       const days = ['日', '月', '火', '水', '木', '金', '土'];
-      const str = `${now.getMonth() + 1}/${now.getDate()}(${days[now.getDay()]}) ${pad2(now.getHours())}:${pad2(now.getMinutes())}`;
-      document.getElementById('header-date-clock').textContent = str;
-
-      const eff = getEffectiveDeliveryDateObj();
-      document.getElementById('delivery-date-chip').textContent = `${eff.getMonth() + 1}/${eff.getDate()}運行分`;
+      const m = deliveryDate.getMonth() + 1;
+      const d = deliveryDate.getDate();
+      const w = days[deliveryDate.getDay()];
+      return `${m}/${d}(${w})`;
     }
 
-    function normalizeStoreArray(arr) {
-      return arr.map((item, idx) => ({
-        order: Number(item.order || idx + 1),
-        name: String(item.name || '').trim(),
-        scheduled: String(item.scheduled || '').trim(),
-        avgArrival: String(item.avgArrival || '').trim()
-      })).filter(s => s.name);
+    function parseTimeToMinutes(hhmm) {
+      if (!hhmm || !String(hhmm).includes(':')) return null;
+      const [h, m] = String(hhmm).split(':').map(Number);
+      if (isNaN(h) || isNaN(m)) return null;
+      return h * 60 + m;
     }
 
-    function normalizeLogsArray(arr) {
-      return arr.map(item => ({
-        courseType: String(item.courseType || '1'),
-        order: Number(item.order || 1),
-        storeName: String(item.storeName || '').trim(),
-        scheduled: String(item.scheduled || '').trim(),
-        arrival: String(item.arrival || '').trim(),
-        diffDisplay: String(item.diffDisplay || '').trim(),
-        isHoliday: Boolean(item.isHoliday || item.arrival === '休業'),
-        isExtraRun: Boolean(item.isExtraRun || item.arrival === '臨時便'),
-        drSentTime: String(item.drSentTime || '').trim()
-      }));
-    }
-
-    function getCacheKey() {
-      return `${STORAGE_KEYS.SCHEDULE_CACHE}_${excelCarIndex}_${getFormattedDeliveryDateKey()}`;
-    }
-
-    function saveScheduleCacheToLocal() {
-      try {
-        const payload = {
-          course1Code,
-          course2Code,
-          course1Stores,
-          course2Stores,
-          arrivalLogs,
-          savedAt: Date.now()
-        };
-        localStorage.setItem(getCacheKey(), JSON.stringify(payload));
-      } catch (e) {}
-    }
-
-    function restoreScheduleCacheFromLocal() {
-      try {
-        const raw = localStorage.getItem(getCacheKey());
-        if (!raw) return false;
-        const parsed = JSON.parse(raw);
-        if (parsed && Array.isArray(parsed.course1Stores)) {
-          course1Code = parsed.course1Code || course1Code;
-          course2Code = parsed.course2Code || course2Code;
-          course1Stores = parsed.course1Stores;
-          course2Stores = parsed.course2Stores || [];
-          arrivalLogs = parsed.arrivalLogs || [];
-          return true;
-        }
-      } catch (e) {}
-      return false;
-    }
-
-    function calcDiffMinutes(scheduledStr, arrivalStr) {
-      if (!scheduledStr || !arrivalStr || !scheduledStr.includes(':') || !arrivalStr.includes(':')) return 0;
-      const [sh, sm] = scheduledStr.split(':').map(Number);
-      const [ah, am] = arrivalStr.split(':').map(Number);
-      if (isNaN(sh) || isNaN(sm) || isNaN(ah) || isNaN(am)) return 0;
-      let diff = (ah * 60 + am) - (sh * 60 + sm);
+    function calculateTimeDiffMinutes(scheduledStr, arrivalStr) {
+      const sMin = parseTimeToMinutes(scheduledStr);
+      const aMin = parseTimeToMinutes(arrivalStr);
+      if (sMin === null || aMin === null) return 0;
+      let diff = aMin - sMin;
       if (diff < -720) diff += 1440;
       if (diff > 720) diff -= 1440;
       return diff;
     }
 
-    function formatDiffText(diffMin) {
-      if (diffMin === 0) return '±0分';
-      return diffMin > 0 ? `+${diffMin}分` : `${diffMin}分`;
+    function formatDiffDisplay(diff) {
+      if (diff === 0) return '定時ぴったり (±0分)';
+      if (diff >= 31) return `⚠️ +${diff}分 延着`;
+      if (diff > 0) return `+${diff}分 遅れ`;
+      return `${diff}分 早着`;
     }
 
-    function setupWheelColumn(el, count, onChange) {
-      el.innerHTML = '';
-      for (let i = 0; i < count; i++) {
-        const div = document.createElement('div');
-        div.className = 'wheel-item text-xl font-extrabold tabular-nums text-slate-700';
-        div.textContent = pad2(i);
-        div.dataset.val = i;
-        div.addEventListener('click', () => {
-          el.scrollTo({ top: i * 44, behavior: 'smooth' });
+    let toastTimer = null;
+    function showToast(msg) {
+      const banner = document.getElementById('toast-banner');
+      banner.textContent = msg;
+      banner.classList.remove('hidden');
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => {
+        banner.classList.add('hidden');
+      }, 2800);
+    }
+
+    // 店舗データを配列の並び順（1, 2, 3...）として確実に正規化
+    function normalizeStoreArray(rawList) {
+      if (!Array.isArray(rawList)) return [];
+      return rawList.map((item, idx) => {
+        if (typeof item === 'string') {
+          return { order: idx + 1, name: item, scheduled: '' };
+        }
+        return {
+          ...item,
+          order: idx + 1,
+          name: item.name ?? item.storeName ?? item.shopName ?? item.store ?? `店舗${idx + 1}`,
+          scheduled: item.scheduled ?? item.scheduledTime ?? item.targetTime ?? item.time ?? ''
+        };
+      });
+    }
+
+    function normalizeLogsArray(rawLogs) {
+      if (!Array.isArray(rawLogs)) return [];
+      return rawLogs.map((l, idx) => {
+        const cType = String(l.courseType ?? l.bin ?? l.course ?? '1');
+        const parsedOrd = parseInt(l.order ?? l.storeOrder ?? l.index, 10);
+        const ord = (!isNaN(parsedOrd) && parsedOrd > 0) ? parsedOrd : (idx + 1);
+        const sName = l.storeName ?? l.name ?? l.shopName ?? '';
+        const sched = l.scheduled ?? l.scheduledTime ?? '';
+        const arr = l.arrival ?? l.arrivalTime ?? l.actualTime ?? l.value ?? '';
+        const isHol = Boolean(l.isHoliday || arr === '休業');
+        const isExt = Boolean(l.isExtraRun || arr === '臨時便');
+        const diff = (isHol || isExt) ? 0 : calculateTimeDiffMinutes(sched, arr);
+        const isDel = Boolean(l.isDelayed || (!isHol && !isExt && diff >= 31));
+        return {
+          ...l,
+          courseType: cType,
+          order: ord,
+          storeName: sName,
+          scheduled: sched,
+          arrival: arr,
+          diffMinutes: diff,
+          diffDisplay: isHol ? '休業' : isExt ? '臨時便' : formatDiffDisplay(diff),
+          isDelayed: isDel,
+          isHoliday: isHol,
+          isExtraRun: isExt
+        };
+      });
+    }
+
+    // Web Audio API サウンド
+    let sharedAudioCtx = null;
+    function getAudioCtx() {
+      if (!sharedAudioCtx) {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (AudioCtx) sharedAudioCtx = new AudioCtx();
+      }
+      if (sharedAudioCtx && sharedAudioCtx.state === 'suspended') {
+        sharedAudioCtx.resume().catch(() => {});
+      }
+      return sharedAudioCtx;
+    }
+
+    function triggerWaterDropTap() {
+      try {
+        if (navigator.vibrate) navigator.vibrate(8);
+        const ctx = getAudioCtx();
+        if (!ctx) return;
+        const now = ctx.currentTime;
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(880, now);
+        osc.frequency.exponentialRampToValueAtTime(1480, now + 0.045);
+        osc.frequency.exponentialRampToValueAtTime(1320, now + 0.24);
+        gain.gain.setValueAtTime(0.001, now);
+        gain.gain.linearRampToValueAtTime(0.075, now + 0.012);
+        gain.gain.exponentialRampToValueAtTime(0.0008, now + 0.26);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.27);
+      } catch (e) {}
+    }
+
+    function triggerDialWheelTick() {
+      try {
+        if (navigator.vibrate) navigator.vibrate(5);
+        const ctx = getAudioCtx();
+        if (!ctx) return;
+        const now = ctx.currentTime;
+
+        // iPhoneピッカー特有の短い高音クリック（カリッ）
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(1650, now);
+        osc.frequency.exponentialRampToValueAtTime(620, now + 0.018);
+
+        gain.gain.setValueAtTime(0.001, now);
+        gain.gain.linearRampToValueAtTime(0.085, now + 0.002);
+        gain.gain.exponentialRampToValueAtTime(0.0008, now + 0.022);
+
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.025);
+      } catch (e) {}
+    }
+
+    function triggerDialSelectChime() {
+      try {
+        if (navigator.vibrate) navigator.vibrate(10);
+        const ctx = getAudioCtx();
+        if (!ctx) return;
+        const now = ctx.currentTime;
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(1180, now);
+        osc.frequency.exponentialRampToValueAtTime(840, now + 0.03);
+        gain.gain.setValueAtTime(0.001, now);
+        gain.gain.linearRampToValueAtTime(0.055, now + 0.004);
+        gain.gain.exponentialRampToValueAtTime(0.0008, now + 0.035);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.04);
+      } catch (e) {}
+    }
+
+    function triggerSendWhooshTone() {
+      try {
+        if (navigator.vibrate) navigator.vibrate([12, 20, 30]);
+        const ctx = getAudioCtx();
+        if (!ctx) return;
+        const now = ctx.currentTime;
+
+        const toneOsc = ctx.createOscillator();
+        const toneGain = ctx.createGain();
+        toneOsc.type = 'sine';
+        toneOsc.frequency.setValueAtTime(660, now);
+        toneOsc.frequency.exponentialRampToValueAtTime(2200, now + 0.36);
+        toneGain.gain.setValueAtTime(0.001, now);
+        toneGain.gain.linearRampToValueAtTime(0.055, now + 0.06);
+        toneGain.gain.exponentialRampToValueAtTime(0.0008, now + 0.38);
+        toneOsc.connect(toneGain);
+        toneGain.connect(ctx.destination);
+        toneOsc.start(now);
+        toneOsc.stop(now + 0.4);
+
+        const duration = 0.48;
+        const bufferSize = Math.floor(ctx.sampleRate * duration);
+        const noiseBuffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+        const output = noiseBuffer.getChannelData(0);
+        for (let i = 0; i < bufferSize; i++) {
+          output[i] = (Math.random() * 2 - 1) * 0.5;
+        }
+        const whiteNoise = ctx.createBufferSource();
+        whiteNoise.buffer = noiseBuffer;
+        const filter = ctx.createBiquadFilter();
+        filter.type = 'bandpass';
+        filter.Q.value = 2.6;
+        filter.frequency.setValueAtTime(1100, now);
+        filter.frequency.exponentialRampToValueAtTime(5200, now + 0.24);
+        filter.frequency.exponentialRampToValueAtTime(7800, now + duration);
+        const noiseGain = ctx.createGain();
+        noiseGain.gain.setValueAtTime(0.001, now);
+        noiseGain.gain.linearRampToValueAtTime(0.11, now + 0.09);
+        noiseGain.gain.exponentialRampToValueAtTime(0.0008, now + duration);
+        whiteNoise.connect(filter);
+        filter.connect(noiseGain);
+        noiseGain.connect(ctx.destination);
+        whiteNoise.start(now);
+        whiteNoise.stop(now + duration);
+      } catch (e) {}
+    }
+
+    // ★事務所からの緊急伝言通知音（優しい2音チャイム）
+    function triggerDispatchMemoAlertSound() {
+      try {
+        if (navigator.vibrate) navigator.vibrate([40, 60, 40]);
+        const ctx = getAudioCtx();
+        if (!ctx) return;
+        const now = ctx.currentTime;
+        [784, 1046.5].forEach((freq, idx) => {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(freq, now + idx * 0.14);
+          gain.gain.setValueAtTime(0.001, now + idx * 0.14);
+          gain.gain.linearRampToValueAtTime(0.11, now + idx * 0.14 + 0.02);
+          gain.gain.exponentialRampToValueAtTime(0.0008, now + idx * 0.14 + 0.32);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(now + idx * 0.14);
+          osc.stop(now + idx * 0.14 + 0.35);
         });
-        el.appendChild(div);
+      } catch (e) {}
+    }
+
+    // ② iPhoneタイマー風 縦型ドラムホイール（前後回転エンドレス無限ループ＋慣性スクロール）
+    function createDrumWheel({ viewportId, reelId, hiddenInputId, maxCount, onValueChange }) {
+      const viewport = document.getElementById(viewportId);
+      const reel = document.getElementById(reelId);
+      const hiddenInput = document.getElementById(hiddenInputId);
+
+      const ITEM_HEIGHT = 44;
+      const VIEWPORT_HEIGHT = 168;
+      const CENTER_OFFSET = (VIEWPORT_HEIGHT - ITEM_HEIGHT) / 2;
+      const LOOP_CYCLES = 5; // 5周分並べて中央周回を使うことで上下どちらにも無限に回転可能
+      const TOTAL_ITEMS = maxCount * LOOP_CYCLES;
+      const BASE_CYCLE_OFFSET = maxCount * 2; // 中央（3周目）の開始インデックス
+
+      reel.innerHTML = '';
+      const itemEls = [];
+      for (let i = 0; i < TOTAL_ITEMS; i++) {
+        const val = i % maxCount;
+        const div = document.createElement('div');
+        div.className = 'wheel-item tabular-nums';
+        div.textContent = pad2(val);
+        div.dataset.virtualIndex = String(i);
+        div.dataset.value = String(val);
+        reel.appendChild(div);
+        itemEls.push(div);
       }
 
-      let scrollTimer = null;
-      const updateHighlight = () => {
-        const idx = Math.max(0, Math.min(count - 1, Math.round(el.scrollTop / 44)));
-        const items = el.children;
-        for (let i = 0; i < items.length; i++) {
-          if (i === idx) {
-            items[i].classList.add('text-blue-600', 'scale-110');
-            items[i].classList.remove('text-slate-400', 'opacity-50');
+      let currentOffset = -BASE_CYCLE_OFFSET * ITEM_HEIGHT;
+      let currentValue = 0;
+      let isDragging = false;
+      let startY = 0;
+      let startOffset = 0;
+      let lastTouchY = 0;
+      let lastTouchTime = 0;
+      let velocity = 0;
+      let animFrameId = null;
+
+      // 無限ループを維持するため、端の周回に近づいたら見た目を変えずに中央周回へ座標を正規化
+      function normalizeInfiniteOffset(offset) {
+        const cyclePx = maxCount * ITEM_HEIGHT;
+        const minSafe = -(maxCount * 3.5) * ITEM_HEIGHT;
+        const maxSafe = -(maxCount * 1.5) * ITEM_HEIGHT;
+        let norm = offset;
+        while (norm > maxSafe) norm -= cyclePx;
+        while (norm < minSafe) norm += cyclePx;
+        return norm;
+      }
+
+      function renderWheel(offset, silent = false) {
+        currentOffset = normalizeInfiniteOffset(offset);
+        reel.style.transform = `translate3d(0, ${CENTER_OFFSET + currentOffset}px, 0)`;
+
+        const virtualFloat = -currentOffset / ITEM_HEIGHT;
+        const nearestVirtualIdx = Math.round(virtualFloat);
+        const modValue = ((nearestVirtualIdx % maxCount) + maxCount) % maxCount;
+
+        if (modValue !== currentValue) {
+          currentValue = modValue;
+          hiddenInput.value = pad2(currentValue);
+          if (!silent) triggerDialWheelTick();
+          if (onValueChange) onValueChange(pad2(currentValue));
+        }
+
+        const startRender = Math.max(0, nearestVirtualIdx - 4);
+        const endRender = Math.min(TOTAL_ITEMS - 1, nearestVirtualIdx + 4);
+
+        for (let i = startRender; i <= endRender; i++) {
+          const dist = i - virtualFloat;
+          const el = itemEls[i];
+          const angle = Math.max(-65, Math.min(65, dist * 22));
+          const scale = Math.max(0.76, 1 - Math.abs(dist) * 0.085);
+          el.style.transform = `perspective(240px) rotateX(${-angle}deg) scale(${scale})`;
+          if (i === nearestVirtualIdx) {
+            el.classList.add('is-selected');
           } else {
-            items[i].classList.remove('text-blue-600', 'scale-110');
-            items[i].classList.add('text-slate-400', 'opacity-50');
+            el.classList.remove('is-selected');
           }
         }
-        return idx;
-      };
+      }
 
-      el.addEventListener('scroll', () => {
-        const idx = updateHighlight();
-        clearTimeout(scrollTimer);
-        scrollTimer = setTimeout(() => {
-          onChange(idx);
-        }, 60);
+      function animateToVirtualIndex(targetVirtualIdx, playFinishChime = true) {
+        cancelAnimationFrame(animFrameId);
+        const targetOffset = -targetVirtualIdx * ITEM_HEIGHT;
+        function step() {
+          const diff = targetOffset - currentOffset;
+          if (Math.abs(diff) < 0.4) {
+            renderWheel(targetOffset, true);
+            if (playFinishChime) triggerDialSelectChime();
+            return;
+          }
+          renderWheel(currentOffset + diff * 0.24, false);
+          animFrameId = requestAnimationFrame(step);
+        }
+        animFrameId = requestAnimationFrame(step);
+      }
+
+      function snapToNearest() {
+        const nearestVirtualIdx = Math.round(-currentOffset / ITEM_HEIGHT);
+        animateToVirtualIndex(nearestVirtualIdx, true);
+      }
+
+      function startInertia(initialVel) {
+        cancelAnimationFrame(animFrameId);
+        let vel = initialVel;
+
+        function inertiaStep() {
+          vel *= 0.92;
+          const nextOffset = currentOffset + vel;
+          renderWheel(nextOffset, false);
+
+          if (Math.abs(vel) < 0.7) {
+            snapToNearest();
+            return;
+          }
+          animFrameId = requestAnimationFrame(inertiaStep);
+        }
+        animFrameId = requestAnimationFrame(inertiaStep);
+      }
+
+      // タッチ操作（スマホ指スワイプ）
+      viewport.addEventListener('touchstart', (e) => {
+        if (e.touches.length !== 1) return;
+        cancelAnimationFrame(animFrameId);
+        isDragging = true;
+        startY = e.touches[0].clientY;
+        startOffset = currentOffset;
+        lastTouchY = startY;
+        lastTouchTime = performance.now();
+        velocity = 0;
+      }, { passive: true });
+
+      viewport.addEventListener('touchmove', (e) => {
+        if (!isDragging || e.touches.length !== 1) return;
+        const y = e.touches[0].clientY;
+        const now = performance.now();
+        const dt = now - lastTouchTime;
+        if (dt > 0) {
+          velocity = ((y - lastTouchY) / dt) * 16;
+        }
+        lastTouchY = y;
+        lastTouchTime = now;
+
+        const deltaY = y - startY;
+        renderWheel(startOffset + deltaY, false);
+      }, { passive: true });
+
+      viewport.addEventListener('touchend', (e) => {
+        if (!isDragging) return;
+        isDragging = false;
+        const endY = (e.changedTouches && e.changedTouches[0]) ? e.changedTouches[0].clientY : lastTouchY;
+        if (Math.abs(endY - startY) < 6) {
+          const targetEl = document.elementFromPoint(
+            viewport.getBoundingClientRect().left + viewport.clientWidth / 2,
+            endY
+          );
+          if (targetEl && targetEl.dataset && targetEl.dataset.virtualIndex !== undefined) {
+            const tappedVirtualIdx = parseInt(targetEl.dataset.virtualIndex, 10);
+            animateToVirtualIndex(tappedVirtualIdx, true);
+            return;
+          }
+        }
+        if (Math.abs(velocity) > 1.8) {
+          startInertia(velocity);
+        } else {
+          snapToNearest();
+        }
       });
 
+      // PCマウスドラッグ＆ホイール対応
+      viewport.addEventListener('mousedown', (e) => {
+        cancelAnimationFrame(animFrameId);
+        isDragging = true;
+        startY = e.clientY;
+        startOffset = currentOffset;
+        lastTouchY = startY;
+        lastTouchTime = performance.now();
+        velocity = 0;
+      });
+
+      window.addEventListener('mousemove', (e) => {
+        if (!isDragging) return;
+        const now = performance.now();
+        const dt = now - lastTouchTime;
+        if (dt > 0) velocity = ((e.clientY - lastTouchY) / dt) * 16;
+        lastTouchY = e.clientY;
+        lastTouchTime = now;
+        renderWheel(startOffset + (e.clientY - startY), false);
+      });
+
+      window.addEventListener('mouseup', (e) => {
+        if (!isDragging) return;
+        isDragging = false;
+        if (Math.abs(e.clientY - startY) < 5 && e.target.dataset && e.target.dataset.virtualIndex !== undefined) {
+          const tappedVirtualIdx = parseInt(e.target.dataset.virtualIndex, 10);
+          animateToVirtualIndex(tappedVirtualIdx, true);
+          return;
+        }
+        if (Math.abs(velocity) > 1.8) {
+          startInertia(velocity);
+        } else {
+          snapToNearest();
+        }
+      });
+
+      let wheelSnapTimer = null;
+      viewport.addEventListener('wheel', (e) => {
+        e.preventDefault();
+        cancelAnimationFrame(animFrameId);
+        renderWheel(currentOffset - e.deltaY * 0.45, false);
+        clearTimeout(wheelSnapTimer);
+        wheelSnapTimer = setTimeout(() => snapToNearest(), 110);
+      }, { passive: false });
+
       return {
-        setValue(val, smooth = false) {
-          const clamped = ((val % count) + count) % count;
-          el.scrollTo({ top: clamped * 44, behavior: smooth ? 'smooth' : 'auto' });
-          updateHighlight();
-          onChange(clamped);
-        },
-        getValue() {
-          return Math.max(0, Math.min(count - 1, Math.round(el.scrollTop / 44)));
+        setValue(valStr, animate = false) {
+          const targetMod = ((parseInt(valStr, 10) || 0) % maxCount + maxCount) % maxCount;
+          const currentVirtualIdx = Math.round(-currentOffset / ITEM_HEIGHT);
+          const currentMod = ((currentVirtualIdx % maxCount) + maxCount) % maxCount;
+
+          // 最短回転方向（例：59→00は+1、00→59は-1）を計算
+          let diff = targetMod - currentMod;
+          if (diff > maxCount / 2) diff -= maxCount;
+          if (diff < -maxCount / 2) diff += maxCount;
+
+          if (animate) {
+            animateToVirtualIndex(currentVirtualIdx + diff, true);
+          } else {
+            cancelAnimationFrame(animFrameId);
+            const resetVirtualIdx = BASE_CYCLE_OFFSET + targetMod;
+            currentValue = targetMod;
+            hiddenInput.value = pad2(targetMod);
+            renderWheel(-resetVirtualIdx * ITEM_HEIGHT, true);
+          }
+          if (onValueChange) onValueChange(pad2(targetMod));
         }
       };
     }
 
     function initTimeSelectOptions() {
-      const hourEl = document.getElementById('wheel-hour');
-      const minEl = document.getElementById('wheel-minute');
-      hourWheelController = setupWheelColumn(hourEl, 24, updateModalDiffPreview);
-      minuteWheelController = setupWheelColumn(minEl, 60, updateModalDiffPreview);
-    }
+      hourWheelController = createDrumWheel({
+        viewportId: 'wheel-hour-viewport',
+        reelId: 'wheel-hour-reel',
+        hiddenInputId: 'select-hour',
+        maxCount: 24,
+        onValueChange: () => updateModalDiffPreview()
+      });
 
-    function getSelectedWheelTime() {
-      const h = hourWheelController ? hourWheelController.getValue() : 0;
-      const m = minuteWheelController ? minuteWheelController.getValue() : 0;
-      return `${pad2(h)}:${pad2(m)}`;
-    }
-
-    function setSelectedWheelTime(hhmm, smooth = false) {
-      let h = 0;
-      let m = 0;
-      if (hhmm && hhmm.includes(':')) {
-        const parts = hhmm.split(':').map(Number);
-        if (!isNaN(parts[0])) h = parts[0];
-        if (!isNaN(parts[1])) m = parts[1];
-      } else {
-        const now = new Date();
-        h = now.getHours();
-        m = now.getMinutes();
-      }
-      if (hourWheelController) hourWheelController.setValue(h, smooth);
-      if (minuteWheelController) minuteWheelController.setValue(m, smooth);
-      updateModalDiffPreview();
+      minuteWheelController = createDrumWheel({
+        viewportId: 'wheel-minute-viewport',
+        reelId: 'wheel-minute-reel',
+        hiddenInputId: 'select-minute',
+        maxCount: 60,
+        onValueChange: () => updateModalDiffPreview()
+      });
     }
 
     function updateModalDiffPreview() {
       if (!selectedStoreForModal) return;
-      const arrStr = getSelectedWheelTime();
-      const diff = calcDiffMinutes(selectedStoreForModal.scheduled, arrStr);
+      const h = document.getElementById('select-hour').value;
+      const m = document.getElementById('select-minute').value;
+      const arrivalStr = `${h}:${m}`;
+      const diff = calculateTimeDiffMinutes(selectedStoreForModal.scheduled, arrivalStr);
       const previewEl = document.getElementById('modal-diff-preview');
-      previewEl.textContent = formatDiffText(diff);
-      previewEl.className = 'text-sm font-extrabold tabular-nums';
+
+      if (!selectedStoreForModal.scheduled) {
+        previewEl.className = 'py-3 px-4 rounded-2xl bg-zinc-100/80 text-zinc-700 text-center font-extrabold text-xs tabular-nums transition-colors';
+        previewEl.textContent = `選択時刻：${arrivalStr}`;
+        return;
+      }
+
       if (diff >= 31) {
-        previewEl.classList.add('text-rose-600');
+        previewEl.className = 'py-3 px-4 rounded-2xl bg-rose-100/80 text-rose-900 text-center font-extrabold text-xs tabular-nums transition-colors';
+        previewEl.textContent = `⚠️ 延着警告（31分以上）：+${diff}分 遅れ`;
       } else if (diff > 0) {
-        previewEl.classList.add('text-amber-600');
+        previewEl.className = 'py-3 px-4 rounded-2xl bg-amber-100/80 text-amber-900 text-center font-extrabold text-xs tabular-nums transition-colors';
+        previewEl.textContent = `定時との差：+${diff}分 遅れ`;
+      } else if (diff < 0) {
+        previewEl.className = 'py-3 px-4 rounded-2xl bg-emerald-100/80 text-emerald-900 text-center font-extrabold text-xs tabular-nums transition-colors';
+        previewEl.textContent = `定時との差：${diff}分 早着（定時内）`;
       } else {
-        previewEl.classList.add('text-emerald-600');
+        previewEl.className = 'py-3 px-4 rounded-2xl bg-emerald-100/80 text-emerald-900 text-center font-extrabold text-xs tabular-nums transition-colors';
+        previewEl.textContent = '定時との差：±0分（定時ぴったり）';
       }
     }
 
-    function updateExtraRunButtonUI() {
-      const btn = document.getElementById('toggle-extra-btn');
-      if (modalExtraRunFlag) {
-        btn.textContent = '臨時便フラグ：ON';
-        btn.className = 'py-2.5 px-3 rounded-xl bg-purple-600 text-white font-extrabold text-xs border border-purple-700 shadow-sm active:scale-95 transition';
+    function setConnectionBadge(state, text) {
+      const pill = document.getElementById('gas-status-pill');
+      const dot = document.getElementById('gas-status-dot');
+      const label = document.getElementById('gas-status-text');
+      label.textContent = text;
+
+      if (state === 'ok') {
+        pill.className = 'inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100/80 text-emerald-800';
+        dot.className = 'w-1.5 h-1.5 rounded-full bg-emerald-500';
+      } else if (state === 'loading') {
+        pill.className = 'inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-100/80 text-blue-800';
+        dot.className = 'w-1.5 h-1.5 rounded-full bg-blue-500 animate-ping';
+      } else if (state === 'error') {
+        pill.className = 'inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-rose-100/80 text-rose-800';
+        dot.className = 'w-1.5 h-1.5 rounded-full bg-rose-500';
       } else {
-        btn.textContent = '臨時便フラグ：OFF';
-        btn.className = 'py-2.5 px-3 rounded-xl bg-purple-50 hover:bg-purple-100 text-purple-800 font-extrabold text-xs border border-purple-200 active:scale-95 transition';
+        pill.className = 'inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-slate-200/70 text-slate-600';
+        dot.className = 'w-1.5 h-1.5 rounded-full bg-amber-500';
       }
+    }
+
+    function updateHeaderAndTabs() {
+      isSingleCourseCar = (excelCarIndex === 14);
+      document.getElementById('fixed-car-num').textContent = pad2(excelCarIndex);
+      document.getElementById('fixed-car-label').textContent = `${excelCarIndex}号車`;
+      document.getElementById('delivery-date-label').textContent = getFormattedDeliveryDateWithDay();
+
+      document.getElementById('tab-course-1-code').textContent = `${course1Code}コース`;
+      document.getElementById('tab-course-2-code').textContent = `${course2Code}コース`;
+
+      const summaryEl = document.getElementById('fixed-course-summary');
+      const tabsGrid = document.getElementById('course-tabs-grid');
+      const tab1 = document.getElementById('tab-course-1');
+      const tab2 = document.getElementById('tab-course-2');
+
+      if (isSingleCourseCar) {
+        activeCourseType = '1';
+        summaryEl.textContent = `${course1Code}コース（1便専用）`;
+        tabsGrid.className = 'mt-3.5 bg-slate-200/70 p-1 rounded-2xl grid grid-cols-1';
+        tab2.classList.add('hidden');
+        tab1.className = 'py-2 px-3 rounded-xl text-xs font-extrabold transition-all flex items-center justify-center gap-1.5 bg-white text-slate-900 shadow-xs';
+      } else {
+        summaryEl.textContent = `${course1Code} / ${course2Code}コース`;
+        tabsGrid.className = 'mt-3.5 bg-slate-200/70 p-1 rounded-2xl grid grid-cols-2 gap-1';
+        tab2.classList.remove('hidden');
+        if (activeCourseType === '1') {
+          tab1.className = 'py-2 px-3 rounded-xl text-xs font-extrabold transition-all flex items-center justify-center gap-1.5 bg-white text-slate-900 shadow-xs';
+          tab2.className = 'py-2 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 text-slate-500 hover:text-slate-800';
+        } else {
+          tab1.className = 'py-2 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 text-slate-500 hover:text-slate-800';
+          tab2.className = 'py-2 px-3 rounded-xl text-xs font-extrabold transition-all flex items-center justify-center gap-1.5 bg-white text-slate-900 shadow-xs';
+        }
+      }
+
+      const activeCode = activeCourseType === '1' ? course1Code : course2Code;
+      const pastLocked = isPastDeliveryDate();
+      const routeSubHeader = document.getElementById('route-sub-header');
+      if (routeSubHeader) {
+        if (pastLocked) {
+          routeSubHeader.classList.add('hidden');
+        } else {
+          routeSubHeader.classList.remove('hidden');
+          document.getElementById('active-course-title').textContent = `ROUTE • ${activeCourseType}便（${activeCode}コース）`;
+        }
+      }
+    }
+
+    function renderStoreList() {
+      updateHeaderAndTabs();
+
+      const stores = activeCourseType === '1' ? course1Stores : course2Stores;
+      const container = document.getElementById('store-list-container');
+      container.innerHTML = '';
+
+      const logsForCourse = arrivalLogs.filter((l) => l.courseType === activeCourseType);
+      const doneCount = logsForCourse.length;
+      const totalCount = stores.length;
+
+      document.getElementById('progress-done').textContent = String(doneCount);
+      document.getElementById('progress-total').textContent = String(totalCount);
+      const pct = totalCount > 0 ? Math.round((doneCount / totalCount) * 100) : 0;
+      document.getElementById('progress-bar-fill').style.width = `${pct}%`;
+      document.getElementById('history-count').textContent = String(arrivalLogs.length);
+
+      const pastLocked = isPastDeliveryDate();
+      if (pastLocked) {
+        const lockBanner = document.createElement('div');
+        lockBanner.className = 'mb-3 rounded-2xl bg-amber-50 border border-amber-200 px-4 py-3 text-xs font-extrabold text-amber-900 flex items-center gap-2';
+        lockBanner.innerHTML = '<span>🔒 過去日のため閲覧専用です（入力・変更はできません）</span>';
+        container.appendChild(lockBanner);
+      }
+
+      if (stores.length === 0) {
+        const empty = document.createElement('div');
+        empty.className = 'bg-white rounded-3xl p-8 text-center border border-slate-100 text-xs font-bold text-slate-400';
+        empty.textContent = 'この便の店舗データはありません';
+        container.appendChild(empty);
+        return;
+      }
+
+      // 最初の未入力店舗（NEXT）を特定
+      let firstUnrecordedOrder = null;
+      for (let i = 0; i < stores.length; i++) {
+        const matched = logsForCourse.find((l) => Number(l.order) === Number(stores[i].order));
+        if (!matched) {
+          firstUnrecordedOrder = Number(stores[i].order);
+          break;
+        }
+      }
+
+      stores.forEach((store, idx) => {
+        const isLastStore = (idx === stores.length - 1);
+        const storeWithFlag = { ...store, isLastStore };
+        const existingLog = logsForCourse.find((l) => Number(l.order) === Number(store.order));
+        const isNext = (!pastLocked && !existingLog && Number(store.order) === firstUnrecordedOrder);
+
+        const card = document.createElement('div');
+        if (existingLog) {
+          card.className = 'bg-slate-50/65 rounded-3xl p-4 border border-slate-200/75 flex items-center justify-between gap-3 active:scale-[0.99] transition cursor-pointer';
+        } else if (isNext) {
+          card.className = 'bg-white rounded-3xl p-4 border-2 border-blue-500 shadow-[0_8px_24px_rgba(37,99,235,0.12)] flex items-center justify-between gap-3 active:scale-[0.99] transition cursor-pointer';
+        } else {
+          card.className = 'bg-white/90 rounded-3xl p-4 border border-slate-200/70 flex items-center justify-between gap-3 active:scale-[0.99] transition cursor-pointer';
+        }
+
+        // 左端の丸型番号／レ点サークルアイコン（緑の〇に緑のレ点／青の〇に青の数字）
+        const circleIcon = document.createElement('div');
+        if (existingLog) {
+          circleIcon.className = 'w-9 h-9 rounded-full bg-emerald-50/60 border-2 border-emerald-500 text-emerald-600 flex items-center justify-center shrink-0';
+          circleIcon.innerHTML = '<svg class="w-4 h-4 text-emerald-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
+        } else if (isNext) {
+          circleIcon.className = 'w-9 h-9 rounded-full bg-blue-50/70 border-2 border-blue-600 text-blue-600 font-black text-sm tabular-nums flex items-center justify-center shrink-0';
+          circleIcon.textContent = String(store.order);
+        } else {
+          circleIcon.className = 'w-9 h-9 rounded-full bg-slate-50 border-2 border-slate-200 text-slate-400 font-black text-sm tabular-nums flex items-center justify-center shrink-0';
+          circleIcon.textContent = String(store.order);
+        }
+
+        const left = document.createElement('div');
+        left.className = 'min-w-0 flex-1';
+
+        const topRow = document.createElement('div');
+        topRow.className = 'flex items-center gap-1.5 mb-0.5';
+
+        const numBadge = document.createElement('span');
+        numBadge.className = existingLog
+          ? 'text-[10px] font-black px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200/80 tabular-nums'
+          : isNext
+          ? 'text-[10px] font-black px-2 py-0.5 rounded-full bg-blue-600 text-white tabular-nums'
+          : 'text-[10px] font-black px-2 py-0.5 rounded-full bg-slate-100 text-slate-500 tabular-nums';
+        numBadge.textContent = isNext ? `NEXT • ${store.order}店舗目` : `${store.order}店舗目`;
+        topRow.appendChild(numBadge);
+
+        if (isLastStore) {
+          const lastBadge = document.createElement('span');
+          lastBadge.className = 'text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200/80';
+          lastBadge.textContent = '最終';
+          topRow.appendChild(lastBadge);
+        }
+
+        const nameEl = document.createElement('div');
+        nameEl.className = existingLog
+          ? 'text-base font-black text-slate-800 truncate'
+          : 'text-base font-black text-slate-900 truncate';
+        nameEl.textContent = store.name;
+
+        const subRow = document.createElement('div');
+        subRow.className = 'flex items-center gap-2.5 text-xs font-bold text-slate-400 mt-0.5 tabular-nums';
+        subRow.innerHTML = `<span>定時 ${store.scheduled || '--:--'}</span>` +
+          (store.avgArrival ? `<span class="text-blue-500/90">平均 ${store.avgArrival}</span>` : '');
+
+        left.appendChild(topRow);
+        left.appendChild(nameEl);
+        left.appendChild(subRow);
+
+        const right = document.createElement('div');
+        right.className = 'shrink-0 text-right';
+
+        if (existingLog) {
+          if (existingLog.isHoliday) {
+            right.innerHTML = `
+              <span class="inline-block px-3 py-1.5 rounded-2xl bg-amber-100 text-amber-900 text-xs font-black">休業</span>
+            `;
+          } else if (existingLog.isExtraRun) {
+            right.innerHTML = `
+              <span class="inline-block px-3 py-1.5 rounded-2xl bg-violet-100 text-violet-900 text-xs font-black">臨時便</span>
+            `;
+          } else {
+            const diff = Number(existingLog.diffMinutes || 0);
+            let badgeClass = 'bg-emerald-100/90 text-emerald-800';
+            if (diff >= 31) badgeClass = 'bg-rose-100 text-rose-800';
+            else if (diff > 0) badgeClass = 'bg-amber-100 text-amber-900';
+
+            right.innerHTML = `
+              <div class="text-base font-black text-slate-900 tabular-nums leading-tight">${existingLog.arrival}</div>
+              <span class="inline-block mt-0.5 px-2 py-0.5 rounded-full text-[10px] font-black tabular-nums ${badgeClass}">
+                ${formatDiffDisplay(diff)}
+              </span>
+            `;
+          }
+        } else if (pastLocked) {
+          right.innerHTML = `
+            <span class="inline-block px-3 py-1.5 rounded-2xl bg-slate-100 text-slate-400 text-xs font-extrabold">未入力</span>
+          `;
+        } else if (isNext) {
+          right.innerHTML = `
+            <span class="inline-block px-3.5 py-2 rounded-2xl bg-blue-600 text-white text-xs font-black shadow-xs">到着記録</span>
+          `;
+        } else {
+          right.innerHTML = `
+            <span class="inline-block px-3 py-1.5 rounded-2xl bg-slate-100 text-slate-600 text-xs font-extrabold">入力</span>
+          `;
+        }
+
+        card.appendChild(circleIcon);
+        card.appendChild(left);
+        card.appendChild(right);
+
+        card.addEventListener('click', () => {
+          if (isPastDeliveryDate()) {
+            showToast('🔒 過去日のため入力・変更はできません');
+            return;
+          }
+          // ③ 未入力店舗がある場合は次の店舗へ進めない（送信済みの再編集は許可）
+          if (!existingLog && firstUnrecordedOrder !== null && Number(store.order) > firstUnrecordedOrder) {
+            const pendingStore = stores.find((s) => Number(s.order) === firstUnrecordedOrder);
+            const pendingName = pendingStore ? pendingStore.name : `${firstUnrecordedOrder}店舗目`;
+            showToast(`⚠️ 先に「${pendingName}」の到着記録を入力してください`);
+            return;
+          }
+          openArrivalModal(storeWithFlag, existingLog);
+        });
+
+        container.appendChild(card);
+      });
     }
 
     function openArrivalModal(store, existingLog) {
       selectedStoreForModal = store;
-      modalExtraRunFlag = existingLog ? Boolean(existingLog.isExtraRun) : false;
-      updateExtraRunButtonUI();
-
-      document.getElementById('modal-store-order').textContent = `${store.order}店舗目`;
-      document.getElementById('modal-store-sched').textContent = store.scheduled ? `予定 ${store.scheduled}` : '予定なし';
+      const activeCode = activeCourseType === '1' ? course1Code : course2Code;
+      document.getElementById('modal-store-badge').textContent = `${activeCourseType}便（${activeCode}）• ${store.order}店舗目`;
       document.getElementById('modal-store-name').textContent = store.name;
+      document.getElementById('modal-scheduled-time').textContent = store.scheduled || '--:--';
 
-      const drSection = document.getElementById('dr-sent-section');
-      const drInput = document.getElementById('dr-sent-time-input');
+      const lastBadge = document.getElementById('modal-last-badge');
       if (store.isLastStore) {
-        drSection.classList.remove('hidden');
-        if (existingLog && existingLog.drSentTime) {
-          drInput.value = existingLog.drSentTime;
-        } else {
-          const now = new Date();
-          drInput.value = `${pad2(now.getHours())}:${pad2(now.getMinutes())}`;
-        }
+        lastBadge.classList.remove('hidden');
       } else {
-        drSection.classList.add('hidden');
+        lastBadge.classList.add('hidden');
       }
+
+      const avgWrap = document.getElementById('modal-avg-time-wrap');
+      const avgText = document.getElementById('modal-avg-time');
+      if (store.avgArrival) {
+        avgWrap.classList.remove('hidden');
+        avgText.textContent = store.avgArrival;
+      } else {
+        avgWrap.classList.add('hidden');
+      }
+
+      // ④ 初期表示時刻：既存修正ならその時刻、新規入力なら直近平均到着時間 → 予定定時 → 現在時刻の順でセット
+      let initialTimeStr = '';
+      if (existingLog && existingLog.arrival && existingLog.arrival.includes(':')) {
+        initialTimeStr = existingLog.arrival;
+      } else if (store.avgArrival && store.avgArrival.includes(':')) {
+        initialTimeStr = store.avgArrival;
+      } else if (store.scheduled && store.scheduled.includes(':')) {
+        initialTimeStr = store.scheduled;
+      } else {
+        const now = new Date();
+        initialTimeStr = `${pad2(now.getHours())}:${pad2(now.getMinutes())}`;
+      }
+
+      const [initH, initM] = initialTimeStr.split(':');
+      document.getElementById('select-hour').value = pad2(initH);
+      document.getElementById('select-minute').value = pad2(initM);
+      if (hourWheelController) hourWheelController.setValue(initH, false);
+      if (minuteWheelController) minuteWheelController.setValue(initM, false);
+      updateModalDiffPreview();
 
       const modal = document.getElementById('arrival-modal');
       modal.classList.remove('hidden');
       modal.classList.add('flex');
-
-      const initialTime = (existingLog && existingLog.arrival && existingLog.arrival.includes(':'))
-        ? existingLog.arrival
-        : `${pad2(new Date().getHours())}:${pad2(new Date().getMinutes())}`;
-      setTimeout(() => setSelectedWheelTime(initialTime, false), 20);
     }
 
     function closeArrivalModal() {
@@ -750,170 +1418,152 @@
       selectedStoreForModal = null;
     }
 
-    function openArrivalModalWithHistory(store, existingLog) {
-      openArrivalModal(store, existingLog);
-      try {
-        history.pushState({ modal: 'arrival' }, '');
-      } catch (e) {}
-    }
-
     function renderHistoryList() {
       const container = document.getElementById('history-list-container');
       container.innerHTML = '';
-      if (arrivalLogs.length === 0) {
-        container.innerHTML = '<div class="text-center py-8 text-xs font-bold text-slate-400">まだ本日の記録はありません</div>';
+
+      if (!arrivalLogs || arrivalLogs.length === 0) {
+        container.innerHTML = '<div class="text-center text-xs font-bold text-zinc-400 py-8">本日の送信履歴はまだありません</div>';
         return;
       }
 
-      arrivalLogs.forEach(log => {
-        const div = document.createElement('div');
-        div.className = 'p-3 rounded-2xl bg-slate-50 border border-slate-200 flex items-center justify-between gap-2';
-        div.innerHTML = `
+      arrivalLogs.forEach((log) => {
+        const row = document.createElement('div');
+        row.className = 'bg-white border border-zinc-200/80 rounded-2xl p-3 flex items-center justify-between gap-2';
+        const cCode = log.courseType === '1' ? course1Code : course2Code;
+        const statusStr = log.isHoliday
+          ? '<span class="text-amber-700 font-black">休業</span>'
+          : log.isExtraRun
+          ? '<span class="text-violet-700 font-black">臨時便</span>'
+          : `<span class="font-black text-zinc-900 tabular-nums">${log.arrival}</span> <span class="text-[11px] font-bold text-zinc-500">(${formatDiffDisplay(Number(log.diffMinutes || 0))})</span>`;
+
+        row.innerHTML = `
           <div class="min-w-0">
-            <div class="flex items-center gap-1.5">
-              <span class="px-1.5 py-0.5 rounded bg-slate-200 text-slate-700 text-[10px] font-extrabold">${log.courseType}便 #${log.order}</span>
-              <span class="text-xs font-extrabold text-slate-900 truncate">${log.storeName}</span>
-            </div>
-            <div class="text-[11px] text-slate-500 mt-0.5 tabular-nums">予定 ${log.scheduled || '--:--'} ${log.drSentTime ? `/ DR ${log.drSentTime}` : ''}</div>
+            <div class="text-[10px] font-extrabold text-zinc-400">${log.courseType}便（${cCode}）• ${log.order}店舗目</div>
+            <div class="text-sm font-black text-zinc-900 truncate">${log.storeName}</div>
           </div>
-          <div class="text-right shrink-0">
-            <div class="text-sm font-black text-blue-700 tabular-nums">${log.arrival}</div>
-            <div class="text-[11px] font-bold text-slate-500 tabular-nums">${log.diffDisplay || ''}</div>
-          </div>
+          <div class="text-right shrink-0 text-xs">${statusStr}</div>
         `;
-        container.appendChild(div);
+        container.appendChild(row);
       });
     }
 
-    function renderDispatchMemoBanner() {
-      const banner = document.getElementById('dispatch-memo-banner');
-      if (!activeDispatchMemo || !activeDispatchMemo.message) {
-        banner.classList.add('hidden');
+    async function handleRecordSubmission(mode) {
+      if (!selectedStoreForModal) return;
+      if (isPastDeliveryDate()) {
+        showToast('🔒 過去日のため入力・変更はできません');
         return;
       }
-      document.getElementById('dispatch-memo-time').textContent = activeDispatchMemo.sentAt || '';
-      document.getElementById('dispatch-memo-text').textContent = activeDispatchMemo.message;
-      banner.classList.remove('hidden');
-    }
 
-    function renderStoreList() {
-      renderDispatchMemoBanner();
+      triggerSendWhooshTone();
 
-      document.getElementById('tab-course-1-code').textContent = `(${course1Code})`;
-      document.getElementById('tab-course-2-code').textContent = `(${course2Code})`;
+      const store = selectedStoreForModal;
+      const isHoliday = (mode === 'holiday');
+      const isExtraRun = (mode === 'extra');
+      const h = document.getElementById('select-hour').value;
+      const m = document.getElementById('select-minute').value;
+      const arrivalStr = isHoliday ? '休業' : isExtraRun ? '臨時便' : `${h}:${m}`;
+      const diffMin = (isHoliday || isExtraRun) ? 0 : calculateTimeDiffMinutes(store.scheduled, arrivalStr);
+      const now = new Date();
+      const drSentTime = `${pad2(now.getHours())}:${pad2(now.getMinutes())}`;
 
-      const logs1 = arrivalLogs.filter(l => l.courseType === '1' && l.arrival && l.arrival !== '臨時便');
-      const logs2 = arrivalLogs.filter(l => l.courseType === '2' && l.arrival && l.arrival !== '臨時便');
-      document.getElementById('tab-course-1-progress').textContent = `${logs1.length}/${course1Stores.length}`;
-      document.getElementById('tab-course-2-progress').textContent = `${logs2.length}/${course2Stores.length}`;
-      document.getElementById('history-count-badge').textContent = String(arrivalLogs.length);
+      const logEntry = {
+        deliveryDate: getFormattedDeliveryDateKey(),
+        excelCarIndex: excelCarIndex,
+        courseType: activeCourseType,
+        storeOrder: store.order,
+        order: store.order,
+        storeName: store.name,
+        scheduled: store.scheduled,
+        arrivalTime: arrivalStr,
+        arrival: arrivalStr,
+        diffMinutes: diffMin,
+        diffDisplay: isHoliday ? '休業' : isExtraRun ? '臨時便' : formatDiffDisplay(diffMin),
+        isDelayed: (!isHoliday && !isExtraRun && diffMin >= 31),
+        isHoliday: isHoliday,
+        isExtraRun: isExtraRun,
+        isLastStore: Boolean(store.isLastStore),
+        drSentTime: store.isLastStore ? drSentTime : ''
+      };
 
-      const tab1 = document.getElementById('tab-course-1');
-      const tab2 = document.getElementById('tab-course-2');
-      if (activeCourse === '1') {
-        tab1.className = 'py-2 px-3 rounded-xl text-sm font-extrabold transition flex items-center justify-center gap-1.5 bg-blue-600 text-white shadow';
-        tab2.className = 'py-2 px-3 rounded-xl text-sm font-extrabold transition flex items-center justify-center gap-1.5 text-slate-300 hover:text-white';
-        document.getElementById('current-course-heading').textContent = `1便 (${course1Code}) 納品先一覧`;
+      arrivalLogs = arrivalLogs.filter(
+        (l) => !(l.courseType === activeCourseType && Number(l.order) === Number(store.order))
+      );
+      arrivalLogs.push(logEntry);
+
+      closeArrivalModal();
+
+      // ③ 1便の最終店舗を送信完了したら、2便がある号車の場合は自動的に2便へ切り替え
+      const switchedToCourse2 = (activeCourseType === '1' && Boolean(store.isLastStore) && !isSingleCourseCar && course2Stores.length > 0);
+      if (switchedToCourse2) {
+        activeCourseType = '2';
+      }
+
+      saveScheduleCacheToLocal();
+      renderStoreList();
+
+      if (switchedToCourse2) {
+        showToast(`🚚 1便完了！2便（${course2Code}コース）へ切り替えました`);
+      } else if (isHoliday) {
+        showToast(`${store.name} を「休業」として送信しました`);
+      } else if (isExtraRun) {
+        showToast(`${store.name} を「臨時便」として送信しました`);
       } else {
-        tab2.className = 'py-2 px-3 rounded-xl text-sm font-extrabold transition flex items-center justify-center gap-1.5 bg-blue-600 text-white shadow';
-        tab1.className = 'py-2 px-3 rounded-xl text-sm font-extrabold transition flex items-center justify-center gap-1.5 text-slate-300 hover:text-white';
-        document.getElementById('current-course-heading').textContent = `2便 (${course2Code}) 納品先一覧`;
+        showToast(`${store.name}（${arrivalStr}）を送信しました`);
       }
 
-      const stores = activeCourse === '1' ? course1Stores : course2Stores;
-      const courseLogs = arrivalLogs.filter(l => l.courseType === activeCourse);
-      const container = document.getElementById('store-list-container');
-      container.innerHTML = '';
-
-      if (stores.length === 0) {
-        container.innerHTML = '<div class="bg-white rounded-2xl p-6 text-center text-xs font-bold text-slate-400 border border-slate-200">この便の納品先データはありません</div>';
-        return;
-      }
-
-      let firstUnrecordedOrder = null;
-      for (const st of stores) {
-        const lg = courseLogs.find(l => Number(l.order) === Number(st.order));
-        if (!lg || !lg.arrival || lg.arrival === '臨時便') {
-          firstUnrecordedOrder = Number(st.order);
-          break;
+      if (gasWebAppUrl) {
+        try {
+          await fetch(gasWebAppUrl, {
+            method: 'POST',
+            mode: 'no-cors',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              action: 'recordArrival',
+              ...logEntry
+            })
+          });
+          // ① アプリを開いたまま操作している場合でも、送信完了後に最新スケジュール＆伝言を自動更新
+          setTimeout(() => {
+            fetchSheetData(true);
+          }, 900);
+        } catch (err) {
+          console.error('GAS送信エラー:', err);
         }
       }
+    }
 
-      stores.forEach((store, idx) => {
-        const isLastStore = idx === stores.length - 1;
-        const storeWithFlag = { ...store, isLastStore };
-        const existingLog = courseLogs.find(l => Number(l.order) === Number(store.order));
-        const isRecorded = existingLog && existingLog.arrival && existingLog.arrival !== '臨時便';
-        const isNextTarget = !isRecorded && Number(store.order) === firstUnrecordedOrder;
+    // ④ ローカルキャッシュ保存＆即座復元（体感読込み速度を0.01秒に高速化）
+    function getScheduleCacheKey() {
+      return `store_schedule_cache_${excelCarIndex}_${getFormattedDeliveryDateKey()}`;
+    }
 
-        const card = document.createElement('button');
-        card.type = 'button';
-        card.className = `w-full text-left rounded-2xl p-3.5 transition active:scale-[0.99] border flex items-center justify-between gap-3 shadow-sm ${
-          isRecorded
-            ? 'bg-slate-50 border-slate-200/90'
-            : isNextTarget
-              ? 'bg-white border-blue-500 ring-2 ring-blue-500/20'
-              : 'bg-white border-slate-200 opacity-85'
-        }`;
+    function saveScheduleCacheToLocal() {
+      try {
+        localStorage.setItem(getScheduleCacheKey(), JSON.stringify({
+          course1Code,
+          course2Code,
+          course1Stores,
+          course2Stores,
+          arrivalLogs
+        }));
+      } catch (e) {}
+    }
 
-        let statusHtml = '';
-        if (isRecorded) {
-          if (existingLog.isHoliday) {
-            statusHtml = `<span class="px-2.5 py-1 rounded-xl bg-amber-100 text-amber-800 text-xs font-extrabold border border-amber-300">休業</span>`;
-          } else {
-            const diffStr = existingLog.diffDisplay || '';
-            const isLate = diffStr.startsWith('+') && parseInt(diffStr, 10) >= 31;
-            statusHtml = `
-              <div class="text-right">
-                <div class="text-base font-black tabular-nums ${isLate ? 'text-rose-600' : 'text-emerald-600'}">${existingLog.arrival}</div>
-                <div class="text-[11px] font-extrabold tabular-nums ${isLate ? 'text-rose-500' : 'text-slate-500'}">${diffStr}</div>
-              </div>
-            `;
-          }
-        } else if (isNextTarget) {
-          statusHtml = `<span class="px-3 py-1.5 rounded-xl bg-blue-600 text-white text-xs font-extrabold shadow-sm">到着入力</span>`;
-        } else {
-          statusHtml = `<span class="px-2.5 py-1 rounded-xl bg-slate-100 text-slate-400 text-xs font-bold">待機中</span>`;
-        }
-
-        card.innerHTML = `
-          <div class="flex items-center gap-3 min-w-0">
-            <div class="w-8 h-8 rounded-xl flex items-center justify-center text-xs font-black shrink-0 ${
-              isRecorded
-                ? 'bg-emerald-100 text-emerald-700'
-                : isNextTarget
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-slate-100 text-slate-500'
-            }">
-              ${isRecorded ? '✓' : store.order}
-            </div>
-            <div class="min-w-0">
-              <div class="flex items-center gap-1.5">
-                <span class="text-sm font-extrabold text-slate-900 truncate">${store.name}</span>
-                ${isLastStore ? '<span class="px-1.5 py-0.2 rounded bg-indigo-100 text-indigo-700 text-[10px] font-extrabold shrink-0">最終</span>' : ''}
-                ${existingLog && existingLog.isExtraRun ? '<span class="px-1.5 py-0.2 rounded bg-purple-100 text-purple-700 text-[10px] font-extrabold shrink-0">臨時</span>' : ''}
-              </div>
-              <div class="flex items-center gap-2 mt-0.5 text-xs text-slate-500 tabular-nums">
-                <span>予定 <strong class="text-slate-700">${store.scheduled || '--:--'}</strong></span>
-                ${store.avgArrival ? `<span class="text-[11px] text-slate-400">(平均 ${store.avgArrival})</span>` : ''}
-              </div>
-            </div>
-          </div>
-          <div class="shrink-0">${statusHtml}</div>
-        `;
-
-        card.addEventListener('click', () => {
-          if (!existingLog && firstUnrecordedOrder !== null && Number(store.order) > firstUnrecordedOrder) {
-            const pendingStore = stores.find((s) => Number(s.order) === firstUnrecordedOrder);
-            const pendingName = pendingStore ? pendingStore.name : `${firstUnrecordedOrder}店舗目`;
-            showToast(`⚠️ 先に「${pendingName}」の到着記録を入力してください`);
-            return;
-          }
-          openArrivalModalWithHistory(storeWithFlag, existingLog);
-        });
-
-        container.appendChild(card);
-      });
+    function restoreScheduleCacheFromLocal() {
+      try {
+        const raw = localStorage.getItem(getScheduleCacheKey());
+        if (!raw) return false;
+        const cached = JSON.parse(raw);
+        if (cached.course1Code) course1Code = String(cached.course1Code);
+        if (cached.course2Code) course2Code = String(cached.course2Code);
+        if (Array.isArray(cached.course1Stores)) course1Stores = normalizeStoreArray(cached.course1Stores);
+        if (Array.isArray(cached.course2Stores)) course2Stores = normalizeStoreArray(cached.course2Stores);
+        if (Array.isArray(cached.arrivalLogs)) arrivalLogs = normalizeLogsArray(cached.arrivalLogs);
+        return true;
+      } catch (e) {
+        return false;
+      }
     }
 
     async function fetchSheetData(silent = false) {
@@ -923,11 +1573,7 @@
         return;
       }
 
-      if (isFetchingSheetData) {
-        return;
-      }
-      isFetchingSheetData = true;
-
+      // ④ 端末キャッシュがあれば即座に描画してから裏側で最新データへ同期
       const hasCached = restoreScheduleCacheFromLocal();
       if (hasCached) {
         renderStoreList();
@@ -936,43 +1582,25 @@
       }
 
       try {
-        let data = null;
-        let lastErr = null;
-        for (let attempt = 0; attempt < 2; attempt++) {
-          try {
-            const query = new URLSearchParams({
-              action: 'getSchedule',
-              excelCarIndex: String(excelCarIndex),
-              deliveryDate: getFormattedDeliveryDateKey(),
-              _t: String(Date.now())
-            });
-            const res = await fetch(`${gasWebAppUrl}?${query.toString()}`, {
-              method: 'GET',
-              credentials: 'omit',
-              cache: 'no-store',
-              redirect: 'follow'
-            });
-            if (!res.ok) {
-              throw new Error(`HTTP ${res.status}`);
-            }
-            const textData = await res.text();
-            try {
-              data = JSON.parse(textData);
-            } catch (parseErr) {
-              throw new Error('GAS権限エラー（アクセスできるユーザーを「全員」にしてください）');
-            }
-            lastErr = null;
-            break;
-          } catch (err) {
-            lastErr = err;
-            if (attempt === 0) {
-              await new Promise((r) => setTimeout(r, 1200));
-            }
-          }
+        const query = new URLSearchParams({
+          action: 'getSchedule',
+          excelCarIndex: String(excelCarIndex),
+          deliveryDate: getFormattedDeliveryDateKey(),
+          _t: String(Date.now())
+        });
+        const res = await fetch(`${gasWebAppUrl}?${query.toString()}`, {
+          method: 'GET',
+          redirect: 'follow'
+        });
+        if (!res.ok) {
+          throw new Error(`HTTP ${res.status}`);
         }
-
-        if (lastErr) {
-          throw lastErr;
+        const textData = await res.text();
+        let data = null;
+        try {
+          data = JSON.parse(textData);
+        } catch (parseErr) {
+          throw new Error('GAS権限エラー（アクセスできるユーザーを「全員」にしてください）');
         }
 
         if (data && data.status === 'ok') {
@@ -986,7 +1614,6 @@
             chatMessagesList = data.chatMessages;
           }
 
-          hasLoadedOnce = true;
           saveScheduleCacheToLocal();
           setConnectionBadge('ok', 'GAS接続済');
           if (!silent && !hasCached) {
@@ -1000,136 +1627,128 @@
             renderChatMessages();
           }
         } else {
-          if (!silent) {
-            setConnectionBadge('error', '読込エラー');
-            showToast(`エラー: ${(data && data.message) || '応答不正'}`);
-          }
+          setConnectionBadge('error', '読込エラー');
+          if (!silent) showToast(`エラー: ${(data && data.message) || '応答不正'}`);
         }
       } catch (e) {
-        if (!silent) {
-          setConnectionBadge('error', '通信エラー');
-          showToast(`通信失敗: ${e.message || e}`);
-        } else if (hasLoadedOnce || hasCached) {
-          setConnectionBadge('ok', 'GAS接続済');
-        }
-      } finally {
-        isFetchingSheetData = false;
+        setConnectionBadge('error', '通信エラー');
+        if (!silent) showToast(`通信失敗: ${e.message || e}`);
       }
       renderStoreList();
     }
 
-    async function sendArrivalRecordToGas(payload) {
-      if (!gasWebAppUrl) {
-        showToast('デモモードでローカル記録しました');
-        return true;
-      }
+    function updateClock() {
+      const now = new Date();
+      document.getElementById('clock-display').textContent = `${pad2(now.getHours())}:${pad2(now.getMinutes())}`;
+    }
+
+    // ★ネイティブアプリ風のホーム画面アイコン（iOS / Android対応）を動的生成
+    function generateAppIcons() {
       try {
-        await fetch(gasWebAppUrl, {
-          method: 'POST',
-          mode: 'no-cors',
-          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-          body: JSON.stringify(payload)
+        const size = 512;
+        const canvas = document.createElement('canvas');
+        canvas.width = size;
+        canvas.height = size;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return;
+
+        // 1. 鮮やかなコバルトブルー〜スカイシアンのグラデーション背景
+        const bgGrad = ctx.createLinearGradient(0, 0, size, size);
+        bgGrad.addColorStop(0, '#0284c7');
+        bgGrad.addColorStop(0.5, '#2563eb');
+        bgGrad.addColorStop(1, '#4f46e5');
+        ctx.fillStyle = bgGrad;
+        ctx.fillRect(0, 0, size, size);
+
+        // 2. 上部からの明るいハイライト（立体感）
+        const glow = ctx.createRadialGradient(size * 0.25, size * 0.15, 20, size * 0.35, size * 0.25, size * 0.75);
+        glow.addColorStop(0, 'rgba(125, 211, 252, 0.55)');
+        glow.addColorStop(1, 'rgba(56, 189, 248, 0)');
+        ctx.fillStyle = glow;
+        ctx.fillRect(0, 0, size, size);
+
+        // 3. アイコン枠ギリギリまで大きく描いた鮮明な配送トラック（白＋鮮やかアクセント）
+        // 荷台部分（大きくワイドに配置）
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.roundRect(36, 118, 286, 218, 30);
+        ctx.fill();
+
+        // 荷台の鮮やかなオレンジ・ゴールドのスピードライン装飾
+        ctx.fillStyle = '#f59e0b';
+        ctx.beginPath();
+        ctx.roundRect(36, 286, 286, 24, 0);
+        ctx.fill();
+
+        // 運転席キャビン（大きく存在感のあるシルエット）
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.moveTo(338, 166);
+        ctx.lineTo(416, 166);
+        ctx.quadraticCurveTo(444, 166, 454, 192);
+        ctx.lineTo(476, 250);
+        ctx.quadraticCurveTo(482, 266, 482, 284);
+        ctx.lineTo(482, 314);
+        ctx.quadraticCurveTo(482, 336, 460, 336);
+        ctx.lineTo(338, 336);
+        ctx.closePath();
+        ctx.fill();
+
+        // キャビンの大きなフロントウィンドウ（鮮やかなディープブルー抜き）
+        ctx.fillStyle = '#1d4ed8';
+        ctx.beginPath();
+        ctx.moveTo(358, 188);
+        ctx.lineTo(408, 188);
+        ctx.quadraticCurveTo(426, 188, 434, 204);
+        ctx.lineTo(452, 252);
+        ctx.lineTo(358, 252);
+        ctx.closePath();
+        ctx.fill();
+
+        // 4. 荷台中央に大きく配置した「定時チェック時計」バッジ（鮮やかなエメラルドグリーン）
+        ctx.fillStyle = '#10b981';
+        ctx.beginPath();
+        ctx.arc(179, 204, 64, 0, Math.PI * 2);
+        ctx.fill();
+
+        // 時計の白い縁取りと太い針
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 14;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        ctx.beginPath();
+        ctx.moveTo(179, 166);
+        ctx.lineTo(179, 204);
+        ctx.lineTo(210, 222);
+        ctx.stroke();
+
+        // 5. 大きなタイヤ（2輪）
+        [128, 398].forEach((wx) => {
+          // タイヤ外周（濃いネイビー）
+          ctx.fillStyle = '#0f172a';
+          ctx.beginPath();
+          ctx.arc(wx, 344, 56, 0, Math.PI * 2);
+          ctx.fill();
+
+          // ホイール（白）
+          ctx.fillStyle = '#ffffff';
+          ctx.beginPath();
+          ctx.arc(wx, 344, 34, 0, Math.PI * 2);
+          ctx.fill();
+
+          // センターキャップ（鮮やかなスカイブルー）
+          ctx.fillStyle = '#0284c7';
+          ctx.beginPath();
+          ctx.arc(wx, 344, 14, 0, Math.PI * 2);
+          ctx.fill();
         });
-        return true;
-      } catch (e) {
-        showToast('送信エラー：通信環境を確認してください');
-        return false;
-      }
-    }
 
-    function updateChatUnreadBadge() {
-      const badge = document.getElementById('chat-unread-badge');
-      const lastReadId = localStorage.getItem(STORAGE_KEYS.LAST_READ_CHAT_ID) || '';
-      const officeMsgs = chatMessagesList.filter(m => m.sender === 'office');
-      if (officeMsgs.length === 0) {
-        badge.classList.add('hidden');
-        return;
-      }
-      const latestOffice = officeMsgs[officeMsgs.length - 1];
-      if (latestOffice && latestOffice.id !== lastReadId && document.getElementById('chat-sub-screen').classList.contains('hidden')) {
-        badge.textContent = '1';
-        badge.classList.remove('hidden');
-      } else {
-        badge.classList.add('hidden');
-      }
-    }
-
-    function renderChatMessages() {
-      const container = document.getElementById('chat-messages-container');
-      container.innerHTML = '';
-
-      if (chatMessagesList.length === 0) {
-        container.innerHTML = '<div class="text-center py-10 text-xs font-bold text-slate-400">事務所との連絡履歴はまだありません</div>';
-        return;
-      }
-
-      const officeMsgs = chatMessagesList.filter(m => m.sender === 'office');
-      if (officeMsgs.length > 0) {
-        localStorage.setItem(STORAGE_KEYS.LAST_READ_CHAT_ID, officeMsgs[officeMsgs.length - 1].id);
-        updateChatUnreadBadge();
-      }
-
-      chatMessagesList.forEach(msg => {
-        const isDriver = msg.sender === 'driver';
-        const wrap = document.createElement('div');
-        wrap.className = `flex flex-col ${isDriver ? 'items-end' : 'items-start'}`;
-
-        const bubble = document.createElement('div');
-        bubble.className = `max-w-[82%] rounded-2xl px-3.5 py-2.5 text-sm shadow-sm ${
-          isDriver
-            ? 'bg-blue-600 text-white rounded-br-sm'
-            : 'bg-white text-slate-900 border border-slate-200 rounded-bl-sm'
-        }`;
-
-        let imgHtml = '';
-        if (msg.imageData) {
-          imgHtml = `<img src="${msg.imageData}" alt="添付画像" class="mt-1.5 rounded-xl max-h-48 object-contain bg-black/5" />`;
-        }
-
-        bubble.innerHTML = `
-          <div class="whitespace-pre-wrap break-words font-medium leading-relaxed">${msg.text || ''}</div>
-          ${imgHtml}
-        `;
-
-        const meta = document.createElement('div');
-        meta.className = 'text-[10px] text-slate-400 mt-1 px-1 tabular-nums';
-        meta.textContent = `${isDriver ? '送信' : '事務所'} ${msg.time || ''}`;
-
-        wrap.appendChild(bubble);
-        wrap.appendChild(meta);
-        container.appendChild(wrap);
-      });
-
-      container.scrollTop = container.scrollHeight;
-    }
-
-    function syncChatViewportHeight() {
-      const screen = document.getElementById('chat-sub-screen');
-      if (screen.classList.contains('hidden')) return;
-      if (window.visualViewport) {
-        screen.style.height = `${window.visualViewport.height}px`;
-        screen.style.top = `${window.visualViewport.offsetTop}px`;
-      }
-    }
-
-    function populateSettingsModal() {
-      const carSelect = document.getElementById('setting-car-select');
-      const qrSelect = document.getElementById('qr-target-car-select');
-      carSelect.innerHTML = '';
-      qrSelect.innerHTML = '';
-
-      for (let i = 0; i <= 34; i++) {
-        const label = i === 0 ? '0号車（運行管理用）' : `${i}号車`;
-        const opt1 = new Option(label, String(i));
-        const opt2 = new Option(label, String(i));
-        carSelect.add(opt1);
-        qrSelect.add(opt2);
-      }
-
-      carSelect.value = String(excelCarIndex);
-      qrSelect.value = String(excelCarIndex);
-      document.getElementById('setting-gas-url').value = gasWebAppUrl;
-      document.getElementById('setting-office-phone').value = officePhoneNumber;
+        const iconDataUrl = canvas.toDataURL('image/png');
+        const appleIcon = document.getElementById('app-apple-touch-icon');
+        const favIcon = document.getElementById('app-favicon');
+        if (appleIcon) appleIcon.href = iconDataUrl;
+        if (favIcon) favIcon.href = iconDataUrl;
+      } catch (e) {}
     }
 
     document.addEventListener('DOMContentLoaded', () => {
@@ -1139,185 +1758,268 @@
       updateClock();
       setInterval(updateClock, 10000);
 
-      if (gasWebAppUrl) {
-        setConnectionBadge('loading', '更新中...');
-      }
+      // 運行携帯（?admin=1）の場合のみ全号車切り替えUIを有効化（一般ドライバー画面は一切変化なし）
+      if (isAdminMode) {
+        document.getElementById('fixed-car-label').classList.add('hidden');
+        const switcherBtn = document.getElementById('admin-car-switcher-btn');
+        const switcherLabel = document.getElementById('admin-car-btn-label');
+        const carModal = document.getElementById('admin-car-modal');
+        const carGrid = document.getElementById('admin-car-grid');
 
-      const hasCached = restoreScheduleCacheFromLocal();
-      renderStoreList();
-      if (hasCached && gasWebAppUrl) {
-        setConnectionBadge('ok', 'GAS接続済');
-      }
+        switcherBtn.classList.remove('hidden');
+        switcherBtn.classList.add('inline-flex');
+        switcherLabel.textContent = `${excelCarIndex}号車`;
 
-      fetchSheetData(false);
-
-      setInterval(() => {
-        if (gasWebAppUrl && !document.hidden) {
-          fetchSheetData(true);
+        function renderAdminCarButtons() {
+          carGrid.innerHTML = '';
+          for (let c = 0; c <= 34; c++) {
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            const isSelected = (c === excelCarIndex);
+            btn.className = isSelected
+              ? 'py-2.5 rounded-xl bg-violet-600 text-white font-black text-sm shadow-xs tabular-nums'
+              : 'py-2.5 rounded-xl bg-white border border-zinc-200/90 text-zinc-800 active:bg-violet-50 font-extrabold text-sm tabular-nums';
+            btn.textContent = `${c}号車`;
+            btn.addEventListener('click', () => {
+              excelCarIndex = c;
+              localStorage.setItem('store_arrival_car_index', String(c));
+              switcherLabel.textContent = `${c}号車`;
+              course1Code = String(100 + excelCarIndex);
+              course2Code = String(200 + excelCarIndex);
+              carModal.classList.add('hidden');
+              carModal.classList.remove('flex');
+              fetchSheetData();
+            });
+            carGrid.appendChild(btn);
+          }
         }
-      }, 15000);
+
+        switcherBtn.addEventListener('click', () => {
+          renderAdminCarButtons();
+          carModal.classList.remove('hidden');
+          carModal.classList.add('flex');
+        });
+
+        document.getElementById('close-admin-car-modal-btn').addEventListener('click', () => {
+          carModal.classList.add('hidden');
+          carModal.classList.remove('flex');
+        });
+
+        carModal.addEventListener('click', (e) => {
+          if (e.target.id === 'admin-car-modal') {
+            carModal.classList.add('hidden');
+            carModal.classList.remove('flex');
+          }
+        });
+      }
+
+      document.addEventListener('click', (e) => {
+        const btn = e.target.closest('button');
+        if (!btn) return;
+        if (['submit-arrival-btn', 'submit-holiday-btn', 'submit-extra-btn'].includes(btn.id)) return;
+        triggerWaterDropTap();
+      }, true);
 
       document.getElementById('tab-course-1').addEventListener('click', () => {
-        activeCourse = '1';
+        activeCourseType = '1';
         renderStoreList();
       });
-
       document.getElementById('tab-course-2').addEventListener('click', () => {
-        activeCourse = '2';
+        if (isSingleCourseCar) return;
+        activeCourseType = '2';
         renderStoreList();
       });
 
-      let lastRefreshTap = 0;
-      document.getElementById('refresh-btn').addEventListener('click', () => {
-        const now = Date.now();
-        if (now - lastRefreshTap < 600) {
-          setConnectionBadge('loading', '更新中...');
-          showToast('アプリを再読み込みしています...');
-          setTimeout(() => window.location.reload(), 200);
+      document.getElementById('prev-day-btn').addEventListener('click', () => {
+        deliveryDate.setDate(deliveryDate.getDate() - 1);
+        fetchSheetData();
+      });
+      document.getElementById('next-day-btn').addEventListener('click', () => {
+        deliveryDate.setDate(deliveryDate.getDate() + 1);
+        fetchSheetData();
+      });
+
+      let lastReloadTapTime = 0;
+      document.getElementById('reload-sheet-btn').addEventListener('click', () => {
+        const nowTap = Date.now();
+        if (nowTap - lastReloadTapTime < 700) {
+          const url = new URL(window.location.href);
+          url.searchParams.set('v', String(nowTap));
+          window.location.replace(url.toString());
           return;
         }
-        lastRefreshTap = now;
-        const icon = document.getElementById('refresh-icon');
-        icon.classList.add('animate-spin');
-        setTimeout(() => icon.classList.remove('animate-spin'), 700);
-        fetchSheetData(false);
-      });
+        lastReloadTapTime = nowTap;
 
-      document.getElementById('office-call-link').addEventListener('click', (e) => {
-        if (!officePhoneNumber) {
-          e.preventDefault();
-          showToast('歯車（⚙）から運行携帯の電話番号を設定してください');
+        const reloadBtn = document.getElementById('reload-sheet-btn');
+        const reloadIcon = reloadBtn.querySelector('svg');
+        if (reloadIcon) {
+          reloadIcon.style.transition = 'transform 0.55s cubic-bezier(0.22, 1, 0.36, 1)';
+          reloadIcon.style.transform = 'rotate(360deg)';
         }
+        reloadBtn.classList.add('ring-2', 'ring-blue-400', 'bg-blue-50', 'text-blue-600');
+        fetchSheetData().then(() => {
+          updateChatUnreadBadge();
+          const badgeEl = document.getElementById('chat-unread-count');
+          if (badgeEl) {
+            badgeEl.style.transition = 'transform 0.25s ease';
+            badgeEl.style.transform = 'scale(1.35)';
+            setTimeout(() => { badgeEl.style.transform = 'scale(1)'; }, 250);
+          }
+          setTimeout(() => {
+            if (reloadIcon) {
+              reloadIcon.style.transition = 'none';
+              reloadIcon.style.transform = 'rotate(0deg)';
+            }
+            reloadBtn.classList.remove('ring-2', 'ring-blue-400', 'bg-blue-50', 'text-blue-600');
+          }, 550);
+        });
       });
 
       document.getElementById('close-arrival-modal-btn').addEventListener('click', closeArrivalModal);
+      document.getElementById('arrival-modal').addEventListener('click', (e) => {
+        if (e.target.id === 'arrival-modal') closeArrivalModal();
+      });
 
-      document.getElementById('set-now-time-btn').addEventListener('click', () => {
+      document.getElementById('set-now-btn').addEventListener('click', () => {
         const now = new Date();
-        setSelectedWheelTime(`${pad2(now.getHours())}:${pad2(now.getMinutes())}`, true);
+        const hVal = pad2(now.getHours());
+        const mVal = pad2(now.getMinutes());
+        document.getElementById('select-hour').value = hVal;
+        document.getElementById('select-minute').value = mVal;
+        if (hourWheelController) hourWheelController.setValue(hVal, true);
+        if (minuteWheelController) minuteWheelController.setValue(mVal, true);
+        updateModalDiffPreview();
       });
 
-      document.getElementById('minus-5min-btn').addEventListener('click', () => {
-        const [h, m] = getSelectedWheelTime().split(':').map(Number);
-        let total = h * 60 + m - 5;
-        if (total < 0) total += 1440;
-        setSelectedWheelTime(`${pad2(Math.floor(total / 60))}:${pad2(total % 60)}`, true);
+      document.getElementById('submit-arrival-btn').addEventListener('click', () => handleRecordSubmission('normal'));
+      document.getElementById('submit-holiday-btn').addEventListener('click', () => handleRecordSubmission('holiday'));
+      document.getElementById('submit-extra-btn').addEventListener('click', () => handleRecordSubmission('extra'));
+
+      document.getElementById('open-gas-modal-btn').addEventListener('click', () => {
+        document.getElementById('gas-url-input').value = gasWebAppUrl;
+        const phoneInput = document.getElementById('office-phone-input');
+        if (phoneInput) phoneInput.value = officePhoneNumber;
+        initQrCarSelector();
+        const modal = document.getElementById('gas-modal');
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
       });
 
-      document.getElementById('plus-5min-btn').addEventListener('click', () => {
-        const [h, m] = getSelectedWheelTime().split(':').map(Number);
-        const total = (h * 60 + m + 5) % 1440;
-        setSelectedWheelTime(`${pad2(Math.floor(total / 60))}:${pad2(total % 60)}`, true);
+      document.getElementById('close-gas-modal-btn').addEventListener('click', () => {
+        const modal = document.getElementById('gas-modal');
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
       });
 
-      document.getElementById('set-dr-now-btn').addEventListener('click', () => {
-        const now = new Date();
-        document.getElementById('dr-sent-time-input').value = `${pad2(now.getHours())}:${pad2(now.getMinutes())}`;
-      });
+      document.getElementById('save-gas-url-btn').addEventListener('click', () => {
+        gasWebAppUrl = document.getElementById('gas-url-input').value.trim();
+        localStorage.setItem('store_arrival_gas_url', gasWebAppUrl);
 
-      document.getElementById('toggle-extra-btn').addEventListener('click', () => {
-        modalExtraRunFlag = !modalExtraRunFlag;
-        updateExtraRunButtonUI();
-      });
-
-      document.getElementById('submit-arrival-btn').addEventListener('click', async () => {
-        if (!selectedStoreForModal) return;
-        const store = selectedStoreForModal;
-        const arrTime = getSelectedWheelTime();
-        const diffMin = calcDiffMinutes(store.scheduled, arrTime);
-        const diffDisp = diffMin === 0 ? '±0' : diffMin > 0 ? `+${diffMin}` : String(diffMin);
-        const drSentTime = store.isLastStore ? (document.getElementById('dr-sent-time-input').value || '') : '';
-
-        const payload = {
-          excelCarIndex,
-          courseType: activeCourse,
-          storeOrder: store.order,
-          storeName: store.name,
-          scheduledTime: store.scheduled,
-          arrivalTime: arrTime,
-          diffMinutes: diffMin,
-          isExtraRun: modalExtraRunFlag,
-          isLastStore: store.isLastStore,
-          drSentTime,
-          deliveryDate: getFormattedDeliveryDateKey()
-        };
-
-        arrivalLogs = arrivalLogs.filter(l => !(l.courseType === activeCourse && Number(l.order) === Number(store.order)));
-        arrivalLogs.push({
-          courseType: activeCourse,
-          order: store.order,
-          storeName: store.name,
-          scheduled: store.scheduled,
-          arrival: arrTime,
-          diffDisplay: diffDisp,
-          isExtraRun: modalExtraRunFlag,
-          drSentTime
-        });
-        saveScheduleCacheToLocal();
-        closeArrivalModal();
-        renderStoreList();
-        showToast(`✅ ${store.name} (${arrTime}) を送信しました`);
-
-        await sendArrivalRecordToGas(payload);
-      });
-
-      document.getElementById('submit-holiday-btn').addEventListener('click', async () => {
-        if (!selectedStoreForModal) return;
-        const store = selectedStoreForModal;
-        const drSentTime = store.isLastStore ? (document.getElementById('dr-sent-time-input').value || '') : '';
-
-        const payload = {
-          excelCarIndex,
-          courseType: activeCourse,
-          storeOrder: store.order,
-          storeName: store.name,
-          scheduledTime: store.scheduled,
-          arrivalTime: '休業',
-          isHoliday: true,
-          isLastStore: store.isLastStore,
-          drSentTime,
-          deliveryDate: getFormattedDeliveryDateKey()
-        };
-
-        arrivalLogs = arrivalLogs.filter(l => !(l.courseType === activeCourse && Number(l.order) === Number(store.order)));
-        arrivalLogs.push({
-          courseType: activeCourse,
-          order: store.order,
-          storeName: store.name,
-          scheduled: store.scheduled,
-          arrival: '休業',
-          isHoliday: true,
-          drSentTime
-        });
-        saveScheduleCacheToLocal();
-        closeArrivalModal();
-        renderStoreList();
-        showToast(`⚠️ ${store.name} を「休業」で記録しました`);
-
-        await sendArrivalRecordToGas(payload);
-      });
-
-      document.getElementById('confirm-memo-btn').addEventListener('click', async () => {
-        if (!activeDispatchMemo) return;
-        const memoId = activeDispatchMemo.memoId;
-        activeDispatchMemo = null;
-        renderDispatchMemoBanner();
-        showToast('事務所伝言を確認済にしました');
-
-        if (gasWebAppUrl) {
-          try {
-            await fetch(gasWebAppUrl, {
-              method: 'POST',
-              mode: 'no-cors',
-              headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-              body: JSON.stringify({
-                action: 'confirmMemo',
-                excelCarIndex,
-                memoId
-              })
-            });
-          } catch (e) {}
+        const phoneInput = document.getElementById('office-phone-input');
+        if (phoneInput) {
+          officePhoneNumber = phoneInput.value.trim();
+          localStorage.setItem('store_arrival_office_phone', officePhoneNumber);
+          updateOfficeCallLink();
         }
+
+        const modal = document.getElementById('gas-modal');
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+        fetchSheetData();
+      });
+
+      // ★電話マークタップ時の発信処理（未登録なら番号登録を案内）
+      document.getElementById('chat-office-call-link').addEventListener('click', (e) => {
+        const cleanNum = String(officePhoneNumber || '').replace(/[^0-9+*#]/g, '');
+        if (!cleanNum) {
+          e.preventDefault();
+          showToast('⚠️ 歯車（⚙）から運行携帯の電話番号を登録してください');
+        }
+      });
+
+      // ★QRコード発行＆配布URLコピー処理
+      let currentInviteUrl = '';
+      function initQrCarSelector() {
+        const sel = document.getElementById('qr-car-select');
+        if (sel.options.length === 0) {
+          const adminOpt = document.createElement('option');
+          adminOpt.value = 'admin';
+          adminOpt.textContent = '★運行管理用（全号車切替）';
+          sel.appendChild(adminOpt);
+          for (let c = 0; c <= 34; c++) {
+            const opt = document.createElement('option');
+            opt.value = String(c);
+            opt.textContent = `${c}号車`;
+            sel.appendChild(opt);
+          }
+        }
+        sel.value = isAdminMode ? 'admin' : String(excelCarIndex);
+        renderQrCodeForSelectedCar();
+      }
+
+      function renderQrCodeForSelectedCar() {
+        const inputUrl = document.getElementById('gas-url-input').value.trim() || gasWebAppUrl;
+        const phoneInput = document.getElementById('office-phone-input');
+        const currentPhone = (phoneInput ? phoneInput.value.trim() : '') || officePhoneNumber;
+        const targetVal = document.getElementById('qr-car-select').value;
+        const previewBox = document.getElementById('qr-preview-box');
+
+        if (!inputUrl) {
+          previewBox.classList.add('hidden');
+          return;
+        }
+
+        const basePageUrl = window.location.href.split('?')[0];
+        const isTargetAdmin = (targetVal === 'admin');
+        const shareObj = isTargetAdmin
+          ? { car: '0', admin: '1', gas: inputUrl }
+          : { car: targetVal, gas: inputUrl };
+        if (currentPhone) shareObj.tel = currentPhone;
+        const shareParams = new URLSearchParams(shareObj);
+        currentInviteUrl = `${basePageUrl}?${shareParams.toString()}`;
+
+        document.getElementById('qr-target-label').textContent = isTargetAdmin
+          ? '★運行管理用（全号車切替）QRコード'
+          : `${targetVal}号車 専用QRコード`;
+        document.getElementById('qr-url-text').textContent = currentInviteUrl;
+        const qrContainer = document.getElementById('qr-code-canvas');
+        qrContainer.innerHTML = '';
+        if (typeof QRCode !== 'undefined') {
+          new QRCode(qrContainer, {
+            text: currentInviteUrl,
+            width: 176,
+            height: 176,
+            colorDark: '#0f172a',
+            colorLight: '#ffffff',
+            correctLevel: QRCode.CorrectLevel.M
+          });
+        }
+        previewBox.classList.remove('hidden');
+      }
+
+      document.getElementById('generate-qr-btn').addEventListener('click', () => {
+        const inputUrl = document.getElementById('gas-url-input').value.trim();
+        if (!inputUrl) {
+          showToast('先に上の欄にGAS ウェブアプリURLを入力してください');
+          return;
+        }
+        gasWebAppUrl = inputUrl;
+        localStorage.setItem('store_arrival_gas_url', gasWebAppUrl);
+        renderQrCodeForSelectedCar();
+        showToast('専用QRコードを表示しました');
+      });
+
+      document.getElementById('qr-car-select').addEventListener('change', renderQrCodeForSelectedCar);
+
+      document.getElementById('copy-invite-url-btn').addEventListener('click', () => {
+        if (!currentInviteUrl) return;
+        const tempInput = document.createElement('input');
+        tempInput.value = currentInviteUrl;
+        document.body.appendChild(tempInput);
+        tempInput.select();
+        document.execCommand('copy');
+        document.body.removeChild(tempInput);
+        showToast('配布用URLをコピーしました');
       });
 
       document.getElementById('open-history-btn').addEventListener('click', () => {
@@ -1333,64 +2035,240 @@
         modal.classList.remove('flex');
       });
 
-      document.getElementById('open-settings-btn').addEventListener('click', () => {
-        populateSettingsModal();
-        const modal = document.getElementById('gas-modal');
-        modal.classList.remove('hidden');
-        modal.classList.add('flex');
-      });
+      // ★LINE風メッセージサブ画面の制御（確認しましたボタンはタップした瞬間にレ点が付いて送信）
+      function updateChatUnreadBadge() {
+        const badgeEl = document.getElementById('chat-unread-count');
+        if (!badgeEl) return;
+        const deletedIds = JSON.parse(localStorage.getItem('store_deleted_chat_ids') || '[]');
+        const list = Array.isArray(chatMessagesList) ? chatMessagesList : [];
+        let unread = list.filter((m) => {
+          const msgKey = String(m.id || `${m.sender}_${m.time}_${m.text}`);
+          if (deletedIds.includes(msgKey)) return false;
+          const isFromOffice = String(m.sender || '').trim() === 'office';
+          const isUnconfirmed = !m.confirmed && String(m.confirmed) !== 'true' && String(m.confirmed) !== '確認済';
+          return isFromOffice && isUnconfirmed;
+        }).length;
+        if (unread === 0 && activeDispatchMemo && activeDispatchMemo.message) {
+          const memoKey = String(activeDispatchMemo.memoId || `office_${activeDispatchMemo.sentAt}_${activeDispatchMemo.message}`);
+          if (!deletedIds.includes(memoKey)) {
+            unread = 1;
+          }
+        }
+        badgeEl.textContent = String(unread);
+        if (unread > 0) {
+          badgeEl.classList.add('animate-bounce');
+        } else {
+          badgeEl.classList.remove('animate-bounce');
+        }
+      }
 
-      document.getElementById('close-gas-modal-btn').addEventListener('click', () => {
-        const modal = document.getElementById('gas-modal');
+      function renderChatMessages() {
+        const container = document.getElementById('chat-messages-container');
+        if (!container) return;
+        container.innerHTML = '';
+
+        // タイムライン上部中央にLINE風の日付ピルバッジを表示
+        const datePillWrap = document.createElement('div');
+        datePillWrap.className = 'flex justify-center my-1';
+        const datePill = document.createElement('span');
+        datePill.className = 'px-3.5 py-1 rounded-full bg-slate-900/35 text-white text-xs font-extrabold tracking-wide backdrop-blur-xs';
+        datePill.textContent = getFormattedDeliveryDateWithDay();
+        datePillWrap.appendChild(datePill);
+        container.appendChild(datePillWrap);
+
+        const deletedIds = JSON.parse(localStorage.getItem('store_deleted_chat_ids') || '[]');
+        const list = (Array.isArray(chatMessagesList) ? [...chatMessagesList] : [])
+          .filter((m) => !deletedIds.includes(String(m.id || `${m.sender}_${m.time}_${m.text}`)));
+
+        if (list.length === 0 && activeDispatchMemo && activeDispatchMemo.message) {
+          const memoKey = String(activeDispatchMemo.memoId || `office_${activeDispatchMemo.sentAt}_${activeDispatchMemo.message}`);
+          if (!deletedIds.includes(memoKey)) {
+            list.push({
+              id: activeDispatchMemo.memoId,
+              sender: 'office',
+              text: activeDispatchMemo.message,
+              time: activeDispatchMemo.sentAt || '',
+              confirmed: false,
+              imageData: ''
+            });
+          }
+        }
+
+        if (list.length === 0) {
+          const emptyMsg = document.createElement('div');
+          emptyMsg.className = 'text-center text-base font-extrabold text-slate-600 py-12';
+          emptyMsg.textContent = '事務所とのメッセージ履歴はまだありません';
+          container.appendChild(emptyMsg);
+          return;
+        }
+
+        list.forEach((msg) => {
+          const isOffice = String(msg.sender) === 'office';
+          const msgKey = String(msg.id || `${msg.sender}_${msg.time}_${msg.text}`);
+          const wrap = document.createElement('div');
+          wrap.className = isOffice ? 'flex flex-col items-start max-w-[88%]' : 'flex flex-col items-end self-end max-w-[88%] ml-auto';
+
+          const senderLabel = document.createElement('div');
+          senderLabel.className = 'text-xs font-extrabold text-slate-600 mb-1 px-1';
+          senderLabel.textContent = isOffice ? '事務所' : `${excelCarIndex}号車`;
+          wrap.appendChild(senderLabel);
+
+          const rowLine = document.createElement('div');
+          rowLine.className = isOffice ? 'flex items-end gap-1.5 max-w-full' : 'flex items-end justify-end gap-1.5 max-w-full';
+
+          const bubble = document.createElement('div');
+          bubble.className = isOffice
+            ? 'line-bubble-office bg-white border border-slate-200 px-3.5 py-2.5 shadow-xs space-y-2 select-none'
+            : 'line-bubble-driver bg-blue-600 text-white px-3.5 py-2.5 shadow-xs space-y-2 select-none';
+
+          // 長押し（650ms）で削除確認モーダルを表示
+          let pressTimer = null;
+          const startLongPress = () => {
+            pressTimer = setTimeout(() => {
+              if (navigator.vibrate) navigator.vibrate(25);
+              openChatDeleteConfirm(msgKey, msg.text || '（添付写真）');
+            }, 650);
+          };
+          const cancelLongPress = () => {
+            if (pressTimer) {
+              clearTimeout(pressTimer);
+              pressTimer = null;
+            }
+          };
+          bubble.addEventListener('touchstart', startLongPress, { passive: true });
+          bubble.addEventListener('touchend', cancelLongPress);
+          bubble.addEventListener('touchmove', cancelLongPress);
+          bubble.addEventListener('mousedown', startLongPress);
+          bubble.addEventListener('mouseup', cancelLongPress);
+          bubble.addEventListener('mouseleave', cancelLongPress);
+
+          if (msg.text) {
+            const p = document.createElement('div');
+            p.className = 'text-base font-bold leading-relaxed whitespace-pre-wrap break-words';
+            p.textContent = msg.text;
+            bubble.appendChild(p);
+          }
+
+          if (msg.imageData) {
+            const img = document.createElement('img');
+            img.src = msg.imageData;
+            img.alt = '添付写真';
+            img.className = 'max-w-full max-h-52 rounded-xl border border-slate-200/60 object-cover';
+            bubble.appendChild(img);
+          }
+
+          if (isOffice) {
+            const okBtn = document.createElement('button');
+            okBtn.type = 'button';
+            if (msg.confirmed) {
+              okBtn.className = 'w-full py-1.5 px-3.5 rounded-full bg-slate-100 border border-slate-200 text-slate-700 font-black text-xs flex items-center justify-between gap-2';
+              okBtn.innerHTML = '<span>確認しました。</span><span class="px-2.5 py-0.5 rounded-full bg-emerald-500 text-white text-[11px] font-black tracking-wider">OK</span>';
+            } else {
+              okBtn.className = 'w-full py-1.5 px-3.5 rounded-full bg-rose-50 hover:bg-rose-100/80 active:scale-95 border border-rose-200 text-rose-900 font-black text-xs flex items-center justify-between gap-2 shadow-2xs transition';
+              okBtn.innerHTML = '<span>確認しました。</span><span class="ok-pill px-2.5 py-0.5 rounded-full bg-slate-300 text-slate-600 text-[11px] font-black tracking-wider transition-colors duration-200">OK</span>';
+              okBtn.addEventListener('click', () => {
+                if (okBtn.dataset.sending === '1') return;
+                okBtn.dataset.sending = '1';
+
+                const okPill = okBtn.querySelector('.ok-pill');
+                if (okPill) {
+                  okPill.classList.remove('bg-slate-300', 'text-slate-600');
+                  okPill.classList.add('bg-emerald-500', 'text-white', 'scale-110');
+                }
+                okBtn.classList.remove('bg-rose-50', 'border-rose-200', 'text-rose-900');
+                okBtn.classList.add('bg-emerald-50', 'border-emerald-300', 'text-emerald-900');
+                triggerDialSelectChime();
+
+                setTimeout(async () => {
+                  msg.confirmed = true;
+                  if (activeDispatchMemo && (!msg.id || activeDispatchMemo.memoId === msg.id)) {
+                    activeDispatchMemo = null;
+                  }
+                  updateChatUnreadBadge();
+                  renderChatMessages();
+                  showToast('事務所へ「確認しました」を送信しました');
+                  if (gasWebAppUrl) {
+                    try {
+                      await fetch(gasWebAppUrl, {
+                        method: 'POST',
+                        mode: 'no-cors',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                          action: 'confirmMemo',
+                          excelCarIndex: excelCarIndex,
+                          memoId: msg.id || ''
+                        })
+                      });
+                    } catch (e) {}
+                  }
+                }, 380);
+              });
+            }
+            bubble.appendChild(okBtn);
+          }
+
+          const timeTag = document.createElement('span');
+          timeTag.className = 'text-[11px] font-extrabold text-slate-600 tabular-nums shrink-0 pb-0.5';
+          timeTag.textContent = msg.time || '';
+
+          if (isOffice) {
+            rowLine.appendChild(bubble);
+            rowLine.appendChild(timeTag);
+          } else {
+            rowLine.appendChild(timeTag);
+            rowLine.appendChild(bubble);
+          }
+
+          wrap.appendChild(rowLine);
+          container.appendChild(wrap);
+        });
+
+        container.scrollTop = container.scrollHeight;
+      }
+
+      let pendingDeleteMsgKey = '';
+      function openChatDeleteConfirm(msgKey, previewText) {
+        pendingDeleteMsgKey = msgKey;
+        const modal = document.getElementById('chat-delete-modal');
+        const previewEl = document.getElementById('chat-delete-preview');
+        if (previewEl) previewEl.textContent = previewText;
+        if (modal) {
+          modal.classList.remove('hidden');
+          modal.classList.add('flex');
+        }
+      }
+
+      document.getElementById('cancel-chat-delete-btn').addEventListener('click', () => {
+        pendingDeleteMsgKey = '';
+        const modal = document.getElementById('chat-delete-modal');
         modal.classList.add('hidden');
         modal.classList.remove('flex');
       });
 
-      document.getElementById('save-gas-settings-btn').addEventListener('click', () => {
-        const newCar = Number(document.getElementById('setting-car-select').value);
-        const newUrl = document.getElementById('setting-gas-url').value.trim();
-        const newPhone = document.getElementById('setting-office-phone').value.trim();
-
-        excelCarIndex = newCar;
-        gasWebAppUrl = newUrl;
-        officePhoneNumber = newPhone;
-
-        localStorage.setItem(STORAGE_KEYS.CAR_INDEX, String(excelCarIndex));
-        localStorage.setItem(STORAGE_KEYS.GAS_URL, gasWebAppUrl);
-        localStorage.setItem(STORAGE_KEYS.OFFICE_PHONE, officePhoneNumber);
-
-        course1Code = String(100 + excelCarIndex);
-        course2Code = String(200 + excelCarIndex);
-        document.getElementById('header-car-label').textContent = excelCarIndex === 0 ? '0号車(管理)' : `${excelCarIndex}号車`;
-        updateOfficeCallLink();
-
-        const modal = document.getElementById('gas-modal');
+      document.getElementById('confirm-chat-delete-btn').addEventListener('click', () => {
+        if (pendingDeleteMsgKey) {
+          const deletedIds = JSON.parse(localStorage.getItem('store_deleted_chat_ids') || '[]');
+          if (!deletedIds.includes(pendingDeleteMsgKey)) {
+            deletedIds.push(pendingDeleteMsgKey);
+            localStorage.setItem('store_deleted_chat_ids', JSON.stringify(deletedIds));
+          }
+          chatMessagesList = (Array.isArray(chatMessagesList) ? chatMessagesList : []).filter(
+            (m) => String(m.id || `${m.sender}_${m.time}_${m.text}`) !== pendingDeleteMsgKey
+          );
+          if (activeDispatchMemo) {
+            const memoKey = String(activeDispatchMemo.memoId || `office_${activeDispatchMemo.sentAt}_${activeDispatchMemo.message}`);
+            if (memoKey === pendingDeleteMsgKey) {
+              activeDispatchMemo = null;
+            }
+          }
+          updateChatUnreadBadge();
+          renderChatMessages();
+          showToast('メッセージを削除しました');
+        }
+        pendingDeleteMsgKey = '';
+        const modal = document.getElementById('chat-delete-modal');
         modal.classList.add('hidden');
         modal.classList.remove('flex');
-
-        hasLoadedOnce = false;
-        fetchSheetData(false);
-      });
-
-      document.getElementById('generate-qr-btn').addEventListener('click', () => {
-        const targetCar = document.getElementById('qr-target-car-select').value;
-        const currentUrlInput = document.getElementById('setting-gas-url').value.trim() || gasWebAppUrl;
-        const currentPhoneInput = document.getElementById('setting-office-phone').value.trim() || officePhoneNumber;
-
-        const baseUrl = `${window.location.origin}${window.location.pathname}`;
-        const qrParams = new URLSearchParams();
-        qrParams.set('car', targetCar);
-        if (currentUrlInput) qrParams.set('gas', currentUrlInput);
-        if (currentPhoneInput) qrParams.set('phone', currentPhoneInput);
-
-        const fullShareUrl = `${baseUrl}?${qrParams.toString()}`;
-        const qrApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=${encodeURIComponent(fullShareUrl)}`;
-
-        document.getElementById('qr-code-img').src = qrApiUrl;
-        document.getElementById('qr-target-label').textContent = targetCar === '0' ? '0号車（運行管理用）QRコード' : `${targetCar}号車 専用QRコード`;
-        const area = document.getElementById('qr-display-area');
-        area.classList.remove('hidden');
-        area.classList.add('flex');
       });
 
       document.getElementById('open-chat-screen-btn').addEventListener('click', () => {
@@ -1400,61 +2278,22 @@
         screen.classList.remove('hidden');
         screen.classList.add('flex');
         syncChatViewportHeight();
-        try {
-          history.pushState({ screen: 'chat' }, '');
-        } catch (e) {}
         if (gasWebAppUrl) fetchSheetData(true);
       });
 
-      function closeChatSubScreen(fromPopState = false) {
+      document.getElementById('close-chat-screen-btn').addEventListener('click', () => {
         const screen = document.getElementById('chat-sub-screen');
-        if (screen.classList.contains('hidden')) return;
         screen.classList.add('hidden');
         screen.classList.remove('flex');
         screen.style.height = '';
         screen.style.top = '';
-        if (!fromPopState && history.state && history.state.screen === 'chat') {
-          try {
-            history.back();
-          } catch (e) {}
-        }
-      }
-
-      document.getElementById('close-chat-screen-btn').addEventListener('click', () => {
-        closeChatSubScreen(false);
       });
 
-      window.addEventListener('popstate', () => {
-        const chatScreen = document.getElementById('chat-sub-screen');
-        if (chatScreen && !chatScreen.classList.contains('hidden')) {
-          closeChatSubScreen(true);
-          return;
-        }
-        const arrivalModal = document.getElementById('arrival-modal');
-        if (arrivalModal && !arrivalModal.classList.contains('hidden')) {
-          closeArrivalModal();
-          return;
-        }
-        const gasModal = document.getElementById('gas-modal');
-        if (gasModal && !gasModal.classList.contains('hidden')) {
-          gasModal.classList.add('hidden');
-          gasModal.classList.remove('flex');
-          return;
-        }
-        const historyModal = document.getElementById('history-modal');
-        if (historyModal && !historyModal.classList.contains('hidden')) {
-          historyModal.classList.add('hidden');
-          historyModal.classList.remove('flex');
-          return;
-        }
+      document.getElementById('chat-camera-btn').addEventListener('click', () => {
+        document.getElementById('chat-camera-input').click();
       });
 
-      document.getElementById('refresh-chat-btn').addEventListener('click', () => {
-        fetchSheetData(true);
-        showToast('メッセージを更新しました');
-      });
-
-      document.getElementById('chat-image-input').addEventListener('change', (e) => {
+      document.getElementById('chat-camera-input').addEventListener('change', (e) => {
         const file = e.target.files && e.target.files[0];
         if (!file) return;
         const reader = new FileReader();
@@ -1466,82 +2305,159 @@
             let w = img.width;
             let h = img.height;
             if (w > maxDim || h > maxDim) {
-              if (w > h) {
-                h = Math.round((h * maxDim) / w);
-                w = maxDim;
-              } else {
-                w = Math.round((w * maxDim) / h);
-                h = maxDim;
-              }
+              if (w > h) { h = Math.round(h * maxDim / w); w = maxDim; }
+              else { w = Math.round(w * maxDim / h); h = maxDim; }
             }
             canvas.width = w;
             canvas.height = h;
-            const ctx = canvas.getContext('2d');
-            ctx.drawImage(img, 0, 0, w, h);
-            pendingChatImageBase64 = canvas.toDataURL('image/jpeg', 0.72);
-            document.getElementById('chat-image-preview-thumb').src = pendingChatImageBase64;
-            document.getElementById('chat-image-preview-bar').classList.remove('hidden');
+            canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+            pendingChatImageBase64 = canvas.toDataURL('image/jpeg', 0.65);
+            document.getElementById('chat-photo-thumb').src = pendingChatImageBase64;
+            document.getElementById('chat-photo-preview-bar').classList.remove('hidden');
           };
           img.src = ev.target.result;
         };
         reader.readAsDataURL(file);
       });
 
-      document.getElementById('remove-chat-image-btn').addEventListener('click', () => {
+      document.getElementById('chat-remove-photo-btn').addEventListener('click', () => {
         pendingChatImageBase64 = '';
-        document.getElementById('chat-image-input').value = '';
-        document.getElementById('chat-image-preview-bar').classList.add('hidden');
+        document.getElementById('chat-camera-input').value = '';
+        document.getElementById('chat-photo-preview-bar').classList.add('hidden');
       });
 
-      document.getElementById('send-chat-btn').addEventListener('click', async () => {
-        const input = document.getElementById('chat-message-input');
-        const text = input.value.trim();
+      async function sendDriverChatMessage() {
+        const inputEl = document.getElementById('chat-message-input');
+        const text = inputEl.value.trim();
         if (!text && !pendingChatImageBase64) return;
-
+        triggerSendWhooshTone();
         const now = new Date();
         const timeStr = `${pad2(now.getHours())}:${pad2(now.getMinutes())}`;
-        const imgCopy = pendingChatImageBase64;
-
+        const imgToSend = pendingChatImageBase64;
         chatMessagesList.push({
-          id: `LOCAL_${Date.now()}`,
+          id: 'DRV_LOCAL_' + Date.now(),
           sender: 'driver',
-          text,
+          text: text,
           time: timeStr,
           confirmed: true,
-          imageData: imgCopy
+          imageData: imgToSend
         });
-
-        input.value = '';
+        inputEl.value = '';
         pendingChatImageBase64 = '';
-        document.getElementById('chat-image-input').value = '';
-        document.getElementById('chat-image-preview-bar').classList.add('hidden');
+        document.getElementById('chat-camera-input').value = '';
+        document.getElementById('chat-photo-preview-bar').classList.add('hidden');
         renderChatMessages();
-
+        showToast('事務所へメッセージを送信しました');
         if (gasWebAppUrl) {
           try {
             await fetch(gasWebAppUrl, {
               method: 'POST',
               mode: 'no-cors',
-              headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+              headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
                 action: 'sendDriverChat',
-                excelCarIndex,
+                excelCarIndex: excelCarIndex,
                 message: text,
-                imageData: imgCopy,
+                imageData: imgToSend,
                 sentAt: timeStr
               })
             });
-          } catch (e) {}
+          } catch (err) {}
+        }
+      }
+
+      document.getElementById('chat-send-btn').addEventListener('click', sendDriverChatMessage);
+      document.getElementById('chat-message-input').addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && !e.isComposing) {
+          e.preventDefault();
+          sendDriverChatMessage();
         }
       });
 
+      // 縦型マイクアイコン押下時の音声入力処理
+      const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+      let activeRecognition = null;
+      document.getElementById('chat-mic-btn').addEventListener('click', () => {
+        const micBtn = document.getElementById('chat-mic-btn');
+        const inputEl = document.getElementById('chat-message-input');
+        if (!SpeechRec) {
+          inputEl.focus();
+          showToast('キーボード右下の🎤マークから音声入力できます');
+          return;
+        }
+        if (activeRecognition) {
+          activeRecognition.stop();
+          activeRecognition = null;
+          micBtn.classList.remove('bg-rose-500', 'text-white', 'animate-pulse');
+          micBtn.classList.add('bg-slate-100', 'text-slate-700');
+          return;
+        }
+        try {
+          const rec = new SpeechRec();
+          rec.lang = 'ja-JP';
+          rec.interimResults = false;
+          rec.maxAlternatives = 1;
+          activeRecognition = rec;
+          micBtn.classList.remove('bg-slate-100', 'text-slate-700');
+          micBtn.classList.add('bg-rose-500', 'text-white', 'animate-pulse');
+          showToast('🎤 お話しください...');
+
+          rec.onresult = (event) => {
+            const transcript = event.results[0][0].transcript;
+            if (transcript) {
+              inputEl.value = inputEl.value ? `${inputEl.value} ${transcript}` : transcript;
+            }
+          };
+          rec.onerror = () => {
+            showToast('音声を認識できませんでした');
+          };
+          rec.onend = () => {
+            activeRecognition = null;
+            micBtn.classList.remove('bg-rose-500', 'text-white', 'animate-pulse');
+            micBtn.classList.add('bg-slate-100', 'text-slate-700');
+          };
+          rec.start();
+        } catch (err) {
+          inputEl.focus();
+        }
+      });
+
+      // スマホでキーボードを開いたときに入力欄の下1/3が隠れないよう画面高さを自動追従
+      function syncChatViewportHeight() {
+        const screen = document.getElementById('chat-sub-screen');
+        if (!screen || screen.classList.contains('hidden')) return;
+        if (window.visualViewport) {
+          screen.style.height = `${window.visualViewport.height}px`;
+          screen.style.top = `${window.visualViewport.offsetTop}px`;
+        }
+        const container = document.getElementById('chat-messages-container');
+        if (container) container.scrollTop = container.scrollHeight;
+      }
       if (window.visualViewport) {
         window.visualViewport.addEventListener('resize', syncChatViewportHeight);
         window.visualViewport.addEventListener('scroll', syncChatViewportHeight);
       }
-    });
+      document.getElementById('chat-message-input').addEventListener('focus', () => {
+        setTimeout(syncChatViewportHeight, 120);
+        setTimeout(syncChatViewportHeight, 350);
+      });
+      document.getElementById('chat-message-input').addEventListener('blur', () => {
+        const screen = document.getElementById('chat-sub-screen');
+        if (screen) {
+          screen.style.height = '';
+          screen.style.top = '';
+        }
+      });
 
-    initFromUrlOrStorage();
+      fetchSheetData();
+
+      // ★アプリを開いている間、15秒ごとに事務所からの新着メッセージを自動チェック
+      setInterval(() => {
+        if (gasWebAppUrl && document.visibilityState === 'visible') {
+          fetchSheetData(true);
+        }
+      }, 15000);
+    });
   </script>
 </body>
 </html>
