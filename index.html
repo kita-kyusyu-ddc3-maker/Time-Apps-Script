@@ -719,6 +719,7 @@
 
     // Web Audio API サウンド
     let sharedAudioCtx = null;
+    let audioUnlocked = false;
     function getAudioCtx() {
       if (!sharedAudioCtx) {
         const AudioCtx = window.AudioContext || window.webkitAudioContext;
@@ -728,6 +729,25 @@
         sharedAudioCtx.resume().catch(() => {});
       }
       return sharedAudioCtx;
+    }
+
+    function unlockAudioOnFirstGesture() {
+      if (audioUnlocked) return;
+      try {
+        const ctx = getAudioCtx();
+        if (!ctx) return;
+        if (ctx.state === 'suspended') {
+          ctx.resume().catch(() => {});
+        }
+        const buffer = ctx.createBuffer(1, 1, 22050);
+        const source = ctx.createBufferSource();
+        source.buffer = buffer;
+        source.connect(ctx.destination);
+        source.start(0);
+        if (ctx.state === 'running') {
+          audioUnlocked = true;
+        }
+      } catch (e) {}
     }
 
     function triggerWaterDropTap() {
@@ -850,20 +870,27 @@
         if (navigator.vibrate) navigator.vibrate([40, 60, 40]);
         const ctx = getAudioCtx();
         if (!ctx) return;
-        const now = ctx.currentTime;
-        [784, 1046.5].forEach((freq, idx) => {
-          const osc = ctx.createOscillator();
-          const gain = ctx.createGain();
-          osc.type = 'sine';
-          osc.frequency.setValueAtTime(freq, now + idx * 0.14);
-          gain.gain.setValueAtTime(0.001, now + idx * 0.14);
-          gain.gain.linearRampToValueAtTime(0.11, now + idx * 0.14 + 0.02);
-          gain.gain.exponentialRampToValueAtTime(0.0008, now + idx * 0.14 + 0.32);
-          osc.connect(gain);
-          gain.connect(ctx.destination);
-          osc.start(now + idx * 0.14);
-          osc.stop(now + idx * 0.14 + 0.35);
-        });
+        const playNotes = () => {
+          const now = ctx.currentTime;
+          [784, 1046.5].forEach((freq, idx) => {
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(freq, now + idx * 0.14);
+            gain.gain.setValueAtTime(0.001, now + idx * 0.14);
+            gain.gain.linearRampToValueAtTime(0.16, now + idx * 0.14 + 0.02);
+            gain.gain.exponentialRampToValueAtTime(0.0008, now + idx * 0.14 + 0.34);
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.start(now + idx * 0.14);
+            osc.stop(now + idx * 0.14 + 0.36);
+          });
+        };
+        if (ctx.state === 'suspended') {
+          ctx.resume().then(playNotes).catch(() => {});
+        } else {
+          playNotes();
+        }
       } catch (e) {}
     }
 
@@ -1946,10 +1973,16 @@
       }, true);
 
       document.addEventListener('pointerdown', () => {
+        unlockAudioOnFirstGesture();
         triggerSmartBackgroundSync(4000);
       }, { passive: true, capture: true });
 
+      document.addEventListener('touchstart', () => {
+        unlockAudioOnFirstGesture();
+      }, { passive: true, capture: true });
+
       document.addEventListener('click', () => {
+        unlockAudioOnFirstGesture();
         triggerSmartBackgroundSync(4000);
       }, { passive: true, capture: true });
 
@@ -2668,17 +2701,26 @@
         }
       });
 
-      fetchSheetData();
+      // ★初期データ読込（キャッシュ即時描画＋裏側GAS最新同期）
+      renderStoreList();
+      if (gasWebAppUrl) {
+        fetchSheetData();
+      }
 
-      // ★アプリを開いている間、通信完了から必ず3秒後に次の新着チェックを連鎖実行（省電力停止＆ロック詰まり完全防止）
+      // ★アプリを開いている間、通信完了から必ず2.5秒後に次の新着チェックを連鎖実行（省電力停止＆ロック詰まり完全防止）
       function scheduleNextAutoPoll() {
         clearTimeout(autoPollTimerId);
+        const chatOpen = (() => {
+          const el = document.getElementById('chat-sub-screen');
+          return el && !el.classList.contains('hidden');
+        })();
+        const delayMs = chatOpen ? 2000 : 3000;
         autoPollTimerId = setTimeout(async () => {
           if (gasWebAppUrl && document.visibilityState === 'visible') {
             await fetchSheetData(true);
           }
           scheduleNextAutoPoll();
-        }, 3000);
+        }, delayMs);
       }
       scheduleNextAutoPoll();
 
