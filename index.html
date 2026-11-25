@@ -1629,9 +1629,9 @@
         return;
       }
 
-      // 同時多重リクエストの防止（6秒以上経過したロックは強制解除して自動同期停止を防ぐ）
+      // 同時多重リクエストの防止（4.5秒以上経過したロックは強制解除して自動同期停止を防ぐ）
       if (isFetchingSheetData && silent) {
-        if (Date.now() - fetchingStartedAt < 6000) {
+        if (Date.now() - fetchingStartedAt < 4500) {
           return;
         }
         isFetchingSheetData = false;
@@ -1739,15 +1739,9 @@
             updateChatUnreadBadge(data);
           }
 
-          const newChatSnapshot = JSON.stringify({
-            chatMessagesList,
-            activeDispatchMemo
-          });
           const chatScreenEl = document.getElementById('chat-sub-screen');
           if (chatScreenEl && !chatScreenEl.classList.contains('hidden')) {
-            if (!silent || prevChatSnapshot !== newChatSnapshot) {
-              renderChatMessages();
-            }
+            renderChatMessages();
           }
 
           const newScheduleSnapshot = JSON.stringify({
@@ -2728,14 +2722,14 @@
         fetchSheetData();
       }
 
-      // ★アプリを開いている間、3秒ごとにシンプルに自動同期（競合なしの1本化）
+      // ★アプリを開いている間、5秒ごとに安定して自動同期（連続通信詰まり防止）
       setInterval(() => {
         if (gasWebAppUrl && document.visibilityState === 'visible') {
           fetchSheetData(true).then(() => {
             updateChatUnreadBadge();
           });
         }
-      }, 3000);
+      }, 5000);
 
       // ★他のアプリやスリープから画面に戻った時に即座に裏側更新
       document.addEventListener('visibilitychange', () => {
