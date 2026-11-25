@@ -1661,6 +1661,7 @@
         }
 
         if (data && data.status === 'ok') {
+          window.__lastGasRawDebug = data;
           const prevScheduleSnapshot = JSON.stringify({
             course1Code,
             course2Code,
@@ -1674,9 +1675,10 @@
           if (Array.isArray(data.course1Stores)) course1Stores = normalizeStoreArray(data.course1Stores);
           if (Array.isArray(data.course2Stores)) course2Stores = normalizeStoreArray(data.course2Stores);
           if (Array.isArray(data.existingLogs)) arrivalLogs = normalizeLogsArray(data.existingLogs);
-          activeDispatchMemo = data.dispatchMemo || null;
-          if (Array.isArray(data.chatMessages)) {
-            chatMessagesList = data.chatMessages;
+          activeDispatchMemo = data.dispatchMemo || data.memo || null;
+          const incomingChats = data.chatMessages || data.messages || data.chatList || data.officeMessages;
+          if (Array.isArray(incomingChats)) {
+            chatMessagesList = incomingChats;
           }
 
           saveScheduleCacheToLocal();
@@ -1691,7 +1693,7 @@
           }
 
           if (typeof updateChatUnreadBadge === 'function') {
-            updateChatUnreadBadge();
+            updateChatUnreadBadge(data);
           }
           if (!document.getElementById('chat-sub-screen').classList.contains('hidden')) {
             renderChatMessages();
@@ -2165,7 +2167,22 @@
       });
 
       // ★LINE風メッセージサブ画面の制御（確認しましたボタンはタップした瞬間にレ点が付いて送信）
-      function updateChatUnreadBadge() {
+      function isMessageFromOffice(m) {
+        const s = String(m.sender ?? m.from ?? m.type ?? m.role ?? '').trim().toLowerCase();
+        return s === 'office' || s === '事務所' || s === 'admin' || s === 'manager' || s === '運行';
+      }
+
+      function isMessageUnconfirmed(m) {
+        const c = m.confirmed ?? m.isConfirmed ?? m.read ?? m.status ?? '';
+        if (c === true || c === 1) return false;
+        const str = String(c).trim().toLowerCase();
+        if (str === 'true' || str === '1' || str === '確認済' || str === '確認済み' || str === 'ok' || str === 'read') {
+          return false;
+        }
+        return true;
+      }
+
+      function updateChatUnreadBadge(rawGasData = null) {
         const badgeEl = document.getElementById('chat-unread-count');
         if (!badgeEl) return;
         const deletedIds = JSON.parse(localStorage.getItem('store_deleted_chat_ids') || '[]');
@@ -2173,16 +2190,21 @@
         let unread = list.filter((m) => {
           const msgKey = String(m.id || `${m.sender}_${m.time}_${m.text}`);
           if (deletedIds.includes(msgKey)) return false;
-          const isFromOffice = String(m.sender || '').trim() === 'office';
-          const isUnconfirmed = !m.confirmed && String(m.confirmed) !== 'true' && String(m.confirmed) !== '確認済';
-          return isFromOffice && isUnconfirmed;
+          return isMessageFromOffice(m) && isMessageUnconfirmed(m);
         }).length;
-        if (unread === 0 && activeDispatchMemo && activeDispatchMemo.message) {
-          const memoKey = String(activeDispatchMemo.memoId || `office_${activeDispatchMemo.sentAt}_${activeDispatchMemo.message}`);
-          if (!deletedIds.includes(memoKey)) {
+
+        if (unread === 0 && activeDispatchMemo && (activeDispatchMemo.message || activeDispatchMemo.text)) {
+          const memoText = activeDispatchMemo.message || activeDispatchMemo.text;
+          const memoKey = String(activeDispatchMemo.memoId || activeDispatchMemo.id || `office_${activeDispatchMemo.sentAt}_${memoText}`);
+          if (!deletedIds.includes(memoKey) && isMessageUnconfirmed(activeDispatchMemo)) {
             unread = 1;
           }
         }
+
+        if (unread === 0 && rawGasData && typeof rawGasData.unreadCount === 'number' && rawGasData.unreadCount > 0) {
+          unread = rawGasData.unreadCount;
+        }
+
         badgeEl.textContent = String(unread);
         if (unread > 0) {
           badgeEl.classList.add('animate-bounce');
@@ -2198,6 +2220,25 @@
         }
         lastKnownUnreadCount = unread;
       }
+
+      // ★「新着メッセージ」ボタン長押し（1秒）でGAS応答の中身を簡易診断表示（通常操作には影響なし）
+      let chatBtnDebugTimer = null;
+      const openChatBtnEl = document.getElementById('open-chat-screen-btn');
+      openChatBtnEl.addEventListener('touchstart', () => {
+        chatBtnDebugTimer = setTimeout(() => {
+          const d = window.__lastGasRawDebug;
+          if (!d) {
+            showToast('GAS応答データ未受信');
+            return;
+          }
+          const keys = Object.keys(d).join(',');
+          const cLen = Array.isArray(d.chatMessages) ? d.chatMessages.length : (Array.isArray(d.messages) ? d.messages.length : 'なし');
+          const mStr = d.dispatchMemo ? 'あり' : 'なし';
+          showToast(`診断: chat=${cLen} / memo=${mStr} / keys=${keys}`);
+        }, 1000);
+      }, { passive: true });
+      openChatBtnEl.addEventListener('touchend', () => clearTimeout(chatBtnDebugTimer));
+      openChatBtnEl.addEventListener('touchmove', () => clearTimeout(chatBtnDebugTimer));
 
       function renderChatMessages() {
         const container = document.getElementById('chat-messages-container');
@@ -2217,15 +2258,16 @@
         const list = (Array.isArray(chatMessagesList) ? [...chatMessagesList] : [])
           .filter((m) => !deletedIds.includes(String(m.id || `${m.sender}_${m.time}_${m.text}`)));
 
-        if (list.length === 0 && activeDispatchMemo && activeDispatchMemo.message) {
-          const memoKey = String(activeDispatchMemo.memoId || `office_${activeDispatchMemo.sentAt}_${activeDispatchMemo.message}`);
+        if (list.length === 0 && activeDispatchMemo && (activeDispatchMemo.message || activeDispatchMemo.text)) {
+          const memoText = activeDispatchMemo.message || activeDispatchMemo.text;
+          const memoKey = String(activeDispatchMemo.memoId || activeDispatchMemo.id || `office_${activeDispatchMemo.sentAt}_${memoText}`);
           if (!deletedIds.includes(memoKey)) {
             list.push({
-              id: activeDispatchMemo.memoId,
+              id: activeDispatchMemo.memoId || activeDispatchMemo.id,
               sender: 'office',
-              text: activeDispatchMemo.message,
+              text: memoText,
               time: activeDispatchMemo.sentAt || '',
-              confirmed: false,
+              confirmed: !isMessageUnconfirmed(activeDispatchMemo),
               imageData: ''
             });
           }
@@ -2240,7 +2282,7 @@
         }
 
         list.forEach((msg) => {
-          const isOffice = String(msg.sender) === 'office';
+          const isOffice = isMessageFromOffice(msg);
           const msgKey = String(msg.id || `${msg.sender}_${msg.time}_${msg.text}`);
           const wrap = document.createElement('div');
           wrap.className = isOffice ? 'flex flex-col items-start max-w-[88%]' : 'flex flex-col items-end self-end max-w-[88%] ml-auto';
