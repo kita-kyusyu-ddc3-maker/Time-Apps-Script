@@ -1665,7 +1665,6 @@
         });
         const fetchOptions = {
           method: 'GET',
-          cache: 'reload',
           redirect: 'follow'
         };
         if (abortCtrl) {
@@ -1679,7 +1678,6 @@
           await new Promise((r) => setTimeout(r, 600));
           res = await fetch(`${gasWebAppUrl}?${query.toString()}`, {
             method: 'GET',
-            cache: 'reload',
             redirect: 'follow'
           });
         }
