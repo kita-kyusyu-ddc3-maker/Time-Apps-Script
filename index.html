@@ -268,7 +268,7 @@
           <span id="history-count" class="bg-slate-600 text-white text-[11px] font-black px-1.5 py-0.2 rounded-md tabular-nums">0</span>
         </button>
         <button type="button" id="open-chat-screen-btn" class="bg-blue-600 hover:bg-blue-500 active:scale-95 text-white text-xs font-extrabold px-3.5 py-2 rounded-xl transition flex items-center gap-1.5 shadow-xs">
-          <span>メッセージ受信</span>
+          <span>新着メッセージ</span>
           <span id="chat-unread-count" class="bg-rose-500 text-white text-[11px] font-black px-1.5 py-0.2 rounded-md tabular-nums">0</span>
         </button>
       </div>
@@ -543,6 +543,25 @@
     let gasWebAppUrl = localStorage.getItem('store_arrival_gas_url') || AUTO_GAS_URL;
     let officePhoneNumber = localStorage.getItem('store_arrival_office_phone') || '';
 
+    // ★ダブルタップリロード直後の「更新中...」判定（デモ表示の一瞬チラつき防止）
+    let isManualReloading = false;
+    try {
+      if (sessionStorage.getItem('store_arrival_reloading') === '1' || urlParams.get('reloading') === '1') {
+        isManualReloading = true;
+      }
+    } catch (e) {}
+
+    if (isManualReloading && gasWebAppUrl) {
+      const initPill = document.getElementById('gas-status-pill');
+      const initDot = document.getElementById('gas-status-dot');
+      const initLabel = document.getElementById('gas-status-text');
+      if (initPill && initDot && initLabel) {
+        initLabel.textContent = '更新中...';
+        initPill.className = 'inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-100/80 text-blue-800';
+        initDot.className = 'w-1.5 h-1.5 rounded-full bg-blue-500 animate-ping';
+      }
+    }
+
     function updateOfficeCallLink() {
       const linkEl = document.getElementById('chat-office-call-link');
       if (!linkEl) return;
@@ -591,6 +610,11 @@
     let pendingChatImageBase64 = '';
     let hourWheelController = null;
     let minuteWheelController = null;
+
+    // ★裏側同期制御用のタイムスタンプ＆多重通信ロック
+    let lastFetchTimestamp = 0;
+    let isFetchingSheetData = false;
+    let lastKnownUnreadCount = 0;
 
     function pad2(n) {
       return String(n).padStart(2, '0');
@@ -1147,6 +1171,15 @@
       }
     }
 
+    // ★いずれかのモーダルが開いているか判定（裏側同期時に画面リセットを防ぐため）
+    function isAnyBlockingModalOpen() {
+      const modalIds = ['arrival-modal', 'gas-modal', 'history-modal', 'admin-car-modal'];
+      return modalIds.some((id) => {
+        const el = document.getElementById(id);
+        return el && !el.classList.contains('hidden');
+      });
+    }
+
     function updateHeaderAndTabs() {
       isSingleCourseCar = (excelCarIndex === 14);
       document.getElementById('fixed-car-num').textContent = pad2(excelCarIndex);
@@ -1569,15 +1602,30 @@
     async function fetchSheetData(silent = false) {
       if (!gasWebAppUrl) {
         setConnectionBadge('demo', 'デモ表示');
+        if (isManualReloading) {
+          isManualReloading = false;
+          try { sessionStorage.removeItem('store_arrival_reloading'); } catch (e) {}
+        }
         renderStoreList();
         return;
       }
 
+      // 同時多重リクエストの防止（手動更新時は優先して通過）
+      if (isFetchingSheetData && silent) {
+        return;
+      }
+      isFetchingSheetData = true;
+      lastFetchTimestamp = Date.now();
+
       // ④ 端末キャッシュがあれば即座に描画してから裏側で最新データへ同期
       const hasCached = restoreScheduleCacheFromLocal();
-      if (hasCached) {
+      if (hasCached && !isAnyBlockingModalOpen()) {
         renderStoreList();
-      } else if (!silent) {
+      }
+
+      if (isManualReloading) {
+        setConnectionBadge('loading', '更新中...');
+      } else if (!hasCached && !silent) {
         setConnectionBadge('loading', '読込中...');
       }
 
@@ -1604,6 +1652,14 @@
         }
 
         if (data && data.status === 'ok') {
+          const prevScheduleSnapshot = JSON.stringify({
+            course1Code,
+            course2Code,
+            course1Stores,
+            course2Stores,
+            arrivalLogs
+          });
+
           if (data.course1Code) course1Code = String(data.course1Code);
           if (data.course2Code) course2Code = String(data.course2Code);
           if (Array.isArray(data.course1Stores)) course1Stores = normalizeStoreArray(data.course1Stores);
@@ -1616,7 +1672,12 @@
 
           saveScheduleCacheToLocal();
           setConnectionBadge('ok', 'GAS接続済');
-          if (!silent && !hasCached) {
+
+          if (isManualReloading) {
+            isManualReloading = false;
+            try { sessionStorage.removeItem('store_arrival_reloading'); } catch (e) {}
+            showToast('最新データに更新しました');
+          } else if (!silent && !hasCached) {
             showToast('最新スケジュールを読み込みました');
           }
 
@@ -1626,19 +1687,57 @@
           if (!document.getElementById('chat-sub-screen').classList.contains('hidden')) {
             renderChatMessages();
           }
+
+          const newScheduleSnapshot = JSON.stringify({
+            course1Code,
+            course2Code,
+            course1Stores,
+            course2Stores,
+            arrivalLogs
+          });
+
+          // モーダル操作中でなければ描画（裏側同期時はデータ変化があった時または初回描画時のみ）
+          if (!isAnyBlockingModalOpen()) {
+            if (!silent || prevScheduleSnapshot !== newScheduleSnapshot) {
+              renderStoreList();
+            }
+          }
         } else {
+          if (isManualReloading) {
+            isManualReloading = false;
+            try { sessionStorage.removeItem('store_arrival_reloading'); } catch (e) {}
+          }
           if (!silent) {
             setConnectionBadge('error', '読込エラー');
             showToast(`エラー: ${(data && data.message) || '応答不正'}`);
           }
         }
       } catch (e) {
+        if (isManualReloading) {
+          isManualReloading = false;
+          try { sessionStorage.removeItem('store_arrival_reloading'); } catch (e) {}
+        }
         if (!silent) {
           setConnectionBadge('error', '通信エラー');
           showToast(`通信失敗: ${e.message || e}`);
         }
+      } finally {
+        isFetchingSheetData = false;
+        lastFetchTimestamp = Date.now();
       }
-      renderStoreList();
+
+      if (!silent && !isAnyBlockingModalOpen()) {
+        renderStoreList();
+      }
+    }
+
+    // ★クールダウン付きスマート裏側同期（タッチ・画面復帰用）
+    function triggerSmartBackgroundSync(minIntervalMs = 4000) {
+      if (!gasWebAppUrl) return;
+      if (document.visibilityState !== 'visible') return;
+      if (isFetchingSheetData) return;
+      if (Date.now() - lastFetchTimestamp < minIntervalMs) return;
+      fetchSheetData(true);
     }
 
     function updateClock() {
@@ -1824,6 +1923,15 @@
         triggerWaterDropTap();
       }, true);
 
+      // ★画面のどこか（店舗カード・便切替・日付切替・余白など）にタッチ／クリックした時に裏側同期を発火（4秒クールダウン付き）
+      document.addEventListener('pointerdown', () => {
+        triggerSmartBackgroundSync(4000);
+      }, { passive: true, capture: true });
+
+      document.addEventListener('click', () => {
+        triggerSmartBackgroundSync(4000);
+      }, { passive: true, capture: true });
+
       document.getElementById('tab-course-1').addEventListener('click', () => {
         activeCourseType = '1';
         renderStoreList();
@@ -1847,8 +1955,14 @@
       document.getElementById('reload-sheet-btn').addEventListener('click', () => {
         const nowTap = Date.now();
         if (nowTap - lastReloadTapTime < 700) {
+          // ① ダブルタップリロード時は「更新中...」状態を記憶し、リロード直後に「デモ表示」が出ないようにする
+          try {
+            sessionStorage.setItem('store_arrival_reloading', '1');
+          } catch (e) {}
+          setConnectionBadge('loading', '更新中...');
           const url = new URL(window.location.href);
           url.searchParams.set('v', String(nowTap));
+          url.searchParams.set('reloading', '1');
           window.location.replace(url.toString());
           return;
         }
@@ -1861,6 +1975,7 @@
           reloadIcon.style.transform = 'rotate(360deg)';
         }
         reloadBtn.classList.add('ring-2', 'ring-blue-400', 'bg-blue-50', 'text-blue-600');
+        setConnectionBadge('loading', '更新中...');
         fetchSheetData().then(() => {
           updateChatUnreadBadge();
           const badgeEl = document.getElementById('chat-unread-count');
@@ -2061,9 +2176,17 @@
         badgeEl.textContent = String(unread);
         if (unread > 0) {
           badgeEl.classList.add('animate-bounce');
+          // 新着未読件数が増えた瞬間にお知らせチャイム＋バッジ強調
+          if (unread > lastKnownUnreadCount) {
+            triggerDispatchMemoAlertSound();
+            badgeEl.style.transition = 'transform 0.25s ease';
+            badgeEl.style.transform = 'scale(1.35)';
+            setTimeout(() => { badgeEl.style.transform = 'scale(1)'; }, 280);
+          }
         } else {
           badgeEl.classList.remove('animate-bounce');
         }
+        lastKnownUnreadCount = unread;
       }
 
       function renderChatMessages() {
@@ -2482,12 +2605,22 @@
 
       fetchSheetData();
 
-      // ★アプリを開いている間、15秒ごとに事務所からの新着メッセージを自動チェック
+      // ★アプリを開いている間、8秒ごとに事務所からの新着メッセージを自動チェック
       setInterval(() => {
         if (gasWebAppUrl && document.visibilityState === 'visible') {
           fetchSheetData(true);
         }
-      }, 15000);
+      }, 8000);
+
+      // ★他のアプリやスリープから画面に戻った時に即座に裏側更新
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') {
+          triggerSmartBackgroundSync(1500);
+        }
+      });
+      window.addEventListener('focus', () => {
+        triggerSmartBackgroundSync(1500);
+      });
     });
   </script>
 </body>
