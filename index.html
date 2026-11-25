@@ -1726,11 +1726,6 @@
 
           saveScheduleCacheToLocal();
           setConnectionBadge('ok', 'GAS接続済');
-          const statusDotEl = document.getElementById('gas-status-dot');
-          if (statusDotEl) {
-            statusDotEl.style.transform = 'scale(1.8)';
-            setTimeout(() => { statusDotEl.style.transform = 'scale(1)'; }, 250);
-          }
 
           if (isManualReloading) {
             isManualReloading = false;
@@ -2271,27 +2266,14 @@
         knownOfficeMessageIds = currentOfficeIds;
         hasInitializedMessageIds = true;
 
-        const openChatBtn = document.getElementById('open-chat-screen-btn');
         badgeEl.textContent = String(unread);
         if (unread > 0) {
           badgeEl.classList.add('animate-bounce');
-          if (openChatBtn) {
-            openChatBtn.classList.remove('bg-blue-600', 'hover:bg-blue-500');
-            openChatBtn.classList.add('bg-rose-600', 'hover:bg-rose-500', 'ring-2', 'ring-rose-300');
-          }
           if (unread > lastKnownUnreadCount || hasBrandNewOfficeMsg) {
             triggerDispatchMemoAlertSound();
-            showToast(`📩 事務所から新着メッセージ（${unread}件）`);
-            badgeEl.style.transition = 'transform 0.25s ease';
-            badgeEl.style.transform = 'scale(1.35)';
-            setTimeout(() => { badgeEl.style.transform = 'scale(1)'; }, 280);
           }
         } else {
           badgeEl.classList.remove('animate-bounce');
-          if (openChatBtn) {
-            openChatBtn.classList.remove('bg-rose-600', 'hover:bg-rose-500', 'ring-2', 'ring-rose-300');
-            openChatBtn.classList.add('bg-blue-600', 'hover:bg-blue-500');
-          }
         }
         lastKnownUnreadCount = unread;
       }
@@ -2749,7 +2731,9 @@
       // ★アプリを開いている間、3秒ごとにシンプルに自動同期（競合なしの1本化）
       setInterval(() => {
         if (gasWebAppUrl && document.visibilityState === 'visible') {
-          fetchSheetData(true);
+          fetchSheetData(true).then(() => {
+            updateChatUnreadBadge();
+          });
         }
       }, 3000);
 
