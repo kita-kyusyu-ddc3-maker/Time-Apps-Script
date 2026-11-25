@@ -616,6 +616,8 @@
     let isFetchingSheetData = false;
     let fetchingStartedAt = 0;
     let lastKnownUnreadCount = 0;
+    let knownOfficeMessageIds = new Set();
+    let hasInitializedMessageIds = false;
     let autoPollTimerId = null;
 
     function pad2(n) {
@@ -2225,17 +2227,33 @@
         if (!badgeEl) return;
         const deletedIds = JSON.parse(localStorage.getItem('store_deleted_chat_ids') || '[]');
         const list = Array.isArray(chatMessagesList) ? chatMessagesList : [];
+        let hasBrandNewOfficeMsg = false;
+
+        const currentOfficeIds = new Set();
         let unread = list.filter((m) => {
           const msgKey = String(m.id || `${m.sender}_${m.time}_${m.text}`);
           if (deletedIds.includes(msgKey)) return false;
-          return isMessageFromOffice(m) && isMessageUnconfirmed(m);
+          if (isMessageFromOffice(m)) {
+            currentOfficeIds.add(msgKey);
+            if (hasInitializedMessageIds && !knownOfficeMessageIds.has(msgKey) && isMessageUnconfirmed(m)) {
+              hasBrandNewOfficeMsg = true;
+            }
+            return isMessageUnconfirmed(m);
+          }
+          return false;
         }).length;
 
-        if (unread === 0 && activeDispatchMemo && (activeDispatchMemo.message || activeDispatchMemo.text)) {
+        if (activeDispatchMemo && (activeDispatchMemo.message || activeDispatchMemo.text)) {
           const memoText = activeDispatchMemo.message || activeDispatchMemo.text;
           const memoKey = String(activeDispatchMemo.memoId || activeDispatchMemo.id || `office_${activeDispatchMemo.sentAt}_${memoText}`);
-          if (!deletedIds.includes(memoKey) && isMessageUnconfirmed(activeDispatchMemo)) {
-            unread = 1;
+          if (!deletedIds.includes(memoKey)) {
+            currentOfficeIds.add(memoKey);
+            if (hasInitializedMessageIds && !knownOfficeMessageIds.has(memoKey) && isMessageUnconfirmed(activeDispatchMemo)) {
+              hasBrandNewOfficeMsg = true;
+            }
+            if (unread === 0 && isMessageUnconfirmed(activeDispatchMemo)) {
+              unread = 1;
+            }
           }
         }
 
@@ -2243,10 +2261,13 @@
           unread = rawGasData.unreadCount;
         }
 
+        knownOfficeMessageIds = currentOfficeIds;
+        hasInitializedMessageIds = true;
+
         badgeEl.textContent = String(unread);
         if (unread > 0) {
           badgeEl.classList.add('animate-bounce');
-          if (unread > lastKnownUnreadCount) {
+          if (unread > lastKnownUnreadCount || hasBrandNewOfficeMsg) {
             triggerDispatchMemoAlertSound();
             badgeEl.style.transition = 'transform 0.25s ease';
             badgeEl.style.transform = 'scale(1.35)';
