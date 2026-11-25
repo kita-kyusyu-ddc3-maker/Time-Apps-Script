@@ -1629,17 +1629,26 @@
         setConnectionBadge('loading', '読込中...');
       }
 
+      const abortCtrl = typeof AbortController !== 'undefined' ? new AbortController() : null;
+      const timeoutTimer = abortCtrl ? setTimeout(() => abortCtrl.abort(), 10000) : null;
+
       try {
         const query = new URLSearchParams({
           action: 'getSchedule',
           excelCarIndex: String(excelCarIndex),
           deliveryDate: getFormattedDeliveryDateKey(),
-          _t: String(Date.now())
+          _t: String(Date.now()),
+          _r: String(Math.random()).slice(2, 8)
         });
-        const res = await fetch(`${gasWebAppUrl}?${query.toString()}`, {
+        const fetchOptions = {
           method: 'GET',
+          cache: 'no-store',
           redirect: 'follow'
-        });
+        };
+        if (abortCtrl) {
+          fetchOptions.signal = abortCtrl.signal;
+        }
+        const res = await fetch(`${gasWebAppUrl}?${query.toString()}`, fetchOptions);
         if (!res.ok) {
           throw new Error(`HTTP ${res.status}`);
         }
@@ -1722,6 +1731,7 @@
           showToast(`通信失敗: ${e.message || e}`);
         }
       } finally {
+        if (timeoutTimer) clearTimeout(timeoutTimer);
         isFetchingSheetData = false;
         lastFetchTimestamp = Date.now();
       }
