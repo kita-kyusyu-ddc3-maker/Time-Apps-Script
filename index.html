@@ -614,7 +614,9 @@
     // ★裏側同期制御用のタイムスタンプ＆多重通信ロック
     let lastFetchTimestamp = 0;
     let isFetchingSheetData = false;
+    let fetchingStartedAt = 0;
     let lastKnownUnreadCount = 0;
+    let autoPollTimerId = null;
 
     function pad2(n) {
       return String(n).padStart(2, '0');
@@ -1595,15 +1597,18 @@
           isManualReloading = false;
           try { sessionStorage.removeItem('store_arrival_reloading'); } catch (e) {}
         }
-        renderStoreList();
         return;
       }
 
-      // 同時多重リクエストの防止（手動更新時は優先して通過）
+      // 同時多重リクエストの防止（6秒以上経過したロックは強制解除して自動同期停止を防ぐ）
       if (isFetchingSheetData && silent) {
-        return;
+        if (Date.now() - fetchingStartedAt < 6000) {
+          return;
+        }
+        isFetchingSheetData = false;
       }
       isFetchingSheetData = true;
+      fetchingStartedAt = Date.now();
       lastFetchTimestamp = Date.now();
 
       // ④ 端末キャッシュがあれば即座に描画してから裏側で最新データへ同期
@@ -1753,6 +1758,7 @@
       } finally {
         if (timeoutTimer) clearTimeout(timeoutTimer);
         isFetchingSheetData = false;
+        fetchingStartedAt = 0;
         lastFetchTimestamp = Date.now();
       }
 
@@ -2664,21 +2670,41 @@
 
       fetchSheetData();
 
-      // ★アプリを開いている間、3秒ごとに事務所からの新着メッセージを自動チェック
+      // ★アプリを開いている間、通信完了から必ず3秒後に次の新着チェックを連鎖実行（省電力停止＆ロック詰まり完全防止）
+      function scheduleNextAutoPoll() {
+        clearTimeout(autoPollTimerId);
+        autoPollTimerId = setTimeout(async () => {
+          if (gasWebAppUrl && document.visibilityState === 'visible') {
+            await fetchSheetData(true);
+          }
+          scheduleNextAutoPoll();
+        }, 3000);
+      }
+      scheduleNextAutoPoll();
+
+      // 予備の定期監視タイマー（万が一チェーンが途切れた場合の復帰用）
       setInterval(() => {
-        if (gasWebAppUrl) {
-          fetchSheetData(true);
+        if (gasWebAppUrl && document.visibilityState === 'visible') {
+          if (Date.now() - lastFetchTimestamp > 5000) {
+            isFetchingSheetData = false;
+            fetchSheetData(true);
+            scheduleNextAutoPoll();
+          }
         }
-      }, 3000);
+      }, 4000);
 
       // ★他のアプリやスリープから画面に戻った時に即座に裏側更新
       document.addEventListener('visibilitychange', () => {
         if (document.visibilityState === 'visible') {
-          triggerSmartBackgroundSync(1000);
+          isFetchingSheetData = false;
+          triggerSmartBackgroundSync(500);
+          scheduleNextAutoPoll();
         }
       });
       window.addEventListener('focus', () => {
-        triggerSmartBackgroundSync(1000);
+        isFetchingSheetData = false;
+        triggerSmartBackgroundSync(500);
+        scheduleNextAutoPoll();
       });
     });
   </script>
