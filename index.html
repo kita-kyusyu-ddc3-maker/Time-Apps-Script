@@ -1661,11 +1661,11 @@
           excelCarIndex: String(excelCarIndex),
           deliveryDate: getFormattedDeliveryDateKey(),
           _t: String(Date.now()),
-          _r: String(Math.random()).slice(2, 8)
+          _r: String(Math.random()).slice(2, 10)
         });
         const fetchOptions = {
           method: 'GET',
-          cache: 'no-store',
+          cache: 'reload',
           redirect: 'follow'
         };
         if (abortCtrl) {
@@ -1679,7 +1679,7 @@
           await new Promise((r) => setTimeout(r, 600));
           res = await fetch(`${gasWebAppUrl}?${query.toString()}`, {
             method: 'GET',
-            cache: 'no-store',
+            cache: 'reload',
             redirect: 'follow'
           });
         }
@@ -2226,8 +2226,10 @@
         const badgeEl = document.getElementById('chat-unread-count');
         if (!badgeEl) return;
         const deletedIds = JSON.parse(localStorage.getItem('store_deleted_chat_ids') || '[]');
+        const confirmedIds = JSON.parse(localStorage.getItem('store_confirmed_chat_ids') || '[]');
         const list = Array.isArray(chatMessagesList) ? chatMessagesList : [];
         let hasBrandNewOfficeMsg = false;
+        let newestUnconfirmedOfficeMsg = null;
 
         const currentOfficeIds = new Set();
         let unread = list.filter((m) => {
@@ -2235,10 +2237,11 @@
           if (deletedIds.includes(msgKey)) return false;
           if (isMessageFromOffice(m)) {
             currentOfficeIds.add(msgKey);
-            if (hasInitializedMessageIds && !knownOfficeMessageIds.has(msgKey) && isMessageUnconfirmed(m)) {
+            const unconf = isMessageUnconfirmed(m) && !confirmedIds.includes(msgKey);
+            if (unconf && hasInitializedMessageIds && !knownOfficeMessageIds.has(msgKey)) {
               hasBrandNewOfficeMsg = true;
             }
-            return isMessageUnconfirmed(m);
+            return unconf;
           }
           return false;
         }).length;
@@ -2248,11 +2251,12 @@
           const memoKey = String(activeDispatchMemo.memoId || activeDispatchMemo.id || `office_${activeDispatchMemo.sentAt}_${memoText}`);
           if (!deletedIds.includes(memoKey)) {
             currentOfficeIds.add(memoKey);
-            if (hasInitializedMessageIds && !knownOfficeMessageIds.has(memoKey) && isMessageUnconfirmed(activeDispatchMemo)) {
-              hasBrandNewOfficeMsg = true;
-            }
-            if (unread === 0 && isMessageUnconfirmed(activeDispatchMemo)) {
-              unread = 1;
+            const unconf = isMessageUnconfirmed(activeDispatchMemo) && !confirmedIds.includes(memoKey);
+            if (unconf) {
+              if (hasInitializedMessageIds && !knownOfficeMessageIds.has(memoKey)) {
+                hasBrandNewOfficeMsg = true;
+              }
+              if (unread === 0) unread = 1;
             }
           }
         }
