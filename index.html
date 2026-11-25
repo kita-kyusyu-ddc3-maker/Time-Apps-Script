@@ -2501,6 +2501,7 @@
         document.getElementById('chat-camera-input').value = '';
         document.getElementById('chat-photo-preview-bar').classList.add('hidden');
         renderChatMessages();
+        updateChatUnreadBadge();
         showToast('事務所へメッセージを送信しました');
         if (gasWebAppUrl) {
           try {
@@ -2516,6 +2517,10 @@
                 sentAt: timeStr
               })
             });
+            // メッセージ送信後、同じ画面を開いたままでも自動更新で新着メッセージ数を反映
+            setTimeout(() => {
+              fetchSheetData(true);
+            }, 900);
           } catch (err) {}
         }
       }
@@ -2605,21 +2610,21 @@
 
       fetchSheetData();
 
-      // ★アプリを開いている間、8秒ごとに事務所からの新着メッセージを自動チェック
+      // ★アプリを開いている間、5秒ごとに事務所からの新着メッセージを自動チェック
       setInterval(() => {
-        if (gasWebAppUrl && document.visibilityState === 'visible') {
+        if (gasWebAppUrl) {
           fetchSheetData(true);
         }
-      }, 8000);
+      }, 5000);
 
       // ★他のアプリやスリープから画面に戻った時に即座に裏側更新
       document.addEventListener('visibilitychange', () => {
         if (document.visibilityState === 'visible') {
-          triggerSmartBackgroundSync(1500);
+          triggerSmartBackgroundSync(1000);
         }
       });
       window.addEventListener('focus', () => {
-        triggerSmartBackgroundSync(1500);
+        triggerSmartBackgroundSync(1000);
       });
     });
   </script>
