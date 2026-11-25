@@ -1589,7 +1589,7 @@
           excelCarIndex: String(excelCarIndex),
           _t: String(Date.now())
         });
-        const res = await fetch(`${gasWebAppUrl}?${query.toString()}`, { cache: 'no-store' });
+        const res = await fetch(`${gasWebAppUrl}?${query.toString()}`);
         const data = await res.json();
 
         if (data && data.status === 'ok') {
@@ -1617,7 +1617,6 @@
           setConnectionBadge('error', '読込エラー');
         }
       } catch (e) {
-        console.error('GAS通信詳細:', e);
         setConnectionBadge('error', '通信エラー');
       }
       renderStoreList();
