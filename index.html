@@ -1620,7 +1620,9 @@
             showToast('最新スケジュールを読み込みました');
           }
 
-          updateChatUnreadBadge();
+          if (typeof updateChatUnreadBadge === 'function') {
+            updateChatUnreadBadge();
+          }
           if (!document.getElementById('chat-sub-screen').classList.contains('hidden')) {
             renderChatMessages();
           }
