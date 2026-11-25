@@ -1637,7 +1637,18 @@
         if (abortCtrl) {
           fetchOptions.signal = abortCtrl.signal;
         }
-        const res = await fetch(`${gasWebAppUrl}?${query.toString()}`, fetchOptions);
+        let res;
+        try {
+          res = await fetch(`${gasWebAppUrl}?${query.toString()}`, fetchOptions);
+        } catch (firstNetErr) {
+          // 電波瞬断やGASリダイレクト遅延時は600ms後に1回自動リトライ
+          await new Promise((r) => setTimeout(r, 600));
+          res = await fetch(`${gasWebAppUrl}?${query.toString()}`, {
+            method: 'GET',
+            cache: 'no-store',
+            redirect: 'follow'
+          });
+        }
         if (!res.ok) {
           throw new Error(`HTTP ${res.status}`);
         }
@@ -2653,12 +2664,12 @@
 
       fetchSheetData();
 
-      // ★アプリを開いている間、5秒ごとに事務所からの新着メッセージを自動チェック
+      // ★アプリを開いている間、3秒ごとに事務所からの新着メッセージを自動チェック
       setInterval(() => {
         if (gasWebAppUrl) {
           fetchSheetData(true);
         }
-      }, 5000);
+      }, 3000);
 
       // ★他のアプリやスリープから画面に戻った時に即座に裏側更新
       document.addEventListener('visibilitychange', () => {
