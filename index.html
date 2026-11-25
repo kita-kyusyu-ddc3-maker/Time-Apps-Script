@@ -617,7 +617,7 @@
     let fetchingStartedAt = 0;
     let lastKnownUnreadCount = 0;
     let knownOfficeMessageIds = new Set();
-    let hasInitializedMessageIds = false;
+    let hasInitializedMessageIds = true;
     let autoPollTimerId = null;
 
     function pad2(n) {
@@ -1640,8 +1640,8 @@
       fetchingStartedAt = Date.now();
       lastFetchTimestamp = Date.now();
 
-      // ④ 端末キャッシュがあれば即座に描画してから裏側で最新データへ同期
-      const hasCached = restoreScheduleCacheFromLocal();
+      // ④ 手動更新(!silent)の時だけ端末キャッシュから即時描画し、自動同期(silent)ではキャッシュ巻き戻しをしない
+      const hasCached = !silent ? restoreScheduleCacheFromLocal() : false;
       if (hasCached && !isAnyBlockingModalOpen()) {
         renderStoreList();
       }
@@ -2725,6 +2725,7 @@
       });
 
       // ★初期データ読込（キャッシュ即時描画＋裏側GAS最新同期）
+      hasInitializedMessageIds = true;
       renderStoreList();
       if (gasWebAppUrl) {
         fetchSheetData();
