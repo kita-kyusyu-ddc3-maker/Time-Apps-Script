@@ -757,7 +757,6 @@
         if (!ctx) return;
         const now = ctx.currentTime;
 
-        // iPhoneピッカー特有の短い高音クリック（カリッ）
         const osc = ctx.createOscillator();
         const gain = ctx.createGain();
         osc.type = 'triangle';
@@ -875,9 +874,9 @@
       const ITEM_HEIGHT = 44;
       const VIEWPORT_HEIGHT = 168;
       const CENTER_OFFSET = (VIEWPORT_HEIGHT - ITEM_HEIGHT) / 2;
-      const LOOP_CYCLES = 5; // 5周分並べて中央周回を使うことで上下どちらにも無限に回転可能
+      const LOOP_CYCLES = 5;
       const TOTAL_ITEMS = maxCount * LOOP_CYCLES;
-      const BASE_CYCLE_OFFSET = maxCount * 2; // 中央（3周目）の開始インデックス
+      const BASE_CYCLE_OFFSET = maxCount * 2;
 
       reel.innerHTML = '';
       const itemEls = [];
@@ -902,7 +901,6 @@
       let velocity = 0;
       let animFrameId = null;
 
-      // 無限ループを維持するため、端の周回に近づいたら見た目を変えずに中央周回へ座標を正規化
       function normalizeInfiniteOffset(offset) {
         const cyclePx = maxCount * ITEM_HEIGHT;
         const minSafe = -(maxCount * 3.5) * ITEM_HEIGHT;
@@ -984,7 +982,6 @@
         animFrameId = requestAnimationFrame(inertiaStep);
       }
 
-      // タッチ操作（スマホ指スワイプ）
       viewport.addEventListener('touchstart', (e) => {
         if (e.touches.length !== 1) return;
         cancelAnimationFrame(animFrameId);
@@ -1033,7 +1030,6 @@
         }
       });
 
-      // PCマウスドラッグ＆ホイール対応
       viewport.addEventListener('mousedown', (e) => {
         cancelAnimationFrame(animFrameId);
         isDragging = true;
@@ -1084,7 +1080,6 @@
           const currentVirtualIdx = Math.round(-currentOffset / ITEM_HEIGHT);
           const currentMod = ((currentVirtualIdx % maxCount) + maxCount) % maxCount;
 
-          // 最短回転方向（例：59→00は+1、00→59は-1）を計算
           let diff = targetMod - currentMod;
           if (diff > maxCount / 2) diff -= maxCount;
           if (diff < -maxCount / 2) diff += maxCount;
@@ -1259,7 +1254,6 @@
         return;
       }
 
-      // 最初の未入力店舗（NEXT）を特定
       let firstUnrecordedOrder = null;
       for (let i = 0; i < stores.length; i++) {
         const matched = logsForCourse.find((l) => Number(l.order) === Number(stores[i].order));
@@ -1284,7 +1278,6 @@
           card.className = 'bg-white/90 rounded-3xl p-4 border border-slate-200/70 flex items-center justify-between gap-3 active:scale-[0.99] transition cursor-pointer';
         }
 
-        // 左端の丸型番号／レ点サークルアイコン（緑の〇に緑のレ点／青の〇に青の数字）
         const circleIcon = document.createElement('div');
         if (existingLog) {
           circleIcon.className = 'w-9 h-9 rounded-full bg-emerald-50/60 border-2 border-emerald-500 text-emerald-600 flex items-center justify-center shrink-0';
@@ -1382,7 +1375,6 @@
             showToast('🔒 過去日のため入力・変更はできません');
             return;
           }
-          // ③ 未入力店舗がある場合は次の店舗へ進めない（送信済みの再編集は許可）
           if (!existingLog && firstUnrecordedOrder !== null && Number(store.order) > firstUnrecordedOrder) {
             const pendingStore = stores.find((s) => Number(s.order) === firstUnrecordedOrder);
             const pendingName = pendingStore ? pendingStore.name : `${firstUnrecordedOrder}店舗目`;
@@ -1419,7 +1411,6 @@
         avgWrap.classList.add('hidden');
       }
 
-      // ④ 初期表示時刻：既存修正ならその時刻、新規入力なら直近平均到着時間 → 予定定時 → 現在時刻の順でセット
       let initialTimeStr = '';
       if (existingLog && existingLog.arrival && existingLog.arrival.includes(':')) {
         initialTimeStr = existingLog.arrival;
@@ -1526,7 +1517,6 @@
 
       closeArrivalModal();
 
-      // ③ 1便の最終店舗を送信完了したら、2便がある号車の場合は自動的に2便へ切り替え
       const switchedToCourse2 = (activeCourseType === '1' && Boolean(store.isLastStore) && !isSingleCourseCar && course2Stores.length > 0);
       if (switchedToCourse2) {
         activeCourseType = '2';
@@ -1550,13 +1540,12 @@
           await fetch(gasWebAppUrl, {
             method: 'POST',
             mode: 'no-cors',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
             body: JSON.stringify({
               action: 'recordArrival',
               ...logEntry
             })
           });
-          // ① アプリを開いたまま操作している場合でも、送信完了後に最新スケジュール＆伝言を自動更新
           setTimeout(() => {
             fetchSheetData(true);
           }, 900);
@@ -1642,6 +1631,7 @@
         });
         const fetchOptions = {
           method: 'GET',
+          credentials: 'omit',
           cache: 'no-store',
           redirect: 'follow'
         };
@@ -1669,6 +1659,10 @@
             course2Stores,
             arrivalLogs
           });
+          const prevChatSnapshot = JSON.stringify({
+            chatMessagesList,
+            activeDispatchMemo
+          });
 
           if (data.course1Code) course1Code = String(data.course1Code);
           if (data.course2Code) course2Code = String(data.course2Code);
@@ -1678,7 +1672,14 @@
           activeDispatchMemo = data.dispatchMemo || data.memo || null;
           const incomingChats = data.chatMessages || data.messages || data.chatList || data.officeMessages;
           if (Array.isArray(incomingChats)) {
-            chatMessagesList = incomingChats;
+            const confirmedIds = JSON.parse(localStorage.getItem('store_confirmed_chat_ids') || '[]');
+            chatMessagesList = incomingChats.map((m) => {
+              const mId = String(m.id || '');
+              if (mId && confirmedIds.includes(mId)) {
+                return { ...m, confirmed: true };
+              }
+              return m;
+            });
           }
 
           saveScheduleCacheToLocal();
@@ -1695,8 +1696,16 @@
           if (typeof updateChatUnreadBadge === 'function') {
             updateChatUnreadBadge(data);
           }
-          if (!document.getElementById('chat-sub-screen').classList.contains('hidden')) {
-            renderChatMessages();
+
+          const newChatSnapshot = JSON.stringify({
+            chatMessagesList,
+            activeDispatchMemo
+          });
+          const chatScreenEl = document.getElementById('chat-sub-screen');
+          if (chatScreenEl && !chatScreenEl.classList.contains('hidden')) {
+            if (!silent || prevChatSnapshot !== newChatSnapshot) {
+              renderChatMessages();
+            }
           }
 
           const newScheduleSnapshot = JSON.stringify({
@@ -1707,7 +1716,6 @@
             arrivalLogs
           });
 
-          // モーダル操作中でなければ描画（裏側同期時はデータ変化があった時または初回描画時のみ）
           if (!isAnyBlockingModalOpen()) {
             if (!silent || prevScheduleSnapshot !== newScheduleSnapshot) {
               renderStoreList();
@@ -1767,7 +1775,6 @@
         const ctx = canvas.getContext('2d');
         if (!ctx) return;
 
-        // 1. 鮮やかなコバルトブルー〜スカイシアンのグラデーション背景
         const bgGrad = ctx.createLinearGradient(0, 0, size, size);
         bgGrad.addColorStop(0, '#0284c7');
         bgGrad.addColorStop(0.5, '#2563eb');
@@ -1775,27 +1782,22 @@
         ctx.fillStyle = bgGrad;
         ctx.fillRect(0, 0, size, size);
 
-        // 2. 上部からの明るいハイライト（立体感）
         const glow = ctx.createRadialGradient(size * 0.25, size * 0.15, 20, size * 0.35, size * 0.25, size * 0.75);
         glow.addColorStop(0, 'rgba(125, 211, 252, 0.55)');
         glow.addColorStop(1, 'rgba(56, 189, 248, 0)');
         ctx.fillStyle = glow;
         ctx.fillRect(0, 0, size, size);
 
-        // 3. アイコン枠ギリギリまで大きく描いた鮮明な配送トラック（白＋鮮やかアクセント）
-        // 荷台部分（大きくワイドに配置）
         ctx.fillStyle = '#ffffff';
         ctx.beginPath();
         ctx.roundRect(36, 118, 286, 218, 30);
         ctx.fill();
 
-        // 荷台の鮮やかなオレンジ・ゴールドのスピードライン装飾
         ctx.fillStyle = '#f59e0b';
         ctx.beginPath();
         ctx.roundRect(36, 286, 286, 24, 0);
         ctx.fill();
 
-        // 運転席キャビン（大きく存在感のあるシルエット）
         ctx.fillStyle = '#ffffff';
         ctx.beginPath();
         ctx.moveTo(338, 166);
@@ -1809,7 +1811,6 @@
         ctx.closePath();
         ctx.fill();
 
-        // キャビンの大きなフロントウィンドウ（鮮やかなディープブルー抜き）
         ctx.fillStyle = '#1d4ed8';
         ctx.beginPath();
         ctx.moveTo(358, 188);
@@ -1820,13 +1821,11 @@
         ctx.closePath();
         ctx.fill();
 
-        // 4. 荷台中央に大きく配置した「定時チェック時計」バッジ（鮮やかなエメラルドグリーン）
         ctx.fillStyle = '#10b981';
         ctx.beginPath();
         ctx.arc(179, 204, 64, 0, Math.PI * 2);
         ctx.fill();
 
-        // 時計の白い縁取りと太い針
         ctx.strokeStyle = '#ffffff';
         ctx.lineWidth = 14;
         ctx.lineCap = 'round';
@@ -1837,21 +1836,17 @@
         ctx.lineTo(210, 222);
         ctx.stroke();
 
-        // 5. 大きなタイヤ（2輪）
         [128, 398].forEach((wx) => {
-          // タイヤ外周（濃いネイビー）
           ctx.fillStyle = '#0f172a';
           ctx.beginPath();
           ctx.arc(wx, 344, 56, 0, Math.PI * 2);
           ctx.fill();
 
-          // ホイール（白）
           ctx.fillStyle = '#ffffff';
           ctx.beginPath();
           ctx.arc(wx, 344, 34, 0, Math.PI * 2);
           ctx.fill();
 
-          // センターキャップ（鮮やかなスカイブルー）
           ctx.fillStyle = '#0284c7';
           ctx.beginPath();
           ctx.arc(wx, 344, 14, 0, Math.PI * 2);
@@ -1873,7 +1868,6 @@
       updateClock();
       setInterval(updateClock, 10000);
 
-      // 運行携帯（?admin=1）の場合のみ全号車切り替えUIを有効化（一般ドライバー画面は一切変化なし）
       if (isAdminMode) {
         document.getElementById('fixed-car-label').classList.add('hidden');
         const switcherBtn = document.getElementById('admin-car-switcher-btn');
@@ -1935,7 +1929,6 @@
         triggerWaterDropTap();
       }, true);
 
-      // ★画面のどこか（店舗カード・便切替・日付切替・余白など）にタッチ／クリックした時に裏側同期を発火（4秒クールダウン付き）
       document.addEventListener('pointerdown', () => {
         triggerSmartBackgroundSync(4000);
       }, { passive: true, capture: true });
@@ -1967,7 +1960,6 @@
       document.getElementById('reload-sheet-btn').addEventListener('click', () => {
         const nowTap = Date.now();
         if (nowTap - lastReloadTapTime < 700) {
-          // ① ダブルタップリロード時は「更新中...」状態を記憶し、リロード直後に「デモ表示」が出ないようにする
           try {
             sessionStorage.setItem('store_arrival_reloading', '1');
           } catch (e) {}
@@ -2059,7 +2051,6 @@
         fetchSheetData();
       });
 
-      // ★電話マークタップ時の発信処理（未登録なら番号登録を案内）
       document.getElementById('chat-office-call-link').addEventListener('click', (e) => {
         const cleanNum = String(officePhoneNumber || '').replace(/[^0-9+*#]/g, '');
         if (!cleanNum) {
@@ -2068,7 +2059,6 @@
         }
       });
 
-      // ★QRコード発行＆配布URLコピー処理
       let currentInviteUrl = '';
       function initQrCarSelector() {
         const sel = document.getElementById('qr-car-select');
@@ -2166,7 +2156,6 @@
         modal.classList.remove('flex');
       });
 
-      // ★LINE風メッセージサブ画面の制御（確認しましたボタンはタップした瞬間にレ点が付いて送信）
       function isMessageFromOffice(m) {
         const s = String(m.sender ?? m.from ?? m.type ?? m.role ?? '').trim().toLowerCase();
         return s === 'office' || s === '事務所' || s === 'admin' || s === 'manager' || s === '運行';
@@ -2208,7 +2197,6 @@
         badgeEl.textContent = String(unread);
         if (unread > 0) {
           badgeEl.classList.add('animate-bounce');
-          // 新着未読件数が増えた瞬間にお知らせチャイム＋バッジ強調
           if (unread > lastKnownUnreadCount) {
             triggerDispatchMemoAlertSound();
             badgeEl.style.transition = 'transform 0.25s ease';
@@ -2221,7 +2209,6 @@
         lastKnownUnreadCount = unread;
       }
 
-      // ★「新着メッセージ」ボタン長押し（1秒）でGAS応答の中身を簡易診断表示（通常操作には影響なし）
       let chatBtnDebugTimer = null;
       const openChatBtnEl = document.getElementById('open-chat-screen-btn');
       openChatBtnEl.addEventListener('touchstart', () => {
@@ -2245,7 +2232,6 @@
         if (!container) return;
         container.innerHTML = '';
 
-        // タイムライン上部中央にLINE風の日付ピルバッジを表示
         const datePillWrap = document.createElement('div');
         datePillWrap.className = 'flex justify-center my-1';
         const datePill = document.createElement('span');
@@ -2300,7 +2286,6 @@
             ? 'line-bubble-office bg-white border border-slate-200 px-3.5 py-2.5 shadow-xs space-y-2 select-none'
             : 'line-bubble-driver bg-blue-600 text-white px-3.5 py-2.5 shadow-xs space-y-2 select-none';
 
-          // 長押し（650ms）で削除確認モーダルを表示
           let pressTimer = null;
           const startLongPress = () => {
             pressTimer = setTimeout(() => {
@@ -2360,6 +2345,13 @@
 
                 setTimeout(async () => {
                   msg.confirmed = true;
+                  if (msg.id) {
+                    const confirmedIds = JSON.parse(localStorage.getItem('store_confirmed_chat_ids') || '[]');
+                    if (!confirmedIds.includes(String(msg.id))) {
+                      confirmedIds.push(String(msg.id));
+                      localStorage.setItem('store_confirmed_chat_ids', JSON.stringify(confirmedIds.slice(-100)));
+                    }
+                  }
                   if (activeDispatchMemo && (!msg.id || activeDispatchMemo.memoId === msg.id)) {
                     activeDispatchMemo = null;
                   }
@@ -2371,13 +2363,16 @@
                       await fetch(gasWebAppUrl, {
                         method: 'POST',
                         mode: 'no-cors',
-                        headers: { 'Content-Type': 'application/json' },
+                        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
                         body: JSON.stringify({
                           action: 'confirmMemo',
                           excelCarIndex: excelCarIndex,
                           memoId: msg.id || ''
                         })
                       });
+                      setTimeout(() => {
+                        fetchSheetData(true);
+                      }, 1000);
                     } catch (e) {}
                   }
                 }, 380);
@@ -2560,7 +2555,7 @@
             await fetch(gasWebAppUrl, {
               method: 'POST',
               mode: 'no-cors',
-              headers: { 'Content-Type': 'application/json' },
+              headers: { 'Content-Type': 'text/plain;charset=utf-8' },
               body: JSON.stringify({
                 action: 'sendDriverChat',
                 excelCarIndex: excelCarIndex,
@@ -2569,7 +2564,6 @@
                 sentAt: timeStr
               })
             });
-            // メッセージ送信後、同じ画面を開いたままでも自動更新で新着メッセージ数を反映
             setTimeout(() => {
               fetchSheetData(true);
             }, 900);
@@ -2585,7 +2579,6 @@
         }
       });
 
-      // 縦型マイクアイコン押下時の音声入力処理
       const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
       let activeRecognition = null;
       document.getElementById('chat-mic-btn').addEventListener('click', () => {
@@ -2633,7 +2626,6 @@
         }
       });
 
-      // スマホでキーボードを開いたときに入力欄の下1/3が隠れないよう画面高さを自動追従
       function syncChatViewportHeight() {
         const screen = document.getElementById('chat-sub-screen');
         if (!screen || screen.classList.contains('hidden')) return;
