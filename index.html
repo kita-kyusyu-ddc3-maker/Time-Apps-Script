@@ -1577,20 +1577,31 @@
       const hasCached = restoreScheduleCacheFromLocal();
       if (hasCached) {
         renderStoreList();
-      }
-
-      if (!silent && !hasCached) {
+      } else {
         setConnectionBadge('loading', '読込中...');
       }
+
       try {
         const query = new URLSearchParams({
           action: 'getSchedule',
-          deliveryDate: getFormattedDeliveryDateKey(),
           excelCarIndex: String(excelCarIndex),
+          deliveryDate: getFormattedDeliveryDateKey(),
           _t: String(Date.now())
         });
-        const res = await fetch(`${gasWebAppUrl}?${query.toString()}`);
-        const data = await res.json();
+        const res = await fetch(`${gasWebAppUrl}?${query.toString()}`, {
+          method: 'GET',
+          redirect: 'follow'
+        });
+        if (!res.ok) {
+          throw new Error(`HTTP ${res.status}`);
+        }
+        const textData = await res.text();
+        let data = null;
+        try {
+          data = JSON.parse(textData);
+        } catch (parseErr) {
+          throw new Error('GAS権限エラー（アクセスできるユーザーを「全員」にしてください）');
+        }
 
         if (data && data.status === 'ok') {
           if (data.course1Code) course1Code = String(data.course1Code);
@@ -1615,9 +1626,11 @@
           }
         } else {
           setConnectionBadge('error', '読込エラー');
+          if (!silent) showToast(`エラー: ${(data && data.message) || '応答不正'}`);
         }
       } catch (e) {
         setConnectionBadge('error', '通信エラー');
+        if (!silent) showToast(`通信失敗: ${e.message || e}`);
       }
       renderStoreList();
     }
