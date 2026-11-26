@@ -1577,9 +1577,14 @@
               ...logEntry
             })
           });
+          window.__recentSubmittedLogs = window.__recentSubmittedLogs || [];
+          window.__recentSubmittedLogs = window.__recentSubmittedLogs.filter(
+            (r) => !(r.courseType === logEntry.courseType && Number(r.order) === Number(logEntry.order))
+          );
+          window.__recentSubmittedLogs.push({ ...logEntry, _submittedAt: Date.now() });
           setTimeout(() => {
             fetchSheetData(true);
-          }, 900);
+          }, 2800);
         } catch (err) {
           console.error('GAS送信エラー:', err);
         }
@@ -1710,7 +1715,20 @@
           if (data.course2Code) course2Code = String(data.course2Code);
           if (Array.isArray(data.course1Stores)) course1Stores = normalizeStoreArray(data.course1Stores);
           if (Array.isArray(data.course2Stores)) course2Stores = normalizeStoreArray(data.course2Stores);
-          if (Array.isArray(data.existingLogs)) arrivalLogs = normalizeLogsArray(data.existingLogs);
+          if (Array.isArray(data.existingLogs)) {
+            let mergedLogs = normalizeLogsArray(data.existingLogs);
+            const recentList = (window.__recentSubmittedLogs || []).filter((r) => Date.now() - r._submittedAt < 8000);
+            window.__recentSubmittedLogs = recentList;
+            recentList.forEach((recentItem) => {
+              const existsOnSheet = mergedLogs.some(
+                (l) => l.courseType === recentItem.courseType && Number(l.order) === Number(recentItem.order)
+              );
+              if (!existsOnSheet) {
+                mergedLogs.push(recentItem);
+              }
+            });
+            arrivalLogs = mergedLogs;
+          }
           activeDispatchMemo = data.dispatchMemo || data.memo || null;
           const incomingChats = data.chatMessages || data.messages || data.chatList || data.officeMessages;
           if (Array.isArray(incomingChats)) {
