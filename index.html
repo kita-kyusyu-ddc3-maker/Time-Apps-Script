@@ -1556,6 +1556,14 @@
       saveScheduleCacheToLocal();
       renderStoreList();
 
+      // ★送信ボタンを押した瞬間（await fetchより前）に保護登録し、進行中の古いGET結果を無効化
+      window.__lastArrivalSubmitAt = Date.now();
+      window.__recentSubmittedLogs = window.__recentSubmittedLogs || [];
+      window.__recentSubmittedLogs = window.__recentSubmittedLogs.filter(
+        (r) => !(r.courseType === logEntry.courseType && Number(r.order) === Number(logEntry.order))
+      );
+      window.__recentSubmittedLogs.push({ ...logEntry, _submittedAt: Date.now() });
+
       if (switchedToCourse2) {
         showToast(`🚚 1便完了！2便（${course2Code}コース）へ切り替えました`);
       } else if (isHoliday) {
@@ -1577,14 +1585,9 @@
               ...logEntry
             })
           });
-          window.__recentSubmittedLogs = window.__recentSubmittedLogs || [];
-          window.__recentSubmittedLogs = window.__recentSubmittedLogs.filter(
-            (r) => !(r.courseType === logEntry.courseType && Number(r.order) === Number(logEntry.order))
-          );
-          window.__recentSubmittedLogs.push({ ...logEntry, _submittedAt: Date.now() });
           setTimeout(() => {
             fetchSheetData(true);
-          }, 2800);
+          }, 3000);
         } catch (err) {
           console.error('GAS送信エラー:', err);
         }
@@ -1643,6 +1646,7 @@
       }
       isFetchingSheetData = true;
       fetchingStartedAt = Date.now();
+      const thisFetchStartedAt = fetchingStartedAt;
       lastFetchTimestamp = Date.now();
 
       // ④ 手動更新(!silent)の時だけ端末キャッシュから即時描画し、自動同期(silent)ではキャッシュ巻き戻しをしない
@@ -1699,6 +1703,8 @@
 
         if (data && data.status === 'ok') {
           window.__lastGasRawDebug = data;
+          // ★このGET通信開始後に新しく店着送信が行われていた場合、古いデータでの画面巻き戻しを防止
+          const submittedDuringThisFetch = Boolean(window.__lastArrivalSubmitAt && thisFetchStartedAt < window.__lastArrivalSubmitAt);
           const prevScheduleSnapshot = JSON.stringify({
             course1Code,
             course2Code,
@@ -1715,9 +1721,9 @@
           if (data.course2Code) course2Code = String(data.course2Code);
           if (Array.isArray(data.course1Stores)) course1Stores = normalizeStoreArray(data.course1Stores);
           if (Array.isArray(data.course2Stores)) course2Stores = normalizeStoreArray(data.course2Stores);
-          if (Array.isArray(data.existingLogs)) {
+          if (Array.isArray(data.existingLogs) && !submittedDuringThisFetch) {
             let mergedLogs = normalizeLogsArray(data.existingLogs);
-            const recentList = (window.__recentSubmittedLogs || []).filter((r) => Date.now() - r._submittedAt < 8000);
+            const recentList = (window.__recentSubmittedLogs || []).filter((r) => Date.now() - r._submittedAt < 15000);
             window.__recentSubmittedLogs = recentList;
             recentList.forEach((recentItem) => {
               const existsOnSheet = mergedLogs.some(
