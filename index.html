@@ -1928,46 +1928,33 @@
         ctx.lineTo(210, 222);
         ctx.stroke();
 
-        [128, 398].forEach((wx) => {
-          ctx.fillStyle = '#0f172a';
-          ctx.beginPath();
-          ctx.arc(wx, 344, 56, 0, Math.PI * 2);
-          ctx.fill();
-
-          ctx.fillStyle = '#ffffff';
-          ctx.beginPath();
-          ctx.arc(wx, 344, 34, 0, Math.PI * 2);
-          ctx.fill();
-
-          ctx.fillStyle = '#0284c7';
-          ctx.beginPath();
-          ctx.arc(wx, 344, 14, 0, Math.PI * 2);
-          ctx.fill();
-        });
-
-        const iconDataUrl = canvas.toDataURL('image/png');
-        const appleIcon = document.getElementById('app-apple-touch-icon');
+        const dataUrl = canvas.toDataURL('image/png');
+        const touchIcon = document.getElementById('app-apple-touch-icon');
         const favIcon = document.getElementById('app-favicon');
-        if (appleIcon) appleIcon.href = iconDataUrl;
-        if (favIcon) favIcon.href = iconDataUrl;
+        if (touchIcon) touchIcon.href = dataUrl;
+        if (favIcon) favIcon.href = dataUrl;
       } catch (e) {}
     }
 
-    // ★オープニング画面（GitHub上の ./opening-bg.jpg 実写背景を表示）
+    // ★オープニング画面（GitHub上の ./opening-bg.jpg 実写背景を表示・アイコンタップ/復帰時確実表示）
     function initOnboardingFlow() {
       const overlay = document.getElementById('onboarding-overlay');
       const goBtn = document.getElementById('onboarding-go-started-btn');
       const carTag = document.getElementById('onboarding-car-tag');
       if (!overlay || !goBtn) return;
 
-      if (isManualReloading) return;
-
-      if (carTag) {
-        carTag.textContent = `${excelCarIndex}号車 • ${pad2(excelCarIndex)}`;
+      if (isManualReloading) {
+        try { sessionStorage.removeItem('store_arrival_reloading'); } catch (e) {}
+        return;
       }
 
-      overlay.classList.remove('hidden');
-      overlay.classList.add('flex');
+      window.showOnboardingOverlay = function() {
+        if (carTag) {
+          carTag.textContent = `${excelCarIndex}号車 • ${pad2(excelCarIndex)}`;
+        }
+        overlay.classList.remove('hidden', 'is-closing');
+        overlay.classList.add('flex');
+      };
 
       window.completeOnboardingFlow = function() {
         overlay.classList.add('is-closing');
@@ -1981,7 +1968,28 @@
         triggerWaterDropTap();
         window.completeOnboardingFlow();
       });
+
+      // 起動直後に必ず表示
+      window.showOnboardingOverlay();
     }
+
+    // ホーム画面に戻ってアプリアイコンを再タップした時（バックグラウンド復帰・pageshow）にも確実に表示
+    let wasAppInBackground = false;
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'hidden') {
+        wasAppInBackground = true;
+      } else if (document.visibilityState === 'visible' && wasAppInBackground) {
+        wasAppInBackground = false;
+        if (typeof window.showOnboardingOverlay === 'function') {
+          window.showOnboardingOverlay();
+        }
+      }
+    });
+    window.addEventListener('pageshow', (event) => {
+      if (event.persisted && typeof window.showOnboardingOverlay === 'function') {
+        window.showOnboardingOverlay();
+      }
+    });
 
     document.addEventListener('DOMContentLoaded', () => {
       initOnboardingFlow();
