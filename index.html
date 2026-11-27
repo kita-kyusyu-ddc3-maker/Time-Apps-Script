@@ -174,50 +174,28 @@
 <body class="text-slate-900 min-h-screen flex justify-center overflow-x-hidden">
 
   <!-- 0. オープニング画面（オンボーディング1画面目・2画面目拡張対応独立レイヤー） -->
-  <div id="onboarding-overlay" class="fixed inset-0 z-[100] hidden flex-col justify-between max-w-md mx-auto bg-[#071120] text-white overflow-hidden select-none">
-    <!-- 背景画像（GitHubアップロード済みの opening-bg.jpg を全画面表示） -->
-    <img src="./opening-bg.jpg" alt="" class="absolute inset-0 w-full h-full object-cover object-center pointer-events-none" />
+  <div id="onboarding-overlay" class="fixed inset-0 z-[100] hidden flex-col justify-end max-w-md mx-auto bg-[#071120] text-white overflow-hidden select-none">
+    <!-- 背景画像（GitHubアップロード済みの opening-bg.jpg をランナーから下のトラックまで全体表示） -->
+    <img src="./opening-bg.jpg" alt="" class="absolute inset-0 w-full h-full object-cover object-top pointer-events-none" />
 
-    <!-- 上部・下部グラデーションマスク（文字とボタンの視認性を極限まで高める） -->
-    <div class="absolute inset-0 pointer-events-none bg-gradient-to-b from-[#081529]/50 via-transparent to-[#050b14]/92"></div>
-    <div class="absolute inset-x-0 bottom-0 h-[56%] pointer-events-none bg-gradient-to-t from-[#040911] via-[#06101e]/85 to-transparent"></div>
-
-    <!-- 上部ブランドヘッダー -->
-    <div class="relative z-10 px-6 pt-[calc(1.25rem+env(safe-area-inset-top))] flex items-center justify-between">
-      <div class="flex items-center gap-2.5">
-        <span class="w-7 h-7 rounded-full bg-[#3EE6A8] flex items-center justify-center shadow-[0_0_16px_rgba(62,230,168,0.45)]">
-          <span class="w-3.5 h-1.5 bg-[#061320] rounded-b-full translate-y-[1px]"></span>
-        </span>
-        <span id="onboarding-car-tag" class="text-sm font-extrabold tracking-wide text-white/95 drop-shadow-xs">CAR --</span>
-      </div>
-      <div class="flex items-center gap-1.5" id="onboarding-step-dots">
-        <span class="w-6 h-1.5 rounded-full bg-[#3EE6A8] transition-all"></span>
-        <span class="w-1.5 h-1.5 rounded-full bg-white/35 transition-all"></span>
-      </div>
-    </div>
+    <!-- 下部テキスト・ボタンの視認性を確保しつつ、サイバートラックがくっきり見えるよう最小限にしたグラデーション -->
+    <div class="absolute inset-x-0 bottom-0 h-[44%] pointer-events-none bg-gradient-to-t from-[#03070e]/92 via-[#040a14]/55 to-transparent"></div>
 
     <!-- 下部メインコンテンツ（ステップ1：Distribution Arrival Manager） -->
-    <div id="onboarding-step-1" class="relative z-10 px-7 pb-[calc(2.1rem+env(safe-area-inset-bottom))] flex flex-col">
-      <!-- ページインジケーターバー -->
-      <div class="flex items-center gap-2 mb-5">
-        <span class="w-7 h-1.5 rounded-full bg-[#3EE6A8]"></span>
-        <span class="w-1.5 h-1.5 rounded-full bg-white/35"></span>
-        <span class="w-1.5 h-1.5 rounded-full bg-white/35"></span>
-      </div>
-
+    <div id="onboarding-step-1" class="relative z-10 px-7 pb-[calc(2rem+env(safe-area-inset-bottom))] flex flex-col">
       <!-- 大きな2行見出し -->
-      <h2 class="text-[2.35rem] leading-[1.08] font-black tracking-tight text-white drop-shadow-[0_2px_12px_rgba(0,0,0,0.5)]">
+      <h2 class="text-[2.35rem] leading-[1.08] font-black tracking-tight text-white drop-shadow-[0_3px_14px_rgba(0,0,0,0.85)]">
         Distribution<br>
-        <span class="onboarding-accent-serif font-bold text-[#3EE6A8] text-[2.45rem] tracking-normal">Arrival Manager</span>
+        <span class="onboarding-accent-serif font-bold text-[#3EE6A8] text-[2.45rem] tracking-normal drop-shadow-[0_3px_14px_rgba(0,0,0,0.85)]">Arrival Manager</span>
       </h2>
 
       <!-- 見出しとボタンの間のドライバーサポート英語メッセージ -->
-      <p class="mt-4 text-[14px] leading-[1.6] font-medium text-slate-200/90 max-w-[310px]">
+      <p class="mt-3.5 text-[14px] leading-[1.6] font-semibold text-white/95 max-w-[310px] drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)]">
         Smart arrival tracking and instant office dispatch support for every driver.
       </p>
 
       <!-- メインアクションボタン（横長ミントグリーン） -->
-      <button type="button" id="onboarding-go-started-btn" class="mt-7 w-full py-4 rounded-2xl bg-[#3EE6A8] hover:bg-[#34d69a] active:scale-[0.985] text-[#051811] font-extrabold text-[16px] tracking-wide shadow-[0_10px_28px_rgba(62,230,168,0.32)] transition">
+      <button type="button" id="onboarding-go-started-btn" class="mt-6 w-full py-4 rounded-2xl bg-[#3EE6A8] hover:bg-[#34d69a] active:scale-[0.985] text-[#051811] font-extrabold text-[16px] tracking-wide shadow-[0_10px_28px_rgba(0,0,0,0.5)] transition">
         Go started
       </button>
     </div>
@@ -1937,7 +1915,7 @@
     }
 
     // ★オープニング画面（GitHub上の ./opening-bg.jpg 実写背景を表示・アイコンタップ/復帰時確実表示）
-    const APP_UI_VERSION = '2026.11.28.v1';
+    const APP_UI_VERSION = '2026.11.28.v2';
 
     async function checkAndAutoRefreshLatestHtml() {
       try {
@@ -1958,12 +1936,7 @@
     function initOnboardingFlow() {
       const overlay = document.getElementById('onboarding-overlay');
       const goBtn = document.getElementById('onboarding-go-started-btn');
-      const carTag = document.getElementById('onboarding-car-tag');
       if (!overlay) return;
-
-      if (carTag) {
-        carTag.textContent = `CAR ${pad2(excelCarIndex)}`;
-      }
 
       const showOverlay = () => {
         if (isManualReloading) return;
@@ -2028,8 +2001,6 @@
             excelCarIndex = i;
             localStorage.setItem('store_arrival_car_index', String(i));
             if (label) label.textContent = `${i}号車`;
-            const carTag = document.getElementById('onboarding-car-tag');
-            if (carTag) carTag.textContent = `CAR ${pad2(i)}`;
             modal.classList.add('hidden');
             modal.classList.remove('flex');
             renderStoreList();
