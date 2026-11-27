@@ -101,7 +101,7 @@
       font-size: 1.85rem;
       font-weight: 900;
     }
-    /* LINE風吹き出しのしっぽデザイン */
+    /* LINE風吹き出しのしっぽデザイン（上部からカーブして尖る本物のLINE形状） */
     .line-bubble-office {
       position: relative;
       border-radius: 18px;
@@ -189,23 +189,16 @@
 
   <!-- 0. オープニング画面（オンボーディング1画面目・独立レイヤー） -->
   <div id="onboarding-overlay" class="fixed inset-0 z-[100] flex flex-col justify-end max-w-md mx-auto bg-[#071120] text-white overflow-hidden select-none">
-    <!-- 背景画像（GitHubアップロード済みの opening-bg.jpg をランナーから下のトラックまで全体表示） -->
     <img src="./opening-bg.jpg" alt="" class="absolute inset-0 w-full h-full object-cover object-top pointer-events-none" />
-
-    <!-- 下部テキスト・ボタンの視認性を確保しつつ、サイバートラックがくっきり見えるよう最小限にしたグラデーション -->
     <div class="absolute inset-x-0 bottom-0 h-[44%] pointer-events-none bg-gradient-to-t from-[#03070e]/92 via-[#040a14]/55 to-transparent"></div>
-
-    <!-- 下部メインコンテンツ（ステップ1：Distribution Arrival Manager） -->
     <div id="onboarding-step-1" class="relative z-10 px-7 pb-[calc(2rem+env(safe-area-inset-bottom))] flex flex-col">
       <h2 class="text-[2.35rem] leading-[1.08] font-black tracking-tight text-white drop-shadow-[0_3px_14px_rgba(0,0,0,0.85)]">
         Distribution<br>
         <span class="onboarding-accent-serif font-bold text-[#3EE6A8] text-[2.45rem] tracking-normal drop-shadow-[0_3px_14px_rgba(0,0,0,0.85)]">Arrival Manager</span>
       </h2>
-
       <p class="mt-3.5 text-[14px] leading-[1.6] font-semibold text-white/95 max-w-[310px] drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)]">
         Smart arrival tracking and instant office dispatch support for every driver.
       </p>
-
       <button type="button" id="onboarding-go-started-btn" class="mt-6 w-full py-4 rounded-2xl bg-[#3EE6A8] hover:bg-[#34d69a] active:scale-[0.985] text-[#051811] font-extrabold text-[16px] tracking-wide shadow-[0_10px_28px_rgba(0,0,0,0.5)] transition">
         Go started
       </button>
@@ -226,7 +219,8 @@
           <div class="min-w-0">
             <div class="flex items-center gap-1.5 whitespace-nowrap">
               <h1 id="fixed-car-label" class="text-lg font-black tracking-tight text-slate-900 leading-none whitespace-nowrap shrink-0">--号車</h1>
-              <button type="button" id="admin-car-switcher-btn" class="hidden items-center gap-1 bg-violet-100 active:bg-violet-200 text-violet-950 border border-violet-300 rounded-xl px-2 py-1 text-xs font-black shadow-2xs transition whitespace-nowrap shrink-0">
+              <!-- 運行携帯（?admin=1）専用：タップで号車選択パネルを開くボタン -->
+              <button type="button" id="admin-car-switcher-btn" class="hidden items-center gap-1 bg-violet-100 active:bg-violet-200 text-violet-950 border border-violet-300 rounded-xl px-2.5 py-1 text-xs font-black shadow-2xs transition whitespace-nowrap shrink-0">
                 <span id="admin-car-btn-label">0号車</span>
                 <svg class="w-3.5 h-3.5 text-violet-700" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
               </button>
@@ -325,7 +319,7 @@
       </div>
     </div>
 
-    <!-- 5. モーダル1：店着時間を入力する画面 -->
+    <!-- 5. モーダル1：店着時間を入力する画面（シックな白デザイン） -->
     <div id="arrival-modal" class="fixed inset-0 bg-zinc-950/35 backdrop-blur-xs z-40 hidden items-end sm:items-center justify-center p-0 sm:p-4">
       <div class="bg-[#FCFCFD] w-full max-w-md rounded-t-[2rem] sm:rounded-[2rem] p-6 shadow-[0_20px_50px_rgba(24,24,27,0.16)] border-t sm:border border-zinc-200/80 space-y-5 animate-modal-in max-h-[92vh] overflow-y-auto">
         <div class="w-10 h-1 bg-zinc-200 rounded-full mx-auto -mt-2 mb-1 sm:hidden"></div>
@@ -355,6 +349,7 @@
 
           <div class="bg-white rounded-3xl px-3 py-2.5 border border-zinc-200/85 shadow-[0_2px_12px_rgba(24,24,27,0.04)] relative">
             <div class="grid grid-cols-11 items-center">
+              <!-- 時 (HOUR) ドラムリール -->
               <div class="col-span-5 flex flex-col items-center">
                 <span class="text-[10px] font-extrabold text-zinc-400 tracking-wider mb-0.5">時 (HOUR)</span>
                 <div id="wheel-hour-viewport" class="wheel-viewport w-full rounded-2xl">
@@ -364,10 +359,12 @@
                 </div>
               </div>
 
+              <!-- 中央コロン -->
               <div class="col-span-1 flex flex-col items-center justify-center pt-4">
                 <span class="text-2xl font-black text-zinc-800 pb-1">:</span>
               </div>
 
+              <!-- 分 (MIN) ドラムリール -->
               <div class="col-span-5 flex flex-col items-center">
                 <span class="text-[10px] font-extrabold text-zinc-400 tracking-wider mb-0.5">分 (MIN)</span>
                 <div id="wheel-minute-viewport" class="wheel-viewport w-full rounded-2xl">
@@ -377,6 +374,7 @@
                 </div>
               </div>
             </div>
+            <!-- 値保持用の隠しinput -->
             <input type="hidden" id="select-hour" value="00" />
             <input type="hidden" id="select-minute" value="00" />
           </div>
@@ -427,6 +425,7 @@
           </div>
         </div>
 
+        <!-- ★追加：他端末導入用の号車別QRコード発行セクション -->
         <div class="border-t border-zinc-200/80 pt-4 space-y-3">
           <div>
             <h3 class="text-sm font-black text-zinc-900">他端末導入用 QRコード発行</h3>
@@ -548,6 +547,7 @@
   </div>
 
   <script>
+    // ⑤ 起動直後にCAR15が出ないよう、URLパラメータ → localStorage保存値 の順で本来の号車番号を即座に確定
     const urlParams = new URLSearchParams(window.location.search);
     const paramCarRaw = urlParams.get('car');
     const paramCar = paramCarRaw !== null ? parseInt(paramCarRaw, 10) : NaN;
@@ -566,10 +566,12 @@
     let isSingleCourseCar = (excelCarIndex === 14);
     const isAdminMode = (urlParams.get('admin') === '1');
 
+    // 初期描画の瞬間に本来のCARナンバーを即反映
     document.getElementById('fixed-car-num').textContent = String(excelCarIndex).padStart(2, '0');
     document.getElementById('fixed-car-label').textContent = `${excelCarIndex}号車`;
     document.getElementById('fixed-course-summary').textContent = `${100 + excelCarIndex} / ${200 + excelCarIndex}コース`;
 
+    // ★QRコードのURLパラメータ(?gas=...)があれば自動取得してスマホに永続保存（一発自動接続）
     const paramGasUrl = urlParams.get('gas');
     if (paramGasUrl && paramGasUrl.startsWith('http')) {
       localStorage.setItem('store_arrival_gas_url', paramGasUrl.trim());
@@ -579,12 +581,14 @@
       localStorage.setItem('store_arrival_office_phone', paramOfficePhone.trim());
     }
 
+    // 自分自身のGASウェブアプリURLを自動検出
     const AUTO_GAS_URL = (typeof google !== 'undefined' && google.script && google.script.run)
       ? window.location.href.split('?')[0]
       : '';
     let gasWebAppUrl = localStorage.getItem('store_arrival_gas_url') || AUTO_GAS_URL;
     let officePhoneNumber = localStorage.getItem('store_arrival_office_phone') || '';
 
+    // ★ダブルタップリロード直後の「更新中...」判定（デモ表示の一瞬チラつき防止）
     let isManualReloading = false;
     try {
       if (sessionStorage.getItem('store_arrival_reloading') === '1' || urlParams.get('reloading') === '1') {
@@ -618,6 +622,7 @@
       return new Date(now.getFullYear(), now.getMonth(), now.getDate());
     }
 
+    // ⑥ 現在の稼働日（当日）より過去日（前日以前）かどうかを判定
     function isPastDeliveryDate() {
       const todayEff = getInitialDeliveryDate();
       const currentTarget = new Date(deliveryDate.getFullYear(), deliveryDate.getMonth(), deliveryDate.getDate());
@@ -651,48 +656,17 @@
     let hourWheelController = null;
     let minuteWheelController = null;
 
+    // ★裏側同期制御用のタイムスタンプ＆多重通信ロック
     let lastFetchTimestamp = 0;
     let isFetchingSheetData = false;
     let fetchingStartedAt = 0;
     let lastKnownUnreadCount = 0;
     let knownOfficeMessageIds = new Set();
     let hasInitializedMessageIds = true;
+    let autoPollTimerId = null;
 
     function pad2(n) {
       return String(n).padStart(2, '0');
-    }
-
-    let sharedAudioCtx = null;
-    function getAudioCtx() {
-      try {
-        const AudioCtx = window.AudioContext || window.webkitAudioContext;
-        if (!sharedAudioCtx && AudioCtx) {
-          sharedAudioCtx = new AudioCtx();
-        }
-        return sharedAudioCtx;
-      } catch (e) {
-        return null;
-      }
-    }
-
-    function unlockAudioOnFirstGesture() {
-      try {
-        const ctx = getAudioCtx();
-        if (ctx && ctx.state === 'suspended') {
-          ctx.resume();
-        }
-      } catch (e) {}
-    }
-
-    function showToast(msg) {
-      const banner = document.getElementById('toast-banner');
-      if (!banner) return;
-      banner.textContent = msg;
-      banner.classList.remove('hidden');
-      clearTimeout(window._toastTimer);
-      window._toastTimer = setTimeout(() => {
-        banner.classList.add('hidden');
-      }, 2400);
     }
 
     function getFormattedDeliveryDateKey() {
@@ -710,116 +684,158 @@
       return `${m}/${d}(${w})`;
     }
 
+    function parseTimeToMinutes(hhmm) {
+      if (!hhmm || !String(hhmm).includes(':')) return null;
+      const [h, m] = String(hhmm).split(':').map(Number);
+      if (isNaN(h) || isNaN(m)) return null;
+      return h * 60 + m;
+    }
+
     function calculateTimeDiffMinutes(scheduledStr, arrivalStr) {
-      if (!scheduledStr || !arrivalStr || !scheduledStr.includes(':') || !arrivalStr.includes(':')) return 0;
-      const [sh, sm] = scheduledStr.split(':').map(Number);
-      const [ah, am] = arrivalStr.split(':').map(Number);
-      if (isNaN(sh) || isNaN(sm) || isNaN(ah) || isNaN(am)) return 0;
-      let diff = (ah * 60 + am) - (sh * 60 + sm);
+      const sMin = parseTimeToMinutes(scheduledStr);
+      const aMin = parseTimeToMinutes(arrivalStr);
+      if (sMin === null || aMin === null) return 0;
+      let diff = aMin - sMin;
       if (diff < -720) diff += 1440;
       if (diff > 720) diff -= 1440;
       return diff;
     }
 
-    function formatDiffDisplay(diffMin) {
-      if (diffMin === 0) return '±0分';
-      return diffMin > 0 ? `+${diffMin}分` : `${diffMin}分`;
+    function formatDiffDisplay(diff) {
+      if (diff === 0) return '定時ぴったり (±0分)';
+      if (diff >= 31) return `⚠️ +${diff}分 延着`;
+      if (diff > 0) return `+${diff}分 遅れ`;
+      return `${diff}分 早着`;
     }
 
-    function normalizeStoreArray(arr) {
-      return arr.map((item, idx) => ({
-        order: Number(item.order || idx + 1),
-        name: String(item.name || ''),
-        scheduled: String(item.scheduled || '--:--'),
-        avgArrival: item.avgArrival ? String(item.avgArrival) : ''
-      }));
+    let toastTimer = null;
+    function showToast(msg) {
+      const banner = document.getElementById('toast-banner');
+      banner.textContent = msg;
+      banner.classList.remove('hidden');
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => {
+        banner.classList.add('hidden');
+      }, 2800);
     }
 
-    function normalizeLogsArray(arr) {
-      return arr.map((l) => {
-        const diffNum = Number(l.diffMinutes || 0);
-        const isHol = Boolean(l.isHoliday || l.arrival === '休業');
-        const isExt = Boolean(l.isExtraRun || l.arrival === '臨時便');
+    // 店舗データを配列の並び順（1, 2, 3...）として確実に正規化
+    function normalizeStoreArray(rawList) {
+      if (!Array.isArray(rawList)) return [];
+      return rawList.map((item, idx) => {
+        if (typeof item === 'string') {
+          return { order: idx + 1, name: item, scheduled: '' };
+        }
         return {
-          courseType: String(l.courseType || '1'),
-          order: Number(l.order || 1),
-          storeName: String(l.storeName || ''),
-          scheduled: String(l.scheduled || ''),
-          arrival: String(l.arrival || ''),
-          diffMinutes: diffNum,
-          diffDisplay: l.diffDisplay || (isHol ? '休業' : isExt ? '臨時便' : formatDiffDisplay(diffNum)),
-          isDelayed: Boolean(l.isDelayed || (!isHol && !isExt && diffNum >= 31)),
-          isHoliday: isHol,
-          isExtraRun: isExt,
-          drSentTime: String(l.drSentTime || '')
+          ...item,
+          order: idx + 1,
+          name: item.name ?? item.storeName ?? item.shopName ?? item.store ?? `店舗${idx + 1}`,
+          scheduled: item.scheduled ?? item.scheduledTime ?? item.targetTime ?? item.time ?? ''
         };
       });
     }
 
-    function generateAppIcons() {
+    function normalizeLogsArray(rawLogs) {
+      if (!Array.isArray(rawLogs)) return [];
+      return rawLogs.map((l, idx) => {
+        const cType = String(l.courseType ?? l.bin ?? l.course ?? '1');
+        const parsedOrd = parseInt(l.order ?? l.storeOrder ?? l.index, 10);
+        const ord = (!isNaN(parsedOrd) && parsedOrd > 0) ? parsedOrd : (idx + 1);
+        const sName = l.storeName ?? l.name ?? l.shopName ?? '';
+        const sched = l.scheduled ?? l.scheduledTime ?? '';
+        const arr = l.arrival ?? l.arrivalTime ?? l.actualTime ?? l.value ?? '';
+        const isHol = Boolean(l.isHoliday || arr === '休業');
+        const isExt = Boolean(l.isExtraRun || arr === '臨時便');
+        const diff = (isHol || isExt) ? 0 : calculateTimeDiffMinutes(sched, arr);
+        const isDel = Boolean(l.isDelayed || (!isHol && !isExt && diff >= 31));
+        return {
+          ...l,
+          courseType: cType,
+          order: ord,
+          storeName: sName,
+          scheduled: sched,
+          arrival: arr,
+          diffMinutes: diff,
+          diffDisplay: isHol ? '休業' : isExt ? '臨時便' : formatDiffDisplay(diff),
+          isDelayed: isDel,
+          isHoliday: isHol,
+          isExtraRun: isExt
+        };
+      });
+    }
+
+    // Web Audio API サウンド
+    let sharedAudioCtx = null;
+    let audioUnlocked = false;
+    function getAudioCtx() {
+      if (!sharedAudioCtx) {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (AudioCtx) sharedAudioCtx = new AudioCtx();
+      }
+      if (sharedAudioCtx && sharedAudioCtx.state === 'suspended') {
+        sharedAudioCtx.resume().catch(() => {});
+      }
+      return sharedAudioCtx;
+    }
+
+    function unlockAudioOnFirstGesture() {
+      if (audioUnlocked) return;
       try {
-        const size = 180;
-        const canvas = document.createElement('canvas');
-        canvas.width = size;
-        canvas.height = size;
-        const ctx = canvas.getContext('2d');
+        const ctx = getAudioCtx();
         if (!ctx) return;
-
-        const grad = ctx.createLinearGradient(0, 0, size, size);
-        grad.addColorStop(0, '#0f172a');
-        grad.addColorStop(1, '#1e293b');
-        ctx.fillStyle = grad;
-        ctx.fillRect(0, 0, size, size);
-
-        ctx.fillStyle = '#3EE6A8';
-        ctx.beginPath();
-        ctx.roundRect(22, 22, 136, 136, 32);
-        ctx.fill();
-
-        ctx.fillStyle = '#051811';
-        ctx.font = '900 44px sans-serif';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText('店着', size / 2, size / 2 + 4);
-
-        const dataUrl = canvas.toDataURL('image/png');
-        const appleIcon = document.getElementById('app-apple-touch-icon');
-        const favIcon = document.getElementById('app-favicon');
-        if (appleIcon) appleIcon.href = dataUrl;
-        if (favIcon) favIcon.href = dataUrl;
+        if (ctx.state === 'suspended') {
+          ctx.resume().catch(() => {});
+        }
+        const buffer = ctx.createBuffer(1, 1, 22050);
+        const source = ctx.createBufferSource();
+        source.buffer = buffer;
+        source.connect(ctx.destination);
+        source.start(0);
+        if (ctx.state === 'running') {
+          audioUnlocked = true;
+        }
       } catch (e) {}
     }
 
     function triggerWaterDropTap() {
       try {
+        if (navigator.vibrate) navigator.vibrate(8);
         const ctx = getAudioCtx();
         if (!ctx) return;
         const now = ctx.currentTime;
         const osc = ctx.createOscillator();
         const gain = ctx.createGain();
         osc.type = 'sine';
-        osc.frequency.setValueAtTime(520, now);
-        osc.frequency.exponentialRampToValueAtTime(880, now + 0.06);
-        gain.gain.setValueAtTime(0.08, now);
-        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.07);
+        osc.frequency.setValueAtTime(880, now);
+        osc.frequency.exponentialRampToValueAtTime(1480, now + 0.045);
+        osc.frequency.exponentialRampToValueAtTime(1320, now + 0.24);
+        gain.gain.setValueAtTime(0.001, now);
+        gain.gain.linearRampToValueAtTime(0.075, now + 0.012);
+        gain.gain.exponentialRampToValueAtTime(0.0008, now + 0.26);
         osc.connect(gain);
         gain.connect(ctx.destination);
         osc.start(now);
-        osc.stop(now + 0.075);
+        osc.stop(now + 0.27);
       } catch (e) {}
     }
 
-    function triggerWheelTickSound() {
+    function triggerDialWheelTick() {
       try {
+        if (navigator.vibrate) navigator.vibrate(5);
         const ctx = getAudioCtx();
         if (!ctx) return;
         const now = ctx.currentTime;
+
         const osc = ctx.createOscillator();
         const gain = ctx.createGain();
         osc.type = 'triangle';
-        osc.frequency.setValueAtTime(950, now);
-        gain.gain.setValueAtTime(0.03, now);
-        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.02);
+        osc.frequency.setValueAtTime(1650, now);
+        osc.frequency.exponentialRampToValueAtTime(620, now + 0.018);
+
+        gain.gain.setValueAtTime(0.001, now);
+        gain.gain.linearRampToValueAtTime(0.085, now + 0.002);
+        gain.gain.exponentialRampToValueAtTime(0.0008, now + 0.022);
+
         osc.connect(gain);
         gain.connect(ctx.destination);
         osc.start(now);
@@ -827,205 +843,665 @@
       } catch (e) {}
     }
 
+    function triggerDialSelectChime() {
+      try {
+        if (navigator.vibrate) navigator.vibrate(10);
+        const ctx = getAudioCtx();
+        if (!ctx) return;
+        const now = ctx.currentTime;
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(1180, now);
+        osc.frequency.exponentialRampToValueAtTime(840, now + 0.03);
+        gain.gain.setValueAtTime(0.001, now);
+        gain.gain.linearRampToValueAtTime(0.055, now + 0.004);
+        gain.gain.exponentialRampToValueAtTime(0.0008, now + 0.035);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.04);
+      } catch (e) {}
+    }
+
     function triggerSendWhooshTone() {
       try {
+        if (navigator.vibrate) navigator.vibrate([12, 20, 30]);
         const ctx = getAudioCtx();
         if (!ctx) return;
         const now = ctx.currentTime;
-        [587.33, 880].forEach((freq, idx) => {
-          const osc = ctx.createOscillator();
-          const gain = ctx.createGain();
-          osc.type = 'sine';
-          osc.frequency.setValueAtTime(freq, now + idx * 0.08);
-          gain.gain.setValueAtTime(0.12, now + idx * 0.08);
-          gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.08 + 0.22);
-          osc.connect(gain);
-          gain.connect(ctx.destination);
-          osc.start(now + idx * 0.08);
-          osc.stop(now + idx * 0.08 + 0.24);
-        });
+
+        const toneOsc = ctx.createOscillator();
+        const toneGain = ctx.createGain();
+        toneOsc.type = 'sine';
+        toneOsc.frequency.setValueAtTime(660, now);
+        toneOsc.frequency.exponentialRampToValueAtTime(2200, now + 0.36);
+        toneGain.gain.setValueAtTime(0.001, now);
+        toneGain.gain.linearRampToValueAtTime(0.055, now + 0.06);
+        toneGain.gain.exponentialRampToValueAtTime(0.0008, now + 0.38);
+        toneOsc.connect(toneGain);
+        toneGain.connect(ctx.destination);
+        toneOsc.start(now);
+        toneOsc.stop(now + 0.4);
+
+        const duration = 0.48;
+        const bufferSize = Math.floor(ctx.sampleRate * duration);
+        const noiseBuffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+        const output = noiseBuffer.getChannelData(0);
+        for (let i = 0; i < bufferSize; i++) {
+          output[i] = (Math.random() * 2 - 1) * 0.5;
+        }
+        const whiteNoise = ctx.createBufferSource();
+        whiteNoise.buffer = noiseBuffer;
+        const filter = ctx.createBiquadFilter();
+        filter.type = 'bandpass';
+        filter.Q.value = 2.6;
+        filter.frequency.setValueAtTime(1100, now);
+        filter.frequency.exponentialRampToValueAtTime(5200, now + 0.24);
+        filter.frequency.exponentialRampToValueAtTime(7800, now + duration);
+        const noiseGain = ctx.createGain();
+        noiseGain.gain.setValueAtTime(0.001, now);
+        noiseGain.gain.linearRampToValueAtTime(0.11, now + 0.09);
+        noiseGain.gain.exponentialRampToValueAtTime(0.0008, now + duration);
+        whiteNoise.connect(filter);
+        filter.connect(noiseGain);
+        noiseGain.connect(ctx.destination);
+        whiteNoise.start(now);
+        whiteNoise.stop(now + duration);
       } catch (e) {}
     }
 
+    // ★事務所からの緊急伝言通知音（優しい2音チャイム）
     function triggerDispatchMemoAlertSound() {
       try {
+        if (navigator.vibrate) navigator.vibrate([40, 60, 40]);
         const ctx = getAudioCtx();
         if (!ctx) return;
-        const now = ctx.currentTime;
-        [880, 1174.66, 1318.5].forEach((freq, idx) => {
-          const osc = ctx.createOscillator();
-          const gain = ctx.createGain();
-          osc.type = 'sine';
-          osc.frequency.setValueAtTime(freq, now + idx * 0.12);
-          gain.gain.setValueAtTime(0.16, now + idx * 0.12);
-          gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.12 + 0.3);
-          osc.connect(gain);
-          gain.connect(ctx.destination);
-          osc.start(now + idx * 0.12);
-          osc.stop(now + idx * 0.12 + 0.32);
-        });
-      } catch (e) {}
-    }
-
-    function updateClock() {
-      const el = document.getElementById('clock-display');
-      if (!el) return;
-      const now = new Date();
-      el.textContent = `${pad2(now.getHours())}:${pad2(now.getMinutes())}`;
-    }
-
-    function restoreScheduleCacheFromLocal() {
-      try {
-        const cacheKey = `store_schedule_cache_${excelCarIndex}`;
-        const raw = localStorage.getItem(cacheKey);
-        if (!raw) return;
-        const parsed = JSON.parse(raw);
-        if (parsed.course1Code) course1Code = parsed.course1Code;
-        if (parsed.course2Code) course2Code = parsed.course2Code;
-        if (Array.isArray(parsed.course1Stores) && parsed.course1Stores.length > 0) {
-          course1Stores = normalizeStoreArray(parsed.course1Stores);
-        }
-        if (Array.isArray(parsed.course2Stores)) {
-          course2Stores = normalizeStoreArray(parsed.course2Stores);
+        const playNotes = () => {
+          const now = ctx.currentTime;
+          [784, 1046.5].forEach((freq, idx) => {
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(freq, now + idx * 0.14);
+            gain.gain.setValueAtTime(0.001, now + idx * 0.14);
+            gain.gain.linearRampToValueAtTime(0.16, now + idx * 0.14 + 0.02);
+            gain.gain.exponentialRampToValueAtTime(0.0008, now + idx * 0.14 + 0.34);
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.start(now + idx * 0.14);
+            osc.stop(now + idx * 0.14 + 0.36);
+          });
+        };
+        if (ctx.state === 'suspended') {
+          ctx.resume().then(playNotes).catch(() => {});
+        } else {
+          playNotes();
         }
       } catch (e) {}
     }
 
-    function createWheelController(viewportId, reelId, hiddenInputId, items, onSelect) {
+    // ② iPhoneタイマー風 縦型ドラムホイール（前後回転エンドレス無限ループ＋慣性スクロール）
+    function createDrumWheel({ viewportId, reelId, hiddenInputId, maxCount, onValueChange }) {
       const viewport = document.getElementById(viewportId);
       const reel = document.getElementById(reelId);
       const hiddenInput = document.getElementById(hiddenInputId);
-      const itemHeight = 44;
-      let currentIndex = 0;
 
-      function renderItems() {
-        if (!reel) return;
-        reel.innerHTML = '';
-        items.forEach((val, idx) => {
-          const div = document.createElement('div');
-          div.className = 'wheel-item tabular-nums' + (idx === currentIndex ? ' is-selected' : '');
-          div.textContent = val;
-          div.addEventListener('click', () => {
-            setIndex(idx, true);
-          });
-          reel.appendChild(div);
-        });
+      const ITEM_HEIGHT = 44;
+      const VIEWPORT_HEIGHT = 168;
+      const CENTER_OFFSET = (VIEWPORT_HEIGHT - ITEM_HEIGHT) / 2;
+      const LOOP_CYCLES = 5;
+      const TOTAL_ITEMS = maxCount * LOOP_CYCLES;
+      const BASE_CYCLE_OFFSET = maxCount * 2;
+
+      reel.innerHTML = '';
+      const itemEls = [];
+      for (let i = 0; i < TOTAL_ITEMS; i++) {
+        const val = i % maxCount;
+        const div = document.createElement('div');
+        div.className = 'wheel-item tabular-nums';
+        div.textContent = pad2(val);
+        div.dataset.virtualIndex = String(i);
+        div.dataset.value = String(val);
+        reel.appendChild(div);
+        itemEls.push(div);
       }
 
-      function setIndex(idx, animate) {
-        currentIndex = Math.max(0, Math.min(items.length - 1, idx));
-        if (hiddenInput) hiddenInput.value = items[currentIndex];
-        if (reel) {
-          const offset = (168 / 2 - itemHeight / 2) - currentIndex * itemHeight;
-          reel.style.transition = animate ? 'transform 0.18s cubic-bezier(0.2, 0.8, 0.2, 1)' : 'none';
-          reel.style.transform = `translateY(${offset}px)`;
-          Array.from(reel.children).forEach((el, i) => {
-            el.classList.toggle('is-selected', i === currentIndex);
-          });
-        }
-        if (onSelect) onSelect(items[currentIndex]);
-      }
-
-      let startY = 0;
-      let startIdx = 0;
+      let currentOffset = -BASE_CYCLE_OFFSET * ITEM_HEIGHT;
+      let currentValue = 0;
       let isDragging = false;
+      let startY = 0;
+      let startOffset = 0;
+      let lastTouchY = 0;
+      let lastTouchTime = 0;
+      let velocity = 0;
+      let animFrameId = null;
 
-      if (viewport) {
-        viewport.addEventListener('touchstart', (e) => {
-          isDragging = true;
-          startY = e.touches[0].clientY;
-          startIdx = currentIndex;
-        }, { passive: true });
-
-        viewport.addEventListener('touchmove', (e) => {
-          if (!isDragging) return;
-          const dy = e.touches[0].clientY - startY;
-          const deltaIdx = Math.round(-dy / 34);
-          const nextIdx = Math.max(0, Math.min(items.length - 1, startIdx + deltaIdx));
-          if (nextIdx !== currentIndex) {
-            triggerWheelTickSound();
-            setIndex(nextIdx, false);
-          }
-        }, { passive: true });
-
-        viewport.addEventListener('touchend', () => {
-          isDragging = false;
-        });
-
-        viewport.addEventListener('wheel', (e) => {
-          e.preventDefault();
-          const step = e.deltaY > 0 ? 1 : -1;
-          const nextIdx = Math.max(0, Math.min(items.length - 1, currentIndex + step));
-          if (nextIdx !== currentIndex) {
-            triggerWheelTickSound();
-            setIndex(nextIdx, true);
-          }
-        }, { passive: false });
+      function normalizeInfiniteOffset(offset) {
+        const cyclePx = maxCount * ITEM_HEIGHT;
+        const minSafe = -(maxCount * 3.5) * ITEM_HEIGHT;
+        const maxSafe = -(maxCount * 1.5) * ITEM_HEIGHT;
+        let norm = offset;
+        while (norm > maxSafe) norm -= cyclePx;
+        while (norm < minSafe) norm += cyclePx;
+        return norm;
       }
 
-      renderItems();
-      setIndex(0, false);
+      function renderWheel(offset, silent = false) {
+        currentOffset = normalizeInfiniteOffset(offset);
+        reel.style.transform = `translate3d(0, ${CENTER_OFFSET + currentOffset}px, 0)`;
+
+        const virtualFloat = -currentOffset / ITEM_HEIGHT;
+        const nearestVirtualIdx = Math.round(virtualFloat);
+        const modValue = ((nearestVirtualIdx % maxCount) + maxCount) % maxCount;
+
+        if (modValue !== currentValue) {
+          currentValue = modValue;
+          hiddenInput.value = pad2(currentValue);
+          if (!silent) triggerDialWheelTick();
+          if (onValueChange) onValueChange(pad2(currentValue));
+        }
+
+        const startRender = Math.max(0, nearestVirtualIdx - 4);
+        const endRender = Math.min(TOTAL_ITEMS - 1, nearestVirtualIdx + 4);
+
+        for (let i = startRender; i <= endRender; i++) {
+          const dist = i - virtualFloat;
+          const el = itemEls[i];
+          const angle = Math.max(-65, Math.min(65, dist * 22));
+          const scale = Math.max(0.76, 1 - Math.abs(dist) * 0.085);
+          el.style.transform = `perspective(240px) rotateX(${-angle}deg) scale(${scale})`;
+          if (i === nearestVirtualIdx) {
+            el.classList.add('is-selected');
+          } else {
+            el.classList.remove('is-selected');
+          }
+        }
+      }
+
+      function animateToVirtualIndex(targetVirtualIdx, playFinishChime = true) {
+        cancelAnimationFrame(animFrameId);
+        const targetOffset = -targetVirtualIdx * ITEM_HEIGHT;
+        function step() {
+          const diff = targetOffset - currentOffset;
+          if (Math.abs(diff) < 0.4) {
+            renderWheel(targetOffset, true);
+            if (playFinishChime) triggerDialSelectChime();
+            return;
+          }
+          renderWheel(currentOffset + diff * 0.24, false);
+          animFrameId = requestAnimationFrame(step);
+        }
+        animFrameId = requestAnimationFrame(step);
+      }
+
+      function snapToNearest() {
+        const nearestVirtualIdx = Math.round(-currentOffset / ITEM_HEIGHT);
+        animateToVirtualIndex(nearestVirtualIdx, true);
+      }
+
+      function startInertia(initialVel) {
+        cancelAnimationFrame(animFrameId);
+        let vel = initialVel;
+
+        function inertiaStep() {
+          vel *= 0.92;
+          const nextOffset = currentOffset + vel;
+          renderWheel(nextOffset, false);
+
+          if (Math.abs(vel) < 0.7) {
+            snapToNearest();
+            return;
+          }
+          animFrameId = requestAnimationFrame(inertiaStep);
+        }
+        animFrameId = requestAnimationFrame(inertiaStep);
+      }
+
+      viewport.addEventListener('touchstart', (e) => {
+        if (e.touches.length !== 1) return;
+        cancelAnimationFrame(animFrameId);
+        isDragging = true;
+        startY = e.touches[0].clientY;
+        startOffset = currentOffset;
+        lastTouchY = startY;
+        lastTouchTime = performance.now();
+        velocity = 0;
+      }, { passive: true });
+
+      viewport.addEventListener('touchmove', (e) => {
+        if (!isDragging || e.touches.length !== 1) return;
+        const y = e.touches[0].clientY;
+        const now = performance.now();
+        const dt = now - lastTouchTime;
+        if (dt > 0) {
+          velocity = ((y - lastTouchY) / dt) * 16;
+        }
+        lastTouchY = y;
+        lastTouchTime = now;
+
+        const deltaY = y - startY;
+        renderWheel(startOffset + deltaY, false);
+      }, { passive: true });
+
+      viewport.addEventListener('touchend', (e) => {
+        if (!isDragging) return;
+        isDragging = false;
+        const endY = (e.changedTouches && e.changedTouches[0]) ? e.changedTouches[0].clientY : lastTouchY;
+        if (Math.abs(endY - startY) < 6) {
+          const targetEl = document.elementFromPoint(
+            viewport.getBoundingClientRect().left + viewport.clientWidth / 2,
+            endY
+          );
+          if (targetEl && targetEl.dataset && targetEl.dataset.virtualIndex !== undefined) {
+            const tappedVirtualIdx = parseInt(targetEl.dataset.virtualIndex, 10);
+            animateToVirtualIndex(tappedVirtualIdx, true);
+            return;
+          }
+        }
+        if (Math.abs(velocity) > 1.8) {
+          startInertia(velocity);
+        } else {
+          snapToNearest();
+        }
+      });
+
+      viewport.addEventListener('mousedown', (e) => {
+        cancelAnimationFrame(animFrameId);
+        isDragging = true;
+        startY = e.clientY;
+        startOffset = currentOffset;
+        lastTouchY = startY;
+        lastTouchTime = performance.now();
+        velocity = 0;
+      });
+
+      window.addEventListener('mousemove', (e) => {
+        if (!isDragging) return;
+        const now = performance.now();
+        const dt = now - lastTouchTime;
+        if (dt > 0) velocity = ((e.clientY - lastTouchY) / dt) * 16;
+        lastTouchY = e.clientY;
+        lastTouchTime = now;
+        renderWheel(startOffset + (e.clientY - startY), false);
+      });
+
+      window.addEventListener('mouseup', (e) => {
+        if (!isDragging) return;
+        isDragging = false;
+        if (Math.abs(e.clientY - startY) < 5 && e.target.dataset && e.target.dataset.virtualIndex !== undefined) {
+          const tappedVirtualIdx = parseInt(e.target.dataset.virtualIndex, 10);
+          animateToVirtualIndex(tappedVirtualIdx, true);
+          return;
+        }
+        if (Math.abs(velocity) > 1.8) {
+          startInertia(velocity);
+        } else {
+          snapToNearest();
+        }
+      });
+
+      let wheelSnapTimer = null;
+      viewport.addEventListener('wheel', (e) => {
+        e.preventDefault();
+        cancelAnimationFrame(animFrameId);
+        renderWheel(currentOffset - e.deltaY * 0.45, false);
+        clearTimeout(wheelSnapTimer);
+        wheelSnapTimer = setTimeout(() => snapToNearest(), 110);
+      }, { passive: false });
 
       return {
-        setValue(val, animate) {
-          const foundIdx = items.indexOf(String(val));
-          if (foundIdx >= 0) setIndex(foundIdx, animate);
+        setValue(valStr, animate = false) {
+          const targetMod = ((parseInt(valStr, 10) || 0) % maxCount + maxCount) % maxCount;
+          const currentVirtualIdx = Math.round(-currentOffset / ITEM_HEIGHT);
+          const currentMod = ((currentVirtualIdx % maxCount) + maxCount) % maxCount;
+
+          let diff = targetMod - currentMod;
+          if (diff > maxCount / 2) diff -= maxCount;
+          if (diff < -maxCount / 2) diff += maxCount;
+
+          if (animate) {
+            animateToVirtualIndex(currentVirtualIdx + diff, true);
+          } else {
+            cancelAnimationFrame(animFrameId);
+            const resetVirtualIdx = BASE_CYCLE_OFFSET + targetMod;
+            currentValue = targetMod;
+            hiddenInput.value = pad2(targetMod);
+            renderWheel(-resetVirtualIdx * ITEM_HEIGHT, true);
+          }
+          if (onValueChange) onValueChange(pad2(targetMod));
         }
       };
     }
 
     function initTimeSelectOptions() {
-      const hours = Array.from({ length: 24 }, (_, i) => pad2(i));
-      const minutes = Array.from({ length: 60 }, (_, i) => pad2(i));
-      hourWheelController = createWheelController('wheel-hour-viewport', 'wheel-hour-reel', 'select-hour', hours, updateModalDiffPreview);
-      minuteWheelController = createWheelController('wheel-minute-viewport', 'wheel-minute-reel', 'select-minute', minutes, updateModalDiffPreview);
+      hourWheelController = createDrumWheel({
+        viewportId: 'wheel-hour-viewport',
+        reelId: 'wheel-hour-reel',
+        hiddenInputId: 'select-hour',
+        maxCount: 24,
+        onValueChange: () => updateModalDiffPreview()
+      });
+
+      minuteWheelController = createDrumWheel({
+        viewportId: 'wheel-minute-viewport',
+        reelId: 'wheel-minute-reel',
+        hiddenInputId: 'select-minute',
+        maxCount: 60,
+        onValueChange: () => updateModalDiffPreview()
+      });
     }
 
     function updateModalDiffPreview() {
-      const preview = document.getElementById('modal-diff-preview');
-      if (!preview || !selectedStoreForModal) return;
-      const hh = document.getElementById('select-hour').value;
-      const mm = document.getElementById('select-minute').value;
-      const arrStr = `${hh}:${mm}`;
-      const diff = calculateTimeDiffMinutes(selectedStoreForModal.scheduled, arrStr);
-      preview.textContent = `定時との差：${formatDiffDisplay(diff)}`;
+      if (!selectedStoreForModal) return;
+      const h = document.getElementById('select-hour').value;
+      const m = document.getElementById('select-minute').value;
+      const arrivalStr = `${h}:${m}`;
+      const diff = calculateTimeDiffMinutes(selectedStoreForModal.scheduled, arrivalStr);
+      const previewEl = document.getElementById('modal-diff-preview');
+
+      if (!selectedStoreForModal.scheduled) {
+        previewEl.className = 'py-3 px-4 rounded-2xl bg-zinc-100/80 text-zinc-700 text-center font-extrabold text-xs tabular-nums transition-colors';
+        previewEl.textContent = `選択時刻：${arrivalStr}`;
+        return;
+      }
+
       if (diff >= 31) {
-        preview.className = 'py-3 px-4 rounded-2xl bg-rose-100 text-rose-900 text-center font-extrabold text-xs tabular-nums transition-colors';
+        previewEl.className = 'py-3 px-4 rounded-2xl bg-rose-100/80 text-rose-900 text-center font-extrabold text-xs tabular-nums transition-colors';
+        previewEl.textContent = `⚠️ 延着警告（31分以上）：+${diff}分 遅れ`;
       } else if (diff > 0) {
-        preview.className = 'py-3 px-4 rounded-2xl bg-amber-100 text-amber-900 text-center font-extrabold text-xs tabular-nums transition-colors';
+        previewEl.className = 'py-3 px-4 rounded-2xl bg-amber-100/80 text-amber-900 text-center font-extrabold text-xs tabular-nums transition-colors';
+        previewEl.textContent = `定時との差：+${diff}分 遅れ`;
+      } else if (diff < 0) {
+        previewEl.className = 'py-3 px-4 rounded-2xl bg-emerald-100/80 text-emerald-900 text-center font-extrabold text-xs tabular-nums transition-colors';
+        previewEl.textContent = `定時との差：${diff}分 早着（定時内）`;
       } else {
-        preview.className = 'py-3 px-4 rounded-2xl bg-emerald-100/75 text-emerald-900 text-center font-extrabold text-xs tabular-nums transition-colors';
+        previewEl.className = 'py-3 px-4 rounded-2xl bg-emerald-100/80 text-emerald-900 text-center font-extrabold text-xs tabular-nums transition-colors';
+        previewEl.textContent = '定時との差：±0分（定時ぴったり）';
       }
     }
 
-    function openArrivalModal(store, totalCount) {
-      selectedStoreForModal = { ...store, totalCount };
-      document.getElementById('modal-store-badge').textContent = `${activeCourseType}便 • ${store.order}店舗目`;
-      const lastBadge = document.getElementById('modal-last-badge');
-      if (lastBadge) lastBadge.classList.toggle('hidden', store.order !== totalCount);
+    function setConnectionBadge(state, text) {
+      const pill = document.getElementById('gas-status-pill');
+      const dot = document.getElementById('gas-status-dot');
+      const label = document.getElementById('gas-status-text');
+      label.textContent = text;
+
+      if (state === 'ok') {
+        pill.className = 'inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100/80 text-emerald-800 shrink-0 whitespace-nowrap';
+        dot.className = 'w-1.5 h-1.5 rounded-full bg-emerald-500';
+      } else if (state === 'loading') {
+        pill.className = 'inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-100/80 text-blue-800 shrink-0 whitespace-nowrap';
+        dot.className = 'w-1.5 h-1.5 rounded-full bg-blue-500 animate-ping';
+      } else if (state === 'error') {
+        pill.className = 'inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-rose-100/80 text-rose-800 shrink-0 whitespace-nowrap';
+        dot.className = 'w-1.5 h-1.5 rounded-full bg-rose-500';
+      } else {
+        pill.className = 'inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-slate-200/70 text-slate-600 shrink-0 whitespace-nowrap';
+        dot.className = 'w-1.5 h-1.5 rounded-full bg-amber-500';
+      }
+    }
+
+    // ★いずれかのモーダルが開いているか判定（裏側同期時に画面リセットを防ぐため）
+    function isAnyBlockingModalOpen() {
+      const modalIds = ['arrival-modal', 'gas-modal', 'history-modal', 'admin-car-modal'];
+      return modalIds.some((id) => {
+        const el = document.getElementById(id);
+        return el && !el.classList.contains('hidden');
+      });
+    }
+
+    function updateHeaderAndTabs() {
+      isSingleCourseCar = (excelCarIndex === 14);
+      document.getElementById('fixed-car-num').textContent = pad2(excelCarIndex);
+      document.getElementById('fixed-car-label').textContent = `${excelCarIndex}号車`;
+      document.getElementById('delivery-date-label').textContent = getFormattedDeliveryDateWithDay();
+
+      document.getElementById('tab-course-1-code').textContent = `${course1Code}コース`;
+      document.getElementById('tab-course-2-code').textContent = `${course2Code}コース`;
+
+      const summaryEl = document.getElementById('fixed-course-summary');
+      const tabsGrid = document.getElementById('course-tabs-grid');
+      const tab1 = document.getElementById('tab-course-1');
+      const tab2 = document.getElementById('tab-course-2');
+
+      if (isSingleCourseCar) {
+        activeCourseType = '1';
+        summaryEl.textContent = `${course1Code}コース（1便専用）`;
+        tabsGrid.className = 'mt-3.5 bg-slate-200/70 p-1 rounded-2xl grid grid-cols-1';
+        tab2.classList.add('hidden');
+        tab1.className = 'py-2 px-3 rounded-xl text-xs font-extrabold transition-all flex items-center justify-center gap-1.5 bg-white text-slate-900 shadow-xs';
+      } else {
+        summaryEl.textContent = `${course1Code} / ${course2Code}コース`;
+        tabsGrid.className = 'mt-3.5 bg-slate-200/70 p-1 rounded-2xl grid grid-cols-2 gap-1';
+        tab2.classList.remove('hidden');
+        if (activeCourseType === '1') {
+          tab1.className = 'py-2 px-3 rounded-xl text-xs font-extrabold transition-all flex items-center justify-center gap-1.5 bg-white text-slate-900 shadow-xs';
+          tab2.className = 'py-2 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 text-slate-500 hover:text-slate-800';
+        } else {
+          tab1.className = 'py-2 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 text-slate-500 hover:text-slate-800';
+          tab2.className = 'py-2 px-3 rounded-xl text-xs font-extrabold transition-all flex items-center justify-center gap-1.5 bg-white text-slate-900 shadow-xs';
+        }
+      }
+
+      const activeCode = activeCourseType === '1' ? course1Code : course2Code;
+      const pastLocked = isPastDeliveryDate();
+      const routeSubHeader = document.getElementById('route-sub-header');
+      if (routeSubHeader) {
+        if (pastLocked) {
+          routeSubHeader.classList.add('hidden');
+        } else {
+          routeSubHeader.classList.remove('hidden');
+          document.getElementById('active-course-title').textContent = `ROUTE • ${activeCourseType}便（${activeCode}コース）`;
+        }
+      }
+    }
+
+    function renderStoreList() {
+      updateHeaderAndTabs();
+
+      const stores = activeCourseType === '1' ? course1Stores : course2Stores;
+      const container = document.getElementById('store-list-container');
+      container.innerHTML = '';
+
+      const logsForCourse = arrivalLogs.filter((l) => l.courseType === activeCourseType);
+      const doneCount = logsForCourse.length;
+      const totalCount = stores.length;
+
+      document.getElementById('progress-done').textContent = String(doneCount);
+      document.getElementById('progress-total').textContent = String(totalCount);
+      const pct = totalCount > 0 ? Math.round((doneCount / totalCount) * 100) : 0;
+      document.getElementById('progress-bar-fill').style.width = `${pct}%`;
+      document.getElementById('history-count').textContent = String(arrivalLogs.length);
+
+      const pastLocked = isPastDeliveryDate();
+      if (pastLocked) {
+        const lockBanner = document.createElement('div');
+        lockBanner.className = 'mb-3 rounded-2xl bg-amber-50 border border-amber-200 px-4 py-3 text-xs font-extrabold text-amber-900 flex items-center gap-2';
+        lockBanner.innerHTML = '<span>🔒 過去日のため閲覧専用です（入力・変更はできません）</span>';
+        container.appendChild(lockBanner);
+      }
+
+      if (stores.length === 0) {
+        const empty = document.createElement('div');
+        empty.className = 'bg-white rounded-3xl p-8 text-center border border-slate-100 text-xs font-bold text-slate-400';
+        empty.textContent = 'この便の店舗データはありません';
+        container.appendChild(empty);
+        return;
+      }
+
+      let firstUnrecordedOrder = null;
+      for (let i = 0; i < stores.length; i++) {
+        const matched = logsForCourse.find((l) => Number(l.order) === Number(stores[i].order));
+        if (!matched) {
+          firstUnrecordedOrder = Number(stores[i].order);
+          break;
+        }
+      }
+
+      stores.forEach((store, idx) => {
+        const isLastStore = (idx === stores.length - 1);
+        const storeWithFlag = { ...store, isLastStore };
+        const existingLog = logsForCourse.find((l) => Number(l.order) === Number(store.order));
+        const isNext = (!pastLocked && !existingLog && Number(store.order) === firstUnrecordedOrder);
+
+        const card = document.createElement('div');
+        if (existingLog) {
+          card.className = 'bg-slate-50/65 rounded-3xl p-4 border border-slate-200/75 flex items-center justify-between gap-3 active:scale-[0.99] transition cursor-pointer';
+        } else if (isNext) {
+          card.className = 'bg-white rounded-3xl p-4 border-2 border-blue-500 shadow-[0_8px_24px_rgba(37,99,235,0.12)] flex items-center justify-between gap-3 active:scale-[0.99] transition cursor-pointer';
+        } else {
+          card.className = 'bg-white/90 rounded-3xl p-4 border border-slate-200/70 flex items-center justify-between gap-3 active:scale-[0.99] transition cursor-pointer';
+        }
+
+        const circleIcon = document.createElement('div');
+        if (existingLog) {
+          circleIcon.className = 'w-9 h-9 rounded-full bg-emerald-50/60 border-2 border-emerald-500 text-emerald-600 flex items-center justify-center shrink-0';
+          circleIcon.innerHTML = '<svg class="w-4 h-4 text-emerald-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
+        } else if (isNext) {
+          circleIcon.className = 'w-9 h-9 rounded-full bg-blue-50/70 border-2 border-blue-600 text-blue-600 font-black text-sm tabular-nums flex items-center justify-center shrink-0';
+          circleIcon.textContent = String(store.order);
+        } else {
+          circleIcon.className = 'w-9 h-9 rounded-full bg-slate-50 border-2 border-slate-200 text-slate-400 font-black text-sm tabular-nums flex items-center justify-center shrink-0';
+          circleIcon.textContent = String(store.order);
+        }
+
+        const left = document.createElement('div');
+        left.className = 'min-w-0 flex-1';
+
+        const topRow = document.createElement('div');
+        topRow.className = 'flex items-center gap-1.5 mb-0.5';
+
+        const numBadge = document.createElement('span');
+        numBadge.className = existingLog
+          ? 'text-[10px] font-black px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200/80 tabular-nums'
+          : isNext
+          ? 'text-[10px] font-black px-2 py-0.5 rounded-full bg-blue-600 text-white tabular-nums'
+          : 'text-[10px] font-black px-2 py-0.5 rounded-full bg-slate-100 text-slate-500 tabular-nums';
+        numBadge.textContent = isNext ? `NEXT • ${store.order}店舗目` : `${store.order}店舗目`;
+        topRow.appendChild(numBadge);
+
+        if (isLastStore) {
+          const lastBadge = document.createElement('span');
+          lastBadge.className = 'text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200/80';
+          lastBadge.textContent = '最終';
+          topRow.appendChild(lastBadge);
+        }
+
+        const nameEl = document.createElement('div');
+        nameEl.className = existingLog
+          ? 'text-base font-black text-slate-800 truncate'
+          : 'text-base font-black text-slate-900 truncate';
+        nameEl.textContent = store.name;
+
+        const subRow = document.createElement('div');
+        subRow.className = 'flex items-center gap-2.5 text-xs font-bold text-slate-400 mt-0.5 tabular-nums';
+        subRow.innerHTML = `<span>定時 ${store.scheduled || '--:--'}</span>` +
+          (store.avgArrival ? `<span class="text-blue-500/90">平均 ${store.avgArrival}</span>` : '');
+
+        left.appendChild(topRow);
+        left.appendChild(nameEl);
+        left.appendChild(subRow);
+
+        const right = document.createElement('div');
+        right.className = 'shrink-0 text-right';
+
+        if (existingLog) {
+          if (existingLog.isHoliday) {
+            right.innerHTML = `
+              <span class="inline-block px-3 py-1.5 rounded-2xl bg-amber-100 text-amber-900 text-xs font-black">休業</span>
+            `;
+          } else if (existingLog.isExtraRun) {
+            right.innerHTML = `
+              <span class="inline-block px-3 py-1.5 rounded-2xl bg-violet-100 text-violet-900 text-xs font-black">臨時便</span>
+            `;
+          } else {
+            const diff = Number(existingLog.diffMinutes || 0);
+            let badgeClass = 'bg-emerald-100/90 text-emerald-800';
+            if (diff >= 31) badgeClass = 'bg-rose-100 text-rose-800';
+            else if (diff > 0) badgeClass = 'bg-amber-100 text-amber-900';
+
+            right.innerHTML = `
+              <div class="text-base font-black text-slate-900 tabular-nums leading-tight">${existingLog.arrival}</div>
+              <span class="inline-block mt-0.5 px-2 py-0.5 rounded-full text-[10px] font-black tabular-nums ${badgeClass}">
+                ${formatDiffDisplay(diff)}
+              </span>
+            `;
+          }
+        } else if (pastLocked) {
+          right.innerHTML = `
+            <span class="inline-block px-3 py-1.5 rounded-2xl bg-slate-100 text-slate-400 text-xs font-extrabold">未入力</span>
+          `;
+        } else if (isNext) {
+          right.innerHTML = `
+            <span class="inline-block px-3.5 py-2 rounded-2xl bg-blue-600 text-white text-xs font-black shadow-xs">到着記録</span>
+          `;
+        } else {
+          right.innerHTML = `
+            <span class="inline-block px-3 py-1.5 rounded-2xl bg-slate-100 text-slate-600 text-xs font-extrabold">入力</span>
+          `;
+        }
+
+        card.appendChild(circleIcon);
+        card.appendChild(left);
+        card.appendChild(right);
+
+        card.addEventListener('click', () => {
+          if (isPastDeliveryDate()) {
+            showToast('🔒 過去日のため入力・変更はできません');
+            return;
+          }
+          if (!existingLog && firstUnrecordedOrder !== null && Number(store.order) > firstUnrecordedOrder) {
+            const pendingStore = stores.find((s) => Number(s.order) === firstUnrecordedOrder);
+            const pendingName = pendingStore ? pendingStore.name : `${firstUnrecordedOrder}店舗目`;
+            showToast(`⚠️ 先に「${pendingName}」の到着記録を入力してください`);
+            return;
+          }
+          openArrivalModal(storeWithFlag, existingLog);
+        });
+
+        container.appendChild(card);
+      });
+    }
+
+    function openArrivalModal(store, existingLog) {
+      selectedStoreForModal = store;
+      const activeCode = activeCourseType === '1' ? course1Code : course2Code;
+      document.getElementById('modal-store-badge').textContent = `${activeCourseType}便（${activeCode}）• ${store.order}店舗目`;
       document.getElementById('modal-store-name').textContent = store.name;
       document.getElementById('modal-scheduled-time').textContent = store.scheduled || '--:--';
 
+      const lastBadge = document.getElementById('modal-last-badge');
+      if (store.isLastStore) {
+        lastBadge.classList.remove('hidden');
+      } else {
+        lastBadge.classList.add('hidden');
+      }
+
       const avgWrap = document.getElementById('modal-avg-time-wrap');
-      const avgVal = document.getElementById('modal-avg-time');
-      if (store.avgArrival && avgWrap && avgVal) {
-        avgVal.textContent = store.avgArrival;
+      const avgText = document.getElementById('modal-avg-time');
+      if (store.avgArrival) {
         avgWrap.classList.remove('hidden');
-      } else if (avgWrap) {
+        avgText.textContent = store.avgArrival;
+      } else {
         avgWrap.classList.add('hidden');
       }
 
-      const now = new Date();
-      const existingLog = arrivalLogs.find(l => l.courseType === activeCourseType && l.order === store.order);
-      let initH = pad2(now.getHours());
-      let initM = pad2(now.getMinutes());
+      let initialTimeStr = '';
       if (existingLog && existingLog.arrival && existingLog.arrival.includes(':')) {
-        const parts = existingLog.arrival.split(':');
-        initH = pad2(Number(parts[0]));
-        initM = pad2(Number(parts[1]));
+        initialTimeStr = existingLog.arrival;
+      } else if (store.avgArrival && store.avgArrival.includes(':')) {
+        initialTimeStr = store.avgArrival;
+      } else if (store.scheduled && store.scheduled.includes(':')) {
+        initialTimeStr = store.scheduled;
+      } else {
+        const now = new Date();
+        initialTimeStr = `${pad2(now.getHours())}:${pad2(now.getMinutes())}`;
       }
-      document.getElementById('select-hour').value = initH;
-      document.getElementById('select-minute').value = initM;
+
+      const [initH, initM] = initialTimeStr.split(':');
+      document.getElementById('select-hour').value = pad2(initH);
+      document.getElementById('select-minute').value = pad2(initM);
       if (hourWheelController) hourWheelController.setValue(initH, false);
       if (minuteWheelController) minuteWheelController.setValue(initM, false);
       updateModalDiffPreview();
@@ -1037,47 +1513,111 @@
 
     function closeArrivalModal() {
       const modal = document.getElementById('arrival-modal');
-      if (modal) {
-        modal.classList.add('hidden');
-        modal.classList.remove('flex');
-      }
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
       selectedStoreForModal = null;
+    }
+
+    function renderHistoryList() {
+      const container = document.getElementById('history-list-container');
+      container.innerHTML = '';
+
+      if (!arrivalLogs || arrivalLogs.length === 0) {
+        container.innerHTML = '<div class="text-center text-xs font-bold text-zinc-400 py-8">本日の送信履歴はまだありません</div>';
+        return;
+      }
+
+      arrivalLogs.forEach((log) => {
+        const row = document.createElement('div');
+        row.className = 'bg-white border border-zinc-200/80 rounded-2xl p-3 flex items-center justify-between gap-2';
+        const cCode = log.courseType === '1' ? course1Code : course2Code;
+        const statusStr = log.isHoliday
+          ? '<span class="text-amber-700 font-black">休業</span>'
+          : log.isExtraRun
+          ? '<span class="text-violet-700 font-black">臨時便</span>'
+          : `<span class="font-black text-zinc-900 tabular-nums">${log.arrival}</span> <span class="text-[11px] font-bold text-zinc-500">(${formatDiffDisplay(Number(log.diffMinutes || 0))})</span>`;
+
+        row.innerHTML = `
+          <div class="min-w-0">
+            <div class="text-[10px] font-extrabold text-zinc-400">${log.courseType}便（${cCode}）• ${log.order}店舗目</div>
+            <div class="text-sm font-black text-zinc-900 truncate">${log.storeName}</div>
+          </div>
+          <div class="text-right shrink-0 text-xs">${statusStr}</div>
+        `;
+        container.appendChild(row);
+      });
     }
 
     async function handleRecordSubmission(mode) {
       if (!selectedStoreForModal) return;
+      if (isPastDeliveryDate()) {
+        showToast('🔒 過去日のため入力・変更はできません');
+        return;
+      }
+
+      triggerSendWhooshTone();
+
       const store = selectedStoreForModal;
-      const hh = document.getElementById('select-hour').value;
-      const mm = document.getElementById('select-minute').value;
-      const arrTime = `${hh}:${mm}`;
       const isHoliday = (mode === 'holiday');
       const isExtraRun = (mode === 'extra');
-      const isLastStore = (store.order === store.totalCount);
-      const diff = (isHoliday || isExtraRun) ? 0 : calculateTimeDiffMinutes(store.scheduled, arrTime);
+      const h = document.getElementById('select-hour').value;
+      const m = document.getElementById('select-minute').value;
+      const arrivalStr = isHoliday ? '休業' : isExtraRun ? '臨時便' : `${h}:${m}`;
+      const diffMin = (isHoliday || isExtraRun) ? 0 : calculateTimeDiffMinutes(store.scheduled, arrivalStr);
       const now = new Date();
       const drSentTime = `${pad2(now.getHours())}:${pad2(now.getMinutes())}`;
 
-      const newEntry = {
+      const logEntry = {
+        deliveryDate: getFormattedDeliveryDateKey(),
+        excelCarIndex: excelCarIndex,
         courseType: activeCourseType,
+        storeOrder: store.order,
         order: store.order,
         storeName: store.name,
         scheduled: store.scheduled,
-        arrival: isHoliday ? '休業' : isExtraRun ? '臨時便' : arrTime,
-        diffMinutes: diff,
-        diffDisplay: isHoliday ? '休業' : isExtraRun ? '臨時便' : formatDiffDisplay(diff),
-        isDelayed: (!isHoliday && !isExtraRun && diff >= 31),
-        isHoliday,
-        isExtraRun,
-        drSentTime: isLastStore ? drSentTime : ''
+        arrivalTime: arrivalStr,
+        arrival: arrivalStr,
+        diffMinutes: diffMin,
+        diffDisplay: isHoliday ? '休業' : isExtraRun ? '臨時便' : formatDiffDisplay(diffMin),
+        isDelayed: (!isHoliday && !isExtraRun && diffMin >= 31),
+        isHoliday: isHoliday,
+        isExtraRun: isExtraRun,
+        isLastStore: Boolean(store.isLastStore),
+        drSentTime: store.isLastStore ? drSentTime : ''
       };
 
-      arrivalLogs = arrivalLogs.filter(l => !(l.courseType === activeCourseType && l.order === store.order));
-      arrivalLogs.push(newEntry);
+      arrivalLogs = arrivalLogs.filter(
+        (l) => !(l.courseType === activeCourseType && Number(l.order) === Number(store.order))
+      );
+      arrivalLogs.push(logEntry);
 
-      triggerSendWhooshTone();
       closeArrivalModal();
+
+      const switchedToCourse2 = (activeCourseType === '1' && Boolean(store.isLastStore) && !isSingleCourseCar && course2Stores.length > 0);
+      if (switchedToCourse2) {
+        activeCourseType = '2';
+      }
+
+      saveScheduleCacheToLocal();
       renderStoreList();
-      showToast(`${store.name} の記録を送信しました`);
+
+      // ★送信ボタンを押した瞬間（await fetchより前）に保護登録し、進行中の古いGET結果を無効化
+      window.__lastArrivalSubmitAt = Date.now();
+      window.__recentSubmittedLogs = window.__recentSubmittedLogs || [];
+      window.__recentSubmittedLogs = window.__recentSubmittedLogs.filter(
+        (r) => !(r.courseType === logEntry.courseType && Number(r.order) === Number(logEntry.order))
+      );
+      window.__recentSubmittedLogs.push({ ...logEntry, _submittedAt: Date.now() });
+
+      if (switchedToCourse2) {
+        showToast(`🚚 1便完了！2便（${course2Code}コース）へ切り替えました`);
+      } else if (isHoliday) {
+        showToast(`${store.name} を「休業」として送信しました`);
+      } else if (isExtraRun) {
+        showToast(`${store.name} を「臨時便」として送信しました`);
+      } else {
+        showToast(`${store.name}（${arrivalStr}）を送信しました`);
+      }
 
       if (gasWebAppUrl) {
         try {
@@ -1086,769 +1626,348 @@
             mode: 'no-cors',
             headers: { 'Content-Type': 'text/plain;charset=utf-8' },
             body: JSON.stringify({
-              excelCarIndex,
-              courseType: activeCourseType,
-              storeOrder: store.order,
-              storeName: store.name,
-              scheduledTime: store.scheduled,
-              arrivalTime: newEntry.arrival,
-              diffMinutes: diff,
-              isHoliday,
-              isExtraRun,
-              isLastStore,
-              drSentTime,
-              deliveryDate: getFormattedDeliveryDateKey()
+              action: 'recordArrival',
+              ...logEntry
             })
           });
-        } catch (e) {}
-      }
-    }
-
-    function renderStoreList() {
-      isSingleCourseCar = (excelCarIndex === 14);
-      document.getElementById('fixed-car-num').textContent = pad2(excelCarIndex);
-      document.getElementById('fixed-car-label').textContent = `${excelCarIndex}号車`;
-      document.getElementById('fixed-course-summary').textContent = isSingleCourseCar
-        ? `${course1Code}コース（1便のみ）`
-        : `${course1Code} / ${course2Code}コース`;
-
-      document.getElementById('delivery-date-label').textContent = getFormattedDeliveryDateWithDay();
-
-      const tab1 = document.getElementById('tab-course-1');
-      const tab2 = document.getElementById('tab-course-2');
-      document.getElementById('tab-course-1-code').textContent = `${course1Code}コース`;
-      document.getElementById('tab-course-2-code').textContent = `${course2Code}コース`;
-
-      if (isSingleCourseCar) {
-        activeCourseType = '1';
-        if (tab2) tab2.classList.add('hidden');
-      } else if (tab2) {
-        tab2.classList.remove('hidden');
-      }
-
-      if (activeCourseType === '1') {
-        tab1.className = 'py-2 px-3 rounded-xl text-xs font-extrabold transition-all flex items-center justify-center gap-1.5 bg-white text-slate-900 shadow-xs';
-        tab2.className = 'py-2 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 text-slate-500 hover:text-slate-800';
-      } else {
-        tab2.className = 'py-2 px-3 rounded-xl text-xs font-extrabold transition-all flex items-center justify-center gap-1.5 bg-white text-slate-900 shadow-xs';
-        tab1.className = 'py-2 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 text-slate-500 hover:text-slate-800';
-      }
-
-      const stores = activeCourseType === '1' ? course1Stores : course2Stores;
-      const activeCode = activeCourseType === '1' ? course1Code : course2Code;
-      document.getElementById('active-course-title').textContent = `ROUTE • ${activeCourseType}便（${activeCode}コース）`;
-
-      const courseLogs = arrivalLogs.filter(l => l.courseType === activeCourseType);
-      document.getElementById('progress-done').textContent = String(courseLogs.length);
-      document.getElementById('progress-total').textContent = String(stores.length);
-      const pct = stores.length > 0 ? Math.round((courseLogs.length / stores.length) * 100) : 0;
-      document.getElementById('progress-bar-fill').style.width = `${pct}%`;
-
-      document.getElementById('history-count').textContent = String(arrivalLogs.length);
-
-      const container = document.getElementById('store-list-container');
-      container.innerHTML = '';
-
-      if (stores.length === 0) {
-        container.innerHTML = '<div class="bg-white rounded-3xl p-8 text-center text-xs font-extrabold text-slate-400 border border-slate-100">この便の配送店舗データはありません</div>';
-        return;
-      }
-
-      stores.forEach((store) => {
-        const log = courseLogs.find(l => l.order === store.order);
-        const card = document.createElement('button');
-        card.type = 'button';
-
-        let cardBorder = 'border-slate-100 bg-white';
-        let badgeHtml = `<span class="px-2.5 py-1 rounded-xl bg-slate-100 text-slate-500 text-xs font-extrabold">未入力</span>`;
-        if (log) {
-          if (log.isHoliday) {
-            cardBorder = 'border-amber-200 bg-amber-50/60';
-            badgeHtml = `<span class="px-2.5 py-1 rounded-xl bg-amber-200/80 text-amber-950 text-xs font-black">休業</span>`;
-          } else if (log.isExtraRun) {
-            cardBorder = 'border-violet-200 bg-violet-50/60';
-            badgeHtml = `<span class="px-2.5 py-1 rounded-xl bg-violet-200/80 text-violet-950 text-xs font-black">臨時便</span>`;
-          } else if (log.isDelayed) {
-            cardBorder = 'border-rose-200 bg-rose-50/60';
-            badgeHtml = `<span class="px-2.5 py-1 rounded-xl bg-rose-500 text-white text-xs font-black tabular-nums">${log.arrival}</span>`;
-          } else {
-            cardBorder = 'border-emerald-200 bg-emerald-50/50';
-            badgeHtml = `<span class="px-2.5 py-1 rounded-xl bg-emerald-600 text-white text-xs font-black tabular-nums">${log.arrival}</span>`;
-          }
+          setTimeout(() => {
+            fetchSheetData(true);
+          }, 3000);
+        } catch (err) {
+          console.error('GAS送信エラー:', err);
         }
-
-        card.className = `w-full text-left rounded-3xl p-4 border ${cardBorder} shadow-[0_2px_12px_rgba(15,23,42,0.03)] active:scale-[0.99] transition flex items-center justify-between gap-3`;
-        card.innerHTML = `
-          <div class="flex items-center gap-3 min-w-0">
-            <div class="w-9 h-9 rounded-2xl ${log ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-600'} font-black text-sm flex items-center justify-center shrink-0 tabular-nums">
-              ${store.order}
-            </div>
-            <div class="min-w-0">
-              <div class="text-base font-black text-slate-900 truncate">${store.name}</div>
-              <div class="flex items-center gap-2 mt-0.5 text-xs font-bold text-slate-400 tabular-nums">
-                <span>定時 ${store.scheduled || '--:--'}</span>
-                ${log && !log.isHoliday && !log.isExtraRun ? `<span class="${log.isDelayed ? 'text-rose-600' : 'text-emerald-600'} font-extrabold">${log.diffDisplay}</span>` : ''}
-              </div>
-            </div>
-          </div>
-          <div class="shrink-0">${badgeHtml}</div>
-        `;
-
-        card.addEventListener('click', () => {
-          openArrivalModal(store, stores.length);
-        });
-        container.appendChild(card);
-      });
-    }
-
-    function renderHistoryList() {
-      const box = document.getElementById('history-list-container');
-      if (!box) return;
-      box.innerHTML = '';
-      if (arrivalLogs.length === 0) {
-        box.innerHTML = '<div class="py-10 text-center text-xs font-bold text-zinc-400">本日の送信履歴はまだありません</div>';
-        return;
-      }
-      arrivalLogs.forEach((l) => {
-        const row = document.createElement('div');
-        row.className = 'bg-white border border-zinc-200/80 rounded-2xl p-3 flex items-center justify-between gap-2';
-        row.innerHTML = `
-          <div class="min-w-0">
-            <div class="text-[11px] font-extrabold text-zinc-400">${l.courseType}便 • ${l.order}店舗目</div>
-            <div class="text-sm font-black text-zinc-900 truncate">${l.storeName}</div>
-          </div>
-          <div class="text-right shrink-0 tabular-nums">
-            <div class="text-sm font-black text-blue-600">${l.arrival}</div>
-            <div class="text-[11px] font-bold text-zinc-500">${l.diffDisplay || ''}</div>
-          </div>
-        `;
-        box.appendChild(row);
-      });
-    }
-
-    function setGasConnectionBadge(state, text) {
-      const pill = document.getElementById('gas-status-pill');
-      const dot = document.getElementById('gas-status-dot');
-      const label = document.getElementById('gas-status-text');
-      if (!pill || !dot || !label) return;
-      label.textContent = text;
-      if (state === 'ok') {
-        pill.className = 'inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100/80 text-emerald-800 shrink-0 whitespace-nowrap';
-        dot.className = 'w-1.5 h-1.5 rounded-full bg-emerald-500';
-      } else if (state === 'loading') {
-        pill.className = 'inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-100/80 text-blue-800 shrink-0 whitespace-nowrap';
-        dot.className = 'w-1.5 h-1.5 rounded-full bg-blue-500 animate-ping';
-      } else {
-        pill.className = 'inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-200/70 text-slate-600 shrink-0 whitespace-nowrap';
-        dot.className = 'w-1.5 h-1.5 rounded-full bg-amber-500';
       }
     }
 
-    async function fetchSheetData(isSilent) {
+    // ④ ローカルキャッシュ保存＆即座復元（体感読込み速度を0.01秒に高速化）
+    function getScheduleCacheKey() {
+      return `store_schedule_cache_${excelCarIndex}_${getFormattedDeliveryDateKey()}`;
+    }
+
+    function saveScheduleCacheToLocal() {
+      try {
+        localStorage.setItem(getScheduleCacheKey(), JSON.stringify({
+          course1Code,
+          course2Code,
+          course1Stores,
+          course2Stores,
+          arrivalLogs
+        }));
+      } catch (e) {}
+    }
+
+    function restoreScheduleCacheFromLocal() {
+      try {
+        const raw = localStorage.getItem(getScheduleCacheKey());
+        if (!raw) return false;
+        const cached = JSON.parse(raw);
+        if (cached.course1Code) course1Code = String(cached.course1Code);
+        if (cached.course2Code) course2Code = String(cached.course2Code);
+        if (Array.isArray(cached.course1Stores)) course1Stores = normalizeStoreArray(cached.course1Stores);
+        if (Array.isArray(cached.course2Stores)) course2Stores = normalizeStoreArray(cached.course2Stores);
+        if (Array.isArray(cached.arrivalLogs)) arrivalLogs = normalizeLogsArray(cached.arrivalLogs);
+        return true;
+      } catch (e) {
+        return false;
+      }
+    }
+
+    async function fetchSheetData(silent = false) {
       if (!gasWebAppUrl) {
-        setGasConnectionBadge('demo', 'デモ表示');
+        setConnectionBadge('demo', 'デモ表示');
+        if (isManualReloading) {
+          isManualReloading = false;
+          try { sessionStorage.removeItem('store_arrival_reloading'); } catch (e) {}
+        }
         return;
       }
-      if (isFetchingSheetData && (Date.now() - fetchingStartedAt < 12000)) return;
+
+      // 同時多重リクエストの防止（4.5秒以上経過したロックは強制解除して自動同期停止を防ぐ）
+      if (isFetchingSheetData && silent) {
+        if (Date.now() - fetchingStartedAt < 4500) {
+          return;
+        }
+        isFetchingSheetData = false;
+      }
       isFetchingSheetData = true;
       fetchingStartedAt = Date.now();
-      if (!isSilent) setGasConnectionBadge('loading', '読込中...');
+      const thisFetchStartedAt = fetchingStartedAt;
+      lastFetchTimestamp = Date.now();
+
+      // ④ 手動更新(!silent)の時だけ端末キャッシュから即時描画し、自動同期(silent)ではキャッシュ巻き戻しをしない
+      const hasCached = !silent ? restoreScheduleCacheFromLocal() : false;
+      if (hasCached && !isAnyBlockingModalOpen()) {
+        renderStoreList();
+      }
+
+      if (isManualReloading) {
+        setConnectionBadge('loading', '更新中...');
+      } else if (!hasCached && !silent) {
+        setConnectionBadge('loading', '読込中...');
+      }
+
+      const abortCtrl = typeof AbortController !== 'undefined' ? new AbortController() : null;
+      const timeoutTimer = abortCtrl ? setTimeout(() => abortCtrl.abort(), 10000) : null;
 
       try {
-        const reqUrl = new URL(gasWebAppUrl);
-        reqUrl.searchParams.set('excelCarIndex', String(excelCarIndex));
-        reqUrl.searchParams.set('deliveryDate', getFormattedDeliveryDateKey());
-        reqUrl.searchParams.set('_ts', String(Date.now()));
+        const query = new URLSearchParams({
+          action: 'getSchedule',
+          excelCarIndex: String(excelCarIndex),
+          deliveryDate: getFormattedDeliveryDateKey(),
+          _t: String(Date.now()),
+          _r: String(Math.random()).slice(2, 10)
+        });
+        const fetchOptions = {
+          method: 'GET',
+          redirect: 'follow'
+        };
+        if (abortCtrl) {
+          fetchOptions.signal = abortCtrl.signal;
+        }
+        let res;
+        try {
+          res = await fetch(`${gasWebAppUrl}?${query.toString()}`, fetchOptions);
+        } catch (firstNetErr) {
+          // 電波瞬断やGASリダイレクト遅延時は600ms後に1回自動リトライ
+          await new Promise((r) => setTimeout(r, 600));
+          res = await fetch(`${gasWebAppUrl}?${query.toString()}`, {
+            method: 'GET',
+            redirect: 'follow'
+          });
+        }
+        if (!res.ok) {
+          throw new Error(`HTTP ${res.status}`);
+        }
+        const textData = await res.text();
+        let data = null;
+        try {
+          data = JSON.parse(textData);
+        } catch (parseErr) {
+          throw new Error('GAS権限エラー（アクセスできるユーザーを「全員」にしてください）');
+        }
 
-        const res = await fetch(reqUrl.toString());
-        const data = await res.json();
         if (data && data.status === 'ok') {
+          window.__lastGasRawDebug = data;
+          // ★このGET通信開始後に新しく店着送信が行われていた場合、古いデータでの画面巻き戻しを防止
+          const submittedDuringThisFetch = Boolean(window.__lastArrivalSubmitAt && thisFetchStartedAt < window.__lastArrivalSubmitAt);
+          const prevScheduleSnapshot = JSON.stringify({
+            course1Code,
+            course2Code,
+            course1Stores,
+            course2Stores,
+            arrivalLogs
+          });
+          const prevChatSnapshot = JSON.stringify({
+            chatMessagesList,
+            activeDispatchMemo
+          });
+
           if (data.course1Code) course1Code = String(data.course1Code);
           if (data.course2Code) course2Code = String(data.course2Code);
-          if (Array.isArray(data.course1Stores) && data.course1Stores.length > 0) {
-            course1Stores = normalizeStoreArray(data.course1Stores);
+          if (Array.isArray(data.course1Stores)) course1Stores = normalizeStoreArray(data.course1Stores);
+          if (Array.isArray(data.course2Stores)) course2Stores = normalizeStoreArray(data.course2Stores);
+          if (Array.isArray(data.existingLogs) && !submittedDuringThisFetch) {
+            let mergedLogs = normalizeLogsArray(data.existingLogs);
+            const recentList = (window.__recentSubmittedLogs || []).filter((r) => Date.now() - r._submittedAt < 15000);
+            window.__recentSubmittedLogs = recentList;
+            recentList.forEach((recentItem) => {
+              const existsOnSheet = mergedLogs.some(
+                (l) => l.courseType === recentItem.courseType && Number(l.order) === Number(recentItem.order)
+              );
+              if (!existsOnSheet) {
+                mergedLogs.push(recentItem);
+              }
+            });
+            arrivalLogs = mergedLogs;
           }
-          if (Array.isArray(data.course2Stores)) {
-            course2Stores = normalizeStoreArray(data.course2Stores);
+          activeDispatchMemo = data.dispatchMemo || data.memo || null;
+          const incomingChats = data.chatMessages || data.messages || data.chatList || data.officeMessages;
+          if (Array.isArray(incomingChats)) {
+            const confirmedIds = JSON.parse(localStorage.getItem('store_confirmed_chat_ids') || '[]');
+            chatMessagesList = incomingChats.map((m) => {
+              const mId = String(m.id || '');
+              if (mId && confirmedIds.includes(mId)) {
+                return { ...m, confirmed: true };
+              }
+              return m;
+            });
           }
-          if (Array.isArray(data.existingLogs)) {
-            arrivalLogs = normalizeLogsArray(data.existingLogs);
+
+          saveScheduleCacheToLocal();
+          setConnectionBadge('ok', 'GAS接続済');
+
+          if (isManualReloading) {
+            isManualReloading = false;
+            try { sessionStorage.removeItem('store_arrival_reloading'); } catch (e) {}
+            showToast('最新データに更新しました');
+          } else if (!silent && !hasCached) {
+            showToast('最新スケジュールを読み込みました');
           }
-          if (Array.isArray(data.chatMessages)) {
-            chatMessagesList = data.chatMessages;
+
+          if (typeof updateChatUnreadBadge === 'function') {
             updateChatUnreadBadge(data);
+          }
+
+          if (typeof window.refreshLiveChatMessages === 'function') {
             window.refreshLiveChatMessages();
           }
 
-          try {
-            localStorage.setItem(`store_schedule_cache_${excelCarIndex}`, JSON.stringify({
-              course1Code,
-              course2Code,
-              course1Stores,
-              course2Stores
-            }));
-          } catch (e) {}
+          const newScheduleSnapshot = JSON.stringify({
+            course1Code,
+            course2Code,
+            course1Stores,
+            course2Stores,
+            arrivalLogs
+          });
 
-          setGasConnectionBadge('ok', 'GAS接続済');
-          renderStoreList();
-          if (isManualReloading) showToast('最新データを読み込みました');
+          if (!isAnyBlockingModalOpen()) {
+            if (!silent || prevScheduleSnapshot !== newScheduleSnapshot) {
+              renderStoreList();
+            }
+          }
+        } else {
+          if (isManualReloading) {
+            isManualReloading = false;
+            try { sessionStorage.removeItem('store_arrival_reloading'); } catch (e) {}
+          }
+          if (!silent) {
+            setConnectionBadge('error', '読込エラー');
+            showToast(`エラー: ${(data && data.message) || '応答不正'}`);
+          }
         }
       } catch (e) {
-        if (!isSilent) setGasConnectionBadge('demo', '接続待機');
+        if (isManualReloading) {
+          isManualReloading = false;
+          try { sessionStorage.removeItem('store_arrival_reloading'); } catch (e) {}
+        }
+        if (!silent) {
+          setConnectionBadge('error', '通信エラー');
+          showToast(`通信失敗: ${e.message || e}`);
+        }
       } finally {
+        if (timeoutTimer) clearTimeout(timeoutTimer);
         isFetchingSheetData = false;
-        isManualReloading = false;
+        fetchingStartedAt = 0;
         lastFetchTimestamp = Date.now();
-        try { sessionStorage.removeItem('store_arrival_reloading'); } catch (e) {}
+      }
+
+      if (!silent && !isAnyBlockingModalOpen()) {
+        renderStoreList();
       }
     }
 
-    function triggerSmartBackgroundSync(minIntervalMs) {
+    // ★クールダウン付きスマート裏側同期（タッチ・画面復帰用）
+    function triggerSmartBackgroundSync(minIntervalMs = 4000) {
+      if (!gasWebAppUrl) return;
+      if (document.visibilityState !== 'visible') return;
+      if (isFetchingSheetData) return;
       if (Date.now() - lastFetchTimestamp < minIntervalMs) return;
       fetchSheetData(true);
     }
 
-    // ★オープニング画面（アイコン起動時は必ず表示・作業中の電源OFF/スリープ復帰時は切る前の画面を完全保持・チラつきゼロ版）
-    const APP_UI_VERSION = '2026.11.28.v5';
-    const ONBOARDING_SESSION_KEY = 'store_arrival_onboarding_session_done';
+    function updateClock() {
+      const now = new Date();
+      document.getElementById('clock-display').textContent = `${pad2(now.getHours())}:${pad2(now.getMinutes())}`;
+    }
 
-    async function checkAndAutoRefreshLatestHtml() {
+    // ★ネイティブアプリ風のホーム画面アイコン（iOS / Android対応）を動的生成
+    function generateAppIcons() {
       try {
-        if (isManualReloading) return;
-        const lastChecked = Number(sessionStorage.getItem('store_ver_checked_at') || '0');
-        if (Date.now() - lastChecked < 15000) return;
-        sessionStorage.setItem('store_ver_checked_at', String(Date.now()));
+        const size = 512;
+        const canvas = document.createElement('canvas');
+        canvas.width = size;
+        canvas.height = size;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return;
 
-        const baseUrl = window.location.href.split('?')[0];
-        const res = await fetch(`${baseUrl}?_vercheck=${Date.now()}`, { cache: 'no-store' });
-        if (!res.ok) return;
-        const htmlText = await res.text();
-        const match = htmlText.match(/const\s+APP_UI_VERSION\s*=\s*'([^']+)'/);
-        if (match && match[1] && match[1] !== APP_UI_VERSION) {
-          const url = new URL(window.location.href);
-          url.searchParams.set('v', String(Date.now()));
-          window.location.replace(url.toString());
-        }
+        const bgGrad = ctx.createLinearGradient(0, 0, size, size);
+        bgGrad.addColorStop(0, '#0284c7');
+        bgGrad.addColorStop(0.5, '#2563eb');
+        bgGrad.addColorStop(1, '#4f46e5');
+        ctx.fillStyle = bgGrad;
+        ctx.fillRect(0, 0, size, size);
+
+        const glow = ctx.createRadialGradient(size * 0.25, size * 0.15, 20, size * 0.35, size * 0.25, size * 0.75);
+        glow.addColorStop(0, 'rgba(125, 211, 252, 0.55)');
+        glow.addColorStop(1, 'rgba(56, 189, 248, 0)');
+        ctx.fillStyle = glow;
+        ctx.fillRect(0, 0, size, size);
+
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.roundRect(36, 118, 286, 218, 30);
+        ctx.fill();
+
+        ctx.fillStyle = '#f59e0b';
+        ctx.beginPath();
+        ctx.roundRect(36, 286, 286, 24, 0);
+        ctx.fill();
+
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.moveTo(338, 166);
+        ctx.lineTo(416, 166);
+        ctx.quadraticCurveTo(444, 166, 454, 192);
+        ctx.lineTo(476, 250);
+        ctx.quadraticCurveTo(482, 266, 482, 284);
+        ctx.lineTo(482, 314);
+        ctx.quadraticCurveTo(482, 336, 460, 336);
+        ctx.lineTo(338, 336);
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.fillStyle = '#1d4ed8';
+        ctx.beginPath();
+        ctx.moveTo(358, 188);
+        ctx.lineTo(408, 188);
+        ctx.quadraticCurveTo(426, 188, 434, 204);
+        ctx.lineTo(452, 252);
+        ctx.lineTo(358, 252);
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.fillStyle = '#10b981';
+        ctx.beginPath();
+        ctx.arc(179, 204, 64, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 14;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        ctx.beginPath();
+        ctx.moveTo(179, 166);
+        ctx.lineTo(179, 204);
+        ctx.lineTo(210, 222);
+        ctx.stroke();
+
+        [128, 398].forEach((wx) => {
+          ctx.fillStyle = '#0f172a';
+          ctx.beginPath();
+          ctx.arc(wx, 344, 56, 0, Math.PI * 2);
+          ctx.fill();
+
+          ctx.fillStyle = '#ffffff';
+          ctx.beginPath();
+          ctx.arc(wx, 344, 34, 0, Math.PI * 2);
+          ctx.fill();
+
+          ctx.fillStyle = '#0284c7';
+          ctx.beginPath();
+          ctx.arc(wx, 344, 14, 0, Math.PI * 2);
+          ctx.fill();
+        });
+
+        const iconDataUrl = canvas.toDataURL('image/png');
+        const appleIcon = document.getElementById('app-apple-touch-icon');
+        const favIcon = document.getElementById('app-favicon');
+        if (appleIcon) appleIcon.href = iconDataUrl;
+        if (favIcon) favIcon.href = iconDataUrl;
       } catch (e) {}
-    }
-
-    function initOnboardingFlow() {
-      const overlay = document.getElementById('onboarding-overlay');
-      const goBtn = document.getElementById('onboarding-go-started-btn');
-      if (!overlay) return;
-
-      let dismissedInSession = false;
-      try {
-        dismissedInSession = sessionStorage.getItem(ONBOARDING_SESSION_KEY) === '1';
-      } catch (e) {}
-
-      if (dismissedInSession || isManualReloading) {
-        document.documentElement.classList.add('is-onboarding-dismissed');
-        overlay.classList.add('hidden');
-        overlay.classList.remove('flex', 'is-closing');
-      } else {
-        document.documentElement.classList.remove('is-onboarding-dismissed');
-        overlay.classList.remove('hidden', 'is-closing');
-        overlay.classList.add('flex');
-      }
-
-      const closeOverlay = () => {
-        triggerWaterDropTap();
-        try {
-          sessionStorage.setItem(ONBOARDING_SESSION_KEY, '1');
-        } catch (e) {}
-        overlay.classList.add('is-closing');
-        setTimeout(() => {
-          document.documentElement.classList.add('is-onboarding-dismissed');
-          overlay.classList.add('hidden');
-          overlay.classList.remove('flex', 'is-closing');
-        }, 420);
-      };
-
-      if (goBtn) {
-        goBtn.addEventListener('click', closeOverlay);
-      }
-    }
-
-    function initAdminCarSwitcher() {
-      const btn = document.getElementById('admin-car-switcher-btn');
-      const label = document.getElementById('admin-car-btn-label');
-      const modal = document.getElementById('admin-car-modal');
-      const grid = document.getElementById('admin-car-grid');
-      const closeBtn = document.getElementById('close-admin-car-modal-btn');
-
-      if (!isAdminMode || !btn) return;
-      btn.classList.remove('hidden');
-      btn.classList.add('inline-flex');
-      if (label) label.textContent = `${excelCarIndex}号車`;
-
-      btn.addEventListener('click', () => {
-        grid.innerHTML = '';
-        for (let i = 0; i <= 34; i++) {
-          const item = document.createElement('button');
-          item.type = 'button';
-          item.className = (i === excelCarIndex)
-            ? 'py-2.5 rounded-xl bg-violet-600 text-white font-black text-xs shadow-xs'
-            : 'py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-extrabold text-xs';
-          item.textContent = `${i}号車`;
-          item.addEventListener('click', () => {
-            excelCarIndex = i;
-            localStorage.setItem('store_arrival_car_index', String(i));
-            if (label) label.textContent = `${i}号車`;
-            modal.classList.add('hidden');
-            modal.classList.remove('flex');
-            renderStoreList();
-            fetchSheetData(false);
-          });
-          grid.appendChild(item);
-        }
-        modal.classList.remove('hidden');
-        modal.classList.add('flex');
-      });
-
-      if (closeBtn) {
-        closeBtn.addEventListener('click', () => {
-          modal.classList.add('hidden');
-          modal.classList.remove('flex');
-        });
-      }
-    }
-
-    function initQrGeneratorUi() {
-      const select = document.getElementById('qr-car-select');
-      const genBtn = document.getElementById('generate-qr-btn');
-      const previewBox = document.getElementById('qr-preview-box');
-      const targetLabel = document.getElementById('qr-target-label');
-      const canvasBox = document.getElementById('qr-code-canvas');
-      const urlText = document.getElementById('qr-url-text');
-      const copyBtn = document.getElementById('copy-invite-url-btn');
-
-      if (!select) return;
-      select.innerHTML = '';
-      for (let i = 0; i <= 34; i++) {
-        const opt = document.createElement('option');
-        opt.value = String(i);
-        opt.textContent = `${i}号車（${100 + i} / ${200 + i}コース）`;
-        if (i === excelCarIndex) opt.selected = true;
-        select.appendChild(opt);
-      }
-
-      if (genBtn) {
-        genBtn.addEventListener('click', () => {
-          const targetCar = select.value;
-          const base = window.location.href.split('?')[0];
-          const inviteUrl = new URL(base);
-          inviteUrl.searchParams.set('car', targetCar);
-          if (gasWebAppUrl) inviteUrl.searchParams.set('gas', gasWebAppUrl);
-          if (officePhoneNumber) inviteUrl.searchParams.set('tel', officePhoneNumber);
-
-          const fullUrl = inviteUrl.toString();
-          targetLabel.textContent = `${targetCar}号車 専用QRコード`;
-          urlText.textContent = fullUrl;
-          canvasBox.innerHTML = '';
-
-          if (typeof QRCode !== 'undefined') {
-            new QRCode(canvasBox, {
-              text: fullUrl,
-              width: 172,
-              height: 172,
-              colorDark: '#0f172a',
-              colorLight: '#ffffff',
-              correctLevel: QRCode.CorrectLevel.M
-            });
-          }
-          previewBox.classList.remove('hidden');
-        });
-      }
-
-      if (copyBtn) {
-        copyBtn.addEventListener('click', () => {
-          const text = urlText.textContent || '';
-          if (!text) return;
-          const temp = document.createElement('textarea');
-          temp.value = text;
-          document.body.appendChild(temp);
-          temp.select();
-          document.execCommand('copy');
-          document.body.removeChild(temp);
-          showToast('配布用URLをコピーしました');
-        });
-      }
-    }
-
-    function updateChatUnreadBadge(data) {
-      const badge = document.getElementById('chat-unread-count');
-      if (!badge) return;
-      const confirmedIds = JSON.parse(localStorage.getItem('store_confirmed_chat_ids') || '[]');
-      const unreadOfficeMsgs = chatMessagesList.filter(
-        (m) => m.sender === 'office' && !m.confirmed && !confirmedIds.includes(String(m.id || ''))
-      );
-      const count = unreadOfficeMsgs.length;
-      badge.textContent = String(count);
-
-      if (count > lastKnownUnreadCount && hasInitializedMessageIds) {
-        triggerDispatchMemoAlertSound();
-      }
-      lastKnownUnreadCount = count;
-    }
-
-    function renderChatMessages() {
-      const container = document.getElementById('chat-messages-container');
-      if (!container) return;
-      container.innerHTML = '';
-
-      if (!chatMessagesList || chatMessagesList.length === 0) {
-        container.innerHTML = '<div class="my-auto text-center text-xs font-extrabold text-slate-600/80 bg-white/70 rounded-2xl py-6 px-4">事務所とのメッセージ履歴はまだありません</div>';
-        return;
-      }
-
-      chatMessagesList.forEach((msg) => {
-        const isDriver = (msg.sender === 'driver');
-        const row = document.createElement('div');
-        row.className = isDriver ? 'flex flex-col items-end' : 'flex flex-col items-start';
-
-        const bubble = document.createElement('div');
-        bubble.className = isDriver
-          ? 'line-bubble-driver max-w-[82%] bg-blue-600 text-white px-4 py-2.5 text-sm font-bold shadow-xs break-words'
-          : 'line-bubble-office max-w-[82%] bg-white text-slate-900 px-4 py-2.5 text-sm font-bold shadow-xs break-words';
-
-        if (msg.text) {
-          const p = document.createElement('div');
-          p.textContent = msg.text;
-          bubble.appendChild(p);
-        }
-        if (msg.imageData) {
-          const img = document.createElement('img');
-          img.src = msg.imageData;
-          img.alt = '添付画像';
-          img.className = 'mt-1.5 rounded-xl max-h-48 object-contain border border-black/10';
-          bubble.appendChild(img);
-        }
-
-        const meta = document.createElement('div');
-        meta.className = 'mt-1 px-2 text-[10px] font-bold text-slate-600 flex items-center gap-1.5';
-        meta.textContent = `${msg.time || ''}${!isDriver ? (msg.confirmed ? ' • 確認済' : ' • 未確認') : ''}`;
-
-        row.appendChild(bubble);
-        row.appendChild(meta);
-        container.appendChild(row);
-      });
-
-      container.scrollTop = container.scrollHeight;
-    }
-
-    window.refreshLiveChatMessages = function () {
-      const chatScreen = document.getElementById('chat-sub-screen');
-      if (chatScreen && !chatScreen.classList.contains('hidden')) {
-        renderChatMessages();
-      }
-    };
-
-    function initChatSubScreen() {
-      const openBtn = document.getElementById('open-chat-screen-btn');
-      const closeBtn = document.getElementById('close-chat-screen-btn');
-      const chatScreen = document.getElementById('chat-sub-screen');
-      const sendBtn = document.getElementById('chat-send-btn');
-      const inputEl = document.getElementById('chat-message-input');
-      const micBtn = document.getElementById('chat-mic-btn');
-      const cameraBtn = document.getElementById('chat-camera-btn');
-      const cameraInput = document.getElementById('chat-camera-input');
-      const previewBar = document.getElementById('chat-photo-preview-bar');
-      const photoThumb = document.getElementById('chat-photo-thumb');
-      const removePhotoBtn = document.getElementById('chat-remove-photo-btn');
-
-      if (openBtn && chatScreen) {
-        openBtn.addEventListener('click', async () => {
-          chatScreen.classList.remove('hidden');
-          chatScreen.classList.add('flex');
-
-          const confirmedIds = JSON.parse(localStorage.getItem('store_confirmed_chat_ids') || '[]');
-          const newlyConfirmed = [];
-
-          chatMessagesList = chatMessagesList.map((m) => {
-            if (m.sender === 'office' && !m.confirmed) {
-              const mId = String(m.id || '');
-              if (mId && !confirmedIds.includes(mId)) {
-                confirmedIds.push(mId);
-                newlyConfirmed.push(mId);
-              }
-              return { ...m, confirmed: true };
-            }
-            return m;
-          });
-
-          if (newlyConfirmed.length > 0) {
-            localStorage.setItem('store_confirmed_chat_ids', JSON.stringify(confirmedIds));
-            updateChatUnreadBadge();
-            if (gasWebAppUrl) {
-              newlyConfirmed.forEach((mId) => {
-                fetch(gasWebAppUrl, {
-                  method: 'POST',
-                  mode: 'no-cors',
-                  headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                  body: JSON.stringify({
-                    action: 'confirmMemo',
-                    excelCarIndex: excelCarIndex,
-                    memoId: mId
-                  })
-                }).catch(() => {});
-              });
-            }
-          }
-
-          renderChatMessages();
-        });
-      }
-
-      if (micBtn && inputEl) {
-        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-        let recognition = null;
-        let isRecording = false;
-        if (SpeechRecognition) {
-          recognition = new SpeechRecognition();
-          recognition.lang = 'ja-JP';
-          recognition.interimResults = false;
-          recognition.onstart = () => {
-            isRecording = true;
-            micBtn.classList.remove('bg-slate-100', 'text-slate-700');
-            micBtn.classList.add('bg-rose-500', 'text-white', 'animate-pulse');
-            showToast('🎤 お話しください（音声入力中）');
-          };
-          recognition.onresult = (event) => {
-            const transcript = event.results[0][0].transcript;
-            if (transcript) {
-              inputEl.value = (inputEl.value ? inputEl.value + ' ' : '') + transcript;
-            }
-          };
-          recognition.onerror = () => {
-            isRecording = false;
-            micBtn.classList.add('bg-slate-100', 'text-slate-700');
-            micBtn.classList.remove('bg-rose-500', 'text-white', 'animate-pulse');
-          };
-          recognition.onend = () => {
-            isRecording = false;
-            micBtn.classList.add('bg-slate-100', 'text-slate-700');
-            micBtn.classList.remove('bg-rose-500', 'text-white', 'animate-pulse');
-          };
-        }
-        micBtn.addEventListener('click', () => {
-          if (!recognition) {
-            showToast('この端末のブラウザは音声入力に対応していません');
-            return;
-          }
-          if (isRecording) {
-            recognition.stop();
-          } else {
-            try { recognition.start(); } catch (e) {}
-          }
-        });
-      }
-
-      if (closeBtn && chatScreen) {
-        closeBtn.addEventListener('click', () => {
-          chatScreen.classList.add('hidden');
-          chatScreen.classList.remove('flex');
-        });
-      }
-
-      if (cameraBtn && cameraInput) {
-        cameraBtn.addEventListener('click', () => cameraInput.click());
-        cameraInput.addEventListener('change', (e) => {
-          const file = e.target.files && e.target.files[0];
-          if (!file) return;
-          const reader = new FileReader();
-          reader.onload = () => {
-            pendingChatImageBase64 = String(reader.result || '');
-            if (photoThumb) photoThumb.src = pendingChatImageBase64;
-            if (previewBar) previewBar.classList.remove('hidden');
-          };
-          reader.readAsDataURL(file);
-        });
-      }
-
-      if (removePhotoBtn) {
-        removePhotoBtn.addEventListener('click', () => {
-          pendingChatImageBase64 = '';
-          if (cameraInput) cameraInput.value = '';
-          if (previewBar) previewBar.classList.add('hidden');
-        });
-      }
-
-      if (sendBtn && inputEl) {
-        sendBtn.addEventListener('click', async () => {
-          const text = inputEl.value.trim();
-          const imgData = pendingChatImageBase64;
-          if (!text && !imgData) return;
-
-          triggerSendWhooshTone();
-          const now = new Date();
-          const timeStr = `${pad2(now.getHours())}:${pad2(now.getMinutes())}`;
-
-          chatMessagesList.push({
-            id: `DRV_${Date.now()}`,
-            sender: 'driver',
-            text: text,
-            time: timeStr,
-            confirmed: true,
-            imageData: imgData
-          });
-
-          inputEl.value = '';
-          pendingChatImageBase64 = '';
-          if (cameraInput) cameraInput.value = '';
-          if (previewBar) previewBar.classList.add('hidden');
-          renderChatMessages();
-
-          if (gasWebAppUrl) {
-            try {
-              await fetch(gasWebAppUrl, {
-                method: 'POST',
-                mode: 'no-cors',
-                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                body: JSON.stringify({
-                  action: 'sendDriverChat',
-                  excelCarIndex: excelCarIndex,
-                  message: text,
-                  imageData: imgData,
-                  sentAt: timeStr
-                })
-              });
-            } catch (e) {}
-          }
-        });
-      }
-    }
-
-    function bindCoreUiEvents() {
-      document.body.addEventListener('touchstart', unlockAudioOnFirstGesture, { passive: true });
-      document.body.addEventListener('click', (e) => {
-        unlockAudioOnFirstGesture();
-        const clickable = e.target.closest('button, a, [data-tap-sound]');
-        if (clickable && clickable.id !== 'submit-arrival-btn' && clickable.id !== 'submit-holiday-btn' && clickable.id !== 'submit-extra-btn' && clickable.id !== 'chat-send-btn') {
-          triggerWaterDropTap();
-        }
-      });
-
-      const tab1 = document.getElementById('tab-course-1');
-      const tab2 = document.getElementById('tab-course-2');
-      if (tab1) {
-        tab1.addEventListener('click', () => {
-          activeCourseType = '1';
-          renderStoreList();
-        });
-      }
-      if (tab2) {
-        tab2.addEventListener('click', () => {
-          activeCourseType = '2';
-          renderStoreList();
-        });
-      }
-
-      const prevDayBtn = document.getElementById('prev-day-btn');
-      const nextDayBtn = document.getElementById('next-day-btn');
-      if (prevDayBtn) {
-        prevDayBtn.addEventListener('click', () => {
-          deliveryDate.setDate(deliveryDate.getDate() - 1);
-          renderStoreList();
-          fetchSheetData(false);
-        });
-      }
-      if (nextDayBtn) {
-        nextDayBtn.addEventListener('click', () => {
-          deliveryDate.setDate(deliveryDate.getDate() + 1);
-          renderStoreList();
-          fetchSheetData(false);
-        });
-      }
-
-      const reloadBtn = document.getElementById('reload-sheet-btn');
-      if (reloadBtn) {
-        reloadBtn.addEventListener('click', () => {
-          isManualReloading = true;
-          try { sessionStorage.setItem('store_arrival_reloading', '1'); } catch (e) {}
-          fetchSheetData(false);
-        });
-      }
-
-      const openGasBtn = document.getElementById('open-gas-modal-btn');
-      const closeGasBtn = document.getElementById('close-gas-modal-btn');
-      const gasModal = document.getElementById('gas-modal');
-      const saveGasBtn = document.getElementById('save-gas-url-btn');
-      if (openGasBtn && gasModal) {
-        openGasBtn.addEventListener('click', () => {
-          document.getElementById('gas-url-input').value = gasWebAppUrl || '';
-          document.getElementById('office-phone-input').value = officePhoneNumber || '';
-          gasModal.classList.remove('hidden');
-          gasModal.classList.add('flex');
-        });
-      }
-      if (closeGasBtn && gasModal) {
-        closeGasBtn.addEventListener('click', () => {
-          gasModal.classList.add('hidden');
-          gasModal.classList.remove('flex');
-        });
-      }
-      if (saveGasBtn && gasModal) {
-        saveGasBtn.addEventListener('click', () => {
-          const newUrl = document.getElementById('gas-url-input').value.trim();
-          const newTel = document.getElementById('office-phone-input').value.trim();
-          gasWebAppUrl = newUrl;
-          officePhoneNumber = newTel;
-          localStorage.setItem('store_arrival_gas_url', newUrl);
-          localStorage.setItem('store_arrival_office_phone', newTel);
-          updateOfficeCallLink();
-          gasModal.classList.add('hidden');
-          gasModal.classList.remove('flex');
-          fetchSheetData(false);
-        });
-      }
-
-      const openHistoryBtn = document.getElementById('open-history-btn');
-      const closeHistoryBtn = document.getElementById('close-history-modal-btn');
-      const historyModal = document.getElementById('history-modal');
-      if (openHistoryBtn && historyModal) {
-        openHistoryBtn.addEventListener('click', () => {
-          renderHistoryList();
-          historyModal.classList.remove('hidden');
-          historyModal.classList.add('flex');
-        });
-      }
-      if (closeHistoryBtn && historyModal) {
-        closeHistoryBtn.addEventListener('click', () => {
-          historyModal.classList.add('hidden');
-          historyModal.classList.remove('flex');
-        });
-      }
-
-      const closeArrivalBtn = document.getElementById('close-arrival-modal-btn');
-      if (closeArrivalBtn) {
-        closeArrivalBtn.addEventListener('click', closeArrivalModal);
-      }
-
-      const setNowBtn = document.getElementById('set-now-btn');
-      if (setNowBtn) {
-        setNowBtn.addEventListener('click', () => {
-          const now = new Date();
-          const hh = pad2(now.getHours());
-          const mm = pad2(now.getMinutes());
-          document.getElementById('select-hour').value = hh;
-          document.getElementById('select-minute').value = mm;
-          if (hourWheelController) hourWheelController.setValue(hh, true);
-          if (minuteWheelController) minuteWheelController.setValue(mm, true);
-          updateModalDiffPreview();
-        });
-      }
-
-      const submitArrivalBtn = document.getElementById('submit-arrival-btn');
-      const submitHolidayBtn = document.getElementById('submit-holiday-btn');
-      const submitExtraBtn = document.getElementById('submit-extra-btn');
-      if (submitArrivalBtn) submitArrivalBtn.addEventListener('click', () => handleRecordSubmission('normal'));
-      if (submitHolidayBtn) submitHolidayBtn.addEventListener('click', () => handleRecordSubmission('holiday'));
-      if (submitExtraBtn) submitExtraBtn.addEventListener('click', () => handleRecordSubmission('extra'));
     }
 
     document.addEventListener('DOMContentLoaded', () => {
-      // オープニング画面（アイコン起動時は即座に表示、Go started押下後の電源OFF/スリープ復帰時は入力画面を保持）
+      // オープニング画面の制御（オリジナル処理には一切干渉しない独立動作）
       (function initOnboardingOverlay() {
         const overlay = document.getElementById('onboarding-overlay');
         const goBtn = document.getElementById('onboarding-go-started-btn');
@@ -1887,21 +2006,853 @@
       generateAppIcons();
       updateOfficeCallLink();
       initTimeSelectOptions();
-      initAdminCarSwitcher();
-      initQrGeneratorUi();
-      initChatSubScreen();
-      bindCoreUiEvents();
-
       updateClock();
-      setInterval(updateClock, 15000);
+      setInterval(updateClock, 10000);
 
-      restoreScheduleCacheFromLocal();
+      if (isAdminMode) {
+        document.getElementById('fixed-car-label').classList.add('hidden');
+        const switcherBtn = document.getElementById('admin-car-switcher-btn');
+        const switcherLabel = document.getElementById('admin-car-btn-label');
+        const carModal = document.getElementById('admin-car-modal');
+        const carGrid = document.getElementById('admin-car-grid');
+
+        switcherBtn.classList.remove('hidden');
+        switcherBtn.classList.add('inline-flex');
+        switcherLabel.textContent = `${excelCarIndex}号車`;
+
+        function renderAdminCarButtons() {
+          carGrid.innerHTML = '';
+          for (let c = 0; c <= 34; c++) {
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            const isSelected = (c === excelCarIndex);
+            btn.className = isSelected
+              ? 'py-2.5 rounded-xl bg-violet-600 text-white font-black text-sm shadow-xs tabular-nums'
+              : 'py-2.5 rounded-xl bg-white border border-zinc-200/90 text-zinc-800 active:bg-violet-50 font-extrabold text-sm tabular-nums';
+            btn.textContent = `${c}号車`;
+            btn.addEventListener('click', () => {
+              excelCarIndex = c;
+              localStorage.setItem('store_arrival_car_index', String(c));
+              switcherLabel.textContent = `${c}号車`;
+              course1Code = String(100 + excelCarIndex);
+              course2Code = String(200 + excelCarIndex);
+              carModal.classList.add('hidden');
+              carModal.classList.remove('flex');
+              fetchSheetData();
+            });
+            carGrid.appendChild(btn);
+          }
+        }
+
+        switcherBtn.addEventListener('click', () => {
+          renderAdminCarButtons();
+          carModal.classList.remove('hidden');
+          carModal.classList.add('flex');
+        });
+
+        document.getElementById('close-admin-car-modal-btn').addEventListener('click', () => {
+          carModal.classList.add('hidden');
+          carModal.classList.remove('flex');
+        });
+
+        carModal.addEventListener('click', (e) => {
+          if (e.target.id === 'admin-car-modal') {
+            carModal.classList.add('hidden');
+            carModal.classList.remove('flex');
+          }
+        });
+      }
+
+      document.addEventListener('click', (e) => {
+        const btn = e.target.closest('button');
+        if (!btn) return;
+        if (['submit-arrival-btn', 'submit-holiday-btn', 'submit-extra-btn'].includes(btn.id)) return;
+        triggerWaterDropTap();
+      }, true);
+
+      document.addEventListener('pointerdown', () => {
+        unlockAudioOnFirstGesture();
+        triggerSmartBackgroundSync(4000);
+      }, { passive: true, capture: true });
+
+      document.addEventListener('touchstart', () => {
+        unlockAudioOnFirstGesture();
+      }, { passive: true, capture: true });
+
+      document.addEventListener('click', () => {
+        unlockAudioOnFirstGesture();
+        triggerSmartBackgroundSync(4000);
+      }, { passive: true, capture: true });
+
+      document.getElementById('tab-course-1').addEventListener('click', () => {
+        activeCourseType = '1';
+        renderStoreList();
+      });
+      document.getElementById('tab-course-2').addEventListener('click', () => {
+        if (isSingleCourseCar) return;
+        activeCourseType = '2';
+        renderStoreList();
+      });
+
+      document.getElementById('prev-day-btn').addEventListener('click', () => {
+        deliveryDate.setDate(deliveryDate.getDate() - 1);
+        fetchSheetData();
+      });
+      document.getElementById('next-day-btn').addEventListener('click', () => {
+        deliveryDate.setDate(deliveryDate.getDate() + 1);
+        fetchSheetData();
+      });
+
+      let lastReloadTapTime = 0;
+      document.getElementById('reload-sheet-btn').addEventListener('click', () => {
+        const nowTap = Date.now();
+        if (nowTap - lastReloadTapTime < 700) {
+          try {
+            sessionStorage.setItem('store_arrival_reloading', '1');
+          } catch (e) {}
+          setConnectionBadge('loading', '更新中...');
+          const url = new URL(window.location.href);
+          url.searchParams.set('v', String(nowTap));
+          url.searchParams.set('reloading', '1');
+          window.location.replace(url.toString());
+          return;
+        }
+        lastReloadTapTime = nowTap;
+
+        const reloadBtn = document.getElementById('reload-sheet-btn');
+        const reloadIcon = reloadBtn.querySelector('svg');
+        if (reloadIcon) {
+          reloadIcon.style.transition = 'transform 0.55s cubic-bezier(0.22, 1, 0.36, 1)';
+          reloadIcon.style.transform = 'rotate(360deg)';
+        }
+        reloadBtn.classList.add('ring-2', 'ring-blue-400', 'bg-blue-50', 'text-blue-600');
+        setConnectionBadge('loading', '更新中...');
+        fetchSheetData().then(() => {
+          updateChatUnreadBadge();
+          const badgeEl = document.getElementById('chat-unread-count');
+          if (badgeEl) {
+            badgeEl.style.transition = 'transform 0.25s ease';
+            badgeEl.style.transform = 'scale(1.35)';
+            setTimeout(() => { badgeEl.style.transform = 'scale(1)'; }, 250);
+          }
+          setTimeout(() => {
+            if (reloadIcon) {
+              reloadIcon.style.transition = 'none';
+              reloadIcon.style.transform = 'rotate(0deg)';
+            }
+            reloadBtn.classList.remove('ring-2', 'ring-blue-400', 'bg-blue-50', 'text-blue-600');
+          }, 550);
+        });
+      });
+
+      document.getElementById('close-arrival-modal-btn').addEventListener('click', closeArrivalModal);
+      document.getElementById('arrival-modal').addEventListener('click', (e) => {
+        if (e.target.id === 'arrival-modal') closeArrivalModal();
+      });
+
+      document.getElementById('set-now-btn').addEventListener('click', () => {
+        const now = new Date();
+        const hVal = pad2(now.getHours());
+        const mVal = pad2(now.getMinutes());
+        document.getElementById('select-hour').value = hVal;
+        document.getElementById('select-minute').value = mVal;
+        if (hourWheelController) hourWheelController.setValue(hVal, true);
+        if (minuteWheelController) minuteWheelController.setValue(mVal, true);
+        updateModalDiffPreview();
+      });
+
+      document.getElementById('submit-arrival-btn').addEventListener('click', () => handleRecordSubmission('normal'));
+      document.getElementById('submit-holiday-btn').addEventListener('click', () => handleRecordSubmission('holiday'));
+      document.getElementById('submit-extra-btn').addEventListener('click', () => handleRecordSubmission('extra'));
+
+      document.getElementById('open-gas-modal-btn').addEventListener('click', () => {
+        document.getElementById('gas-url-input').value = gasWebAppUrl;
+        const phoneInput = document.getElementById('office-phone-input');
+        if (phoneInput) phoneInput.value = officePhoneNumber;
+        initQrCarSelector();
+        const modal = document.getElementById('gas-modal');
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+      });
+
+      document.getElementById('close-gas-modal-btn').addEventListener('click', () => {
+        const modal = document.getElementById('gas-modal');
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+      });
+
+      document.getElementById('save-gas-url-btn').addEventListener('click', () => {
+        gasWebAppUrl = document.getElementById('gas-url-input').value.trim();
+        localStorage.setItem('store_arrival_gas_url', gasWebAppUrl);
+
+        const phoneInput = document.getElementById('office-phone-input');
+        if (phoneInput) {
+          officePhoneNumber = phoneInput.value.trim();
+          localStorage.setItem('store_arrival_office_phone', officePhoneNumber);
+          updateOfficeCallLink();
+        }
+
+        const modal = document.getElementById('gas-modal');
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+        fetchSheetData();
+      });
+
+      document.getElementById('chat-office-call-link').addEventListener('click', (e) => {
+        const cleanNum = String(officePhoneNumber || '').replace(/[^0-9+*#]/g, '');
+        if (!cleanNum) {
+          e.preventDefault();
+          showToast('⚠️ 歯車（⚙）から運行携帯の電話番号を登録してください');
+        }
+      });
+
+      let currentInviteUrl = '';
+      function initQrCarSelector() {
+        const sel = document.getElementById('qr-car-select');
+        if (sel.options.length === 0) {
+          const adminOpt = document.createElement('option');
+          adminOpt.value = 'admin';
+          adminOpt.textContent = '★運行管理用（全号車切替）';
+          sel.appendChild(adminOpt);
+          for (let c = 0; c <= 34; c++) {
+            const opt = document.createElement('option');
+            opt.value = String(c);
+            opt.textContent = `${c}号車`;
+            sel.appendChild(opt);
+          }
+        }
+        sel.value = isAdminMode ? 'admin' : String(excelCarIndex);
+        renderQrCodeForSelectedCar();
+      }
+
+      function renderQrCodeForSelectedCar() {
+        const inputUrl = document.getElementById('gas-url-input').value.trim() || gasWebAppUrl;
+        const phoneInput = document.getElementById('office-phone-input');
+        const currentPhone = (phoneInput ? phoneInput.value.trim() : '') || officePhoneNumber;
+        const targetVal = document.getElementById('qr-car-select').value;
+        const previewBox = document.getElementById('qr-preview-box');
+
+        if (!inputUrl) {
+          previewBox.classList.add('hidden');
+          return;
+        }
+
+        const basePageUrl = window.location.href.split('?')[0];
+        const isTargetAdmin = (targetVal === 'admin');
+        const shareObj = isTargetAdmin
+          ? { car: '0', admin: '1', gas: inputUrl }
+          : { car: targetVal, gas: inputUrl };
+        if (currentPhone) shareObj.tel = currentPhone;
+        const shareParams = new URLSearchParams(shareObj);
+        currentInviteUrl = `${basePageUrl}?${shareParams.toString()}`;
+
+        document.getElementById('qr-target-label').textContent = isTargetAdmin
+          ? '★運行管理用（全号車切替）QRコード'
+          : `${targetVal}号車 専用QRコード`;
+        document.getElementById('qr-url-text').textContent = currentInviteUrl;
+        const qrContainer = document.getElementById('qr-code-canvas');
+        qrContainer.innerHTML = '';
+        if (typeof QRCode !== 'undefined') {
+          new QRCode(qrContainer, {
+            text: currentInviteUrl,
+            width: 176,
+            height: 176,
+            colorDark: '#0f172a',
+            colorLight: '#ffffff',
+            correctLevel: QRCode.CorrectLevel.M
+          });
+        }
+        previewBox.classList.remove('hidden');
+      }
+
+      document.getElementById('generate-qr-btn').addEventListener('click', () => {
+        const inputUrl = document.getElementById('gas-url-input').value.trim();
+        if (!inputUrl) {
+          showToast('先に上の欄にGAS ウェブアプリURLを入力してください');
+          return;
+        }
+        gasWebAppUrl = inputUrl;
+        localStorage.setItem('store_arrival_gas_url', gasWebAppUrl);
+        renderQrCodeForSelectedCar();
+        showToast('専用QRコードを表示しました');
+      });
+
+      document.getElementById('qr-car-select').addEventListener('change', renderQrCodeForSelectedCar);
+
+      document.getElementById('copy-invite-url-btn').addEventListener('click', () => {
+        if (!currentInviteUrl) return;
+        const tempInput = document.createElement('input');
+        tempInput.value = currentInviteUrl;
+        document.body.appendChild(tempInput);
+        tempInput.select();
+        document.execCommand('copy');
+        document.body.removeChild(tempInput);
+        showToast('配布用URLをコピーしました');
+      });
+
+      document.getElementById('open-history-btn').addEventListener('click', () => {
+        renderHistoryList();
+        const modal = document.getElementById('history-modal');
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+      });
+
+      document.getElementById('close-history-modal-btn').addEventListener('click', () => {
+        const modal = document.getElementById('history-modal');
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+      });
+
+      function isMessageFromOffice(m) {
+        const s = String(m.sender ?? m.from ?? m.type ?? m.role ?? '').trim().toLowerCase();
+        return s === 'office' || s === '事務所' || s === 'admin' || s === 'manager' || s === '運行';
+      }
+
+      function isMessageUnconfirmed(m) {
+        const c = m.confirmed ?? m.isConfirmed ?? m.read ?? m.status ?? '';
+        if (c === true || c === 1) return false;
+        const str = String(c).trim().toLowerCase();
+        if (str === 'true' || str === '1' || str === '確認済' || str === '確認済み' || str === 'ok' || str === 'read') {
+          return false;
+        }
+        return true;
+      }
+
+      function updateChatUnreadBadge(rawGasData = null) {
+        const badgeEl = document.getElementById('chat-unread-count');
+        if (!badgeEl) return;
+        const deletedIds = JSON.parse(localStorage.getItem('store_deleted_chat_ids') || '[]');
+        const confirmedIds = JSON.parse(localStorage.getItem('store_confirmed_chat_ids') || '[]');
+        const list = Array.isArray(chatMessagesList) ? chatMessagesList : [];
+        let hasBrandNewOfficeMsg = false;
+        let newestUnconfirmedOfficeMsg = null;
+
+        const currentOfficeIds = new Set();
+        let unread = list.filter((m) => {
+          const msgKey = String(m.id || `${m.sender}_${m.time}_${m.text}`);
+          if (deletedIds.includes(msgKey)) return false;
+          if (isMessageFromOffice(m)) {
+            currentOfficeIds.add(msgKey);
+            const unconf = isMessageUnconfirmed(m) && !confirmedIds.includes(msgKey);
+            if (unconf && hasInitializedMessageIds && !knownOfficeMessageIds.has(msgKey)) {
+              hasBrandNewOfficeMsg = true;
+            }
+            return unconf;
+          }
+          return false;
+        }).length;
+
+        if (activeDispatchMemo && (activeDispatchMemo.message || activeDispatchMemo.text)) {
+          const memoText = activeDispatchMemo.message || activeDispatchMemo.text;
+          const memoKey = String(activeDispatchMemo.memoId || activeDispatchMemo.id || `office_${activeDispatchMemo.sentAt}_${memoText}`);
+          if (!deletedIds.includes(memoKey)) {
+            currentOfficeIds.add(memoKey);
+            const unconf = isMessageUnconfirmed(activeDispatchMemo) && !confirmedIds.includes(memoKey);
+            if (unconf) {
+              if (hasInitializedMessageIds && !knownOfficeMessageIds.has(memoKey)) {
+                hasBrandNewOfficeMsg = true;
+              }
+              if (unread === 0) unread = 1;
+            }
+          }
+        }
+
+        if (unread === 0 && rawGasData && typeof rawGasData.unreadCount === 'number' && rawGasData.unreadCount > 0) {
+          unread = rawGasData.unreadCount;
+        }
+
+        knownOfficeMessageIds = currentOfficeIds;
+        hasInitializedMessageIds = true;
+
+        badgeEl.textContent = String(unread);
+        if (unread > 0) {
+          badgeEl.classList.add('animate-bounce');
+          if (unread > lastKnownUnreadCount || hasBrandNewOfficeMsg) {
+            triggerDispatchMemoAlertSound();
+          }
+        } else {
+          badgeEl.classList.remove('animate-bounce');
+        }
+        lastKnownUnreadCount = unread;
+      }
+
+      let chatBtnDebugTimer = null;
+      const openChatBtnEl = document.getElementById('open-chat-screen-btn');
+      openChatBtnEl.addEventListener('touchstart', () => {
+        chatBtnDebugTimer = setTimeout(() => {
+          const d = window.__lastGasRawDebug;
+          if (!d) {
+            showToast('GAS応答データ未受信');
+            return;
+          }
+          const keys = Object.keys(d).join(',');
+          const cLen = Array.isArray(d.chatMessages) ? d.chatMessages.length : (Array.isArray(d.messages) ? d.messages.length : 'なし');
+          const mStr = d.dispatchMemo ? 'あり' : 'なし';
+          showToast(`診断: chat=${cLen} / memo=${mStr} / keys=${keys}`);
+        }, 1000);
+      }, { passive: true });
+      openChatBtnEl.addEventListener('touchend', () => clearTimeout(chatBtnDebugTimer));
+      openChatBtnEl.addEventListener('touchmove', () => clearTimeout(chatBtnDebugTimer));
+
+      function renderChatMessages() {
+        const container = document.getElementById('chat-messages-container');
+        if (!container) return;
+        container.innerHTML = '';
+
+        const datePillWrap = document.createElement('div');
+        datePillWrap.className = 'flex justify-center my-1';
+        const datePill = document.createElement('span');
+        datePill.className = 'px-3.5 py-1 rounded-full bg-slate-900/35 text-white text-xs font-extrabold tracking-wide backdrop-blur-xs';
+        datePill.textContent = getFormattedDeliveryDateWithDay();
+        datePillWrap.appendChild(datePill);
+        container.appendChild(datePillWrap);
+
+        const deletedIds = JSON.parse(localStorage.getItem('store_deleted_chat_ids') || '[]');
+        const list = (Array.isArray(chatMessagesList) ? [...chatMessagesList] : [])
+          .filter((m) => !deletedIds.includes(String(m.id || `${m.sender}_${m.time}_${m.text}`)));
+
+        if (list.length === 0 && activeDispatchMemo && (activeDispatchMemo.message || activeDispatchMemo.text)) {
+          const memoText = activeDispatchMemo.message || activeDispatchMemo.text;
+          const memoKey = String(activeDispatchMemo.memoId || activeDispatchMemo.id || `office_${activeDispatchMemo.sentAt}_${memoText}`);
+          if (!deletedIds.includes(memoKey)) {
+            list.push({
+              id: activeDispatchMemo.memoId || activeDispatchMemo.id,
+              sender: 'office',
+              text: memoText,
+              time: activeDispatchMemo.sentAt || '',
+              confirmed: !isMessageUnconfirmed(activeDispatchMemo),
+              imageData: ''
+            });
+          }
+        }
+
+        if (list.length === 0) {
+          const emptyMsg = document.createElement('div');
+          emptyMsg.className = 'text-center text-base font-extrabold text-slate-600 py-12';
+          emptyMsg.textContent = '事務所とのメッセージ履歴はまだありません';
+          container.appendChild(emptyMsg);
+          return;
+        }
+
+        list.forEach((msg) => {
+          const isOffice = isMessageFromOffice(msg);
+          const msgKey = String(msg.id || `${msg.sender}_${msg.time}_${msg.text}`);
+          const wrap = document.createElement('div');
+          wrap.className = isOffice ? 'flex flex-col items-start max-w-[88%]' : 'flex flex-col items-end self-end max-w-[88%] ml-auto';
+
+          const senderLabel = document.createElement('div');
+          senderLabel.className = 'text-xs font-extrabold text-slate-600 mb-1 px-1';
+          senderLabel.textContent = isOffice ? '事務所' : `${excelCarIndex}号車`;
+          wrap.appendChild(senderLabel);
+
+          const rowLine = document.createElement('div');
+          rowLine.className = isOffice ? 'flex items-end gap-1.5 max-w-full' : 'flex items-end justify-end gap-1.5 max-w-full';
+
+          const bubble = document.createElement('div');
+          bubble.className = isOffice
+            ? 'line-bubble-office bg-white border border-slate-200 px-3.5 py-2.5 shadow-xs space-y-2 select-none'
+            : 'line-bubble-driver bg-blue-600 text-white px-3.5 py-2.5 shadow-xs space-y-2 select-none';
+
+          let pressTimer = null;
+          const startLongPress = () => {
+            pressTimer = setTimeout(() => {
+              if (navigator.vibrate) navigator.vibrate(25);
+              openChatDeleteConfirm(msgKey, msg.text || '（添付写真）');
+            }, 650);
+          };
+          const cancelLongPress = () => {
+            if (pressTimer) {
+              clearTimeout(pressTimer);
+              pressTimer = null;
+            }
+          };
+          bubble.addEventListener('touchstart', startLongPress, { passive: true });
+          bubble.addEventListener('touchend', cancelLongPress);
+          bubble.addEventListener('touchmove', cancelLongPress);
+          bubble.addEventListener('mousedown', startLongPress);
+          bubble.addEventListener('mouseup', cancelLongPress);
+          bubble.addEventListener('mouseleave', cancelLongPress);
+
+          if (msg.text) {
+            const p = document.createElement('div');
+            p.className = 'text-base font-bold leading-relaxed whitespace-pre-wrap break-words';
+            p.textContent = msg.text;
+            bubble.appendChild(p);
+          }
+
+          if (msg.imageData) {
+            const img = document.createElement('img');
+            img.src = msg.imageData;
+            img.alt = '添付写真';
+            img.className = 'max-w-full max-h-52 rounded-xl border border-slate-200/60 object-cover';
+            bubble.appendChild(img);
+          }
+
+          if (isOffice) {
+            const okBtn = document.createElement('button');
+            okBtn.type = 'button';
+            if (msg.confirmed) {
+              okBtn.className = 'w-full py-1.5 px-3.5 rounded-full bg-slate-100 border border-slate-200 text-slate-700 font-black text-xs flex items-center justify-between gap-2';
+              okBtn.innerHTML = '<span>確認しました。</span><span class="px-2.5 py-0.5 rounded-full bg-emerald-500 text-white text-[11px] font-black tracking-wider">OK</span>';
+            } else {
+              okBtn.className = 'w-full py-1.5 px-3.5 rounded-full bg-rose-50 hover:bg-rose-100/80 active:scale-95 border border-rose-200 text-rose-900 font-black text-xs flex items-center justify-between gap-2 shadow-2xs transition';
+              okBtn.innerHTML = '<span>確認しました。</span><span class="ok-pill px-2.5 py-0.5 rounded-full bg-slate-300 text-slate-600 text-[11px] font-black tracking-wider transition-colors duration-200">OK</span>';
+              okBtn.addEventListener('click', () => {
+                if (okBtn.dataset.sending === '1') return;
+                okBtn.dataset.sending = '1';
+
+                const okPill = okBtn.querySelector('.ok-pill');
+                if (okPill) {
+                  okPill.classList.remove('bg-slate-300', 'text-slate-600');
+                  okPill.classList.add('bg-emerald-500', 'text-white', 'scale-110');
+                }
+                okBtn.classList.remove('bg-rose-50', 'border-rose-200', 'text-rose-900');
+                okBtn.classList.add('bg-emerald-50', 'border-emerald-300', 'text-emerald-900');
+                triggerDialSelectChime();
+
+                setTimeout(async () => {
+                  msg.confirmed = true;
+                  if (msg.id) {
+                    const confirmedIds = JSON.parse(localStorage.getItem('store_confirmed_chat_ids') || '[]');
+                    if (!confirmedIds.includes(String(msg.id))) {
+                      confirmedIds.push(String(msg.id));
+                      localStorage.setItem('store_confirmed_chat_ids', JSON.stringify(confirmedIds.slice(-100)));
+                    }
+                  }
+                  if (activeDispatchMemo && (!msg.id || activeDispatchMemo.memoId === msg.id)) {
+                    activeDispatchMemo = null;
+                  }
+                  updateChatUnreadBadge();
+                  renderChatMessages();
+                  showToast('事務所へ「確認しました」を送信しました');
+                  if (gasWebAppUrl) {
+                    try {
+                      await fetch(gasWebAppUrl, {
+                        method: 'POST',
+                        mode: 'no-cors',
+                        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                        body: JSON.stringify({
+                          action: 'confirmMemo',
+                          excelCarIndex: excelCarIndex,
+                          memoId: msg.id || ''
+                        })
+                      });
+                      setTimeout(() => {
+                        fetchSheetData(true);
+                      }, 1000);
+                    } catch (e) {}
+                  }
+                }, 380);
+              });
+            }
+            bubble.appendChild(okBtn);
+          }
+
+          const timeTag = document.createElement('span');
+          timeTag.className = 'text-[11px] font-extrabold text-slate-600 tabular-nums shrink-0 pb-0.5';
+          timeTag.textContent = msg.time || '';
+
+          if (isOffice) {
+            rowLine.appendChild(bubble);
+            rowLine.appendChild(timeTag);
+          } else {
+            rowLine.appendChild(timeTag);
+            rowLine.appendChild(bubble);
+          }
+
+          wrap.appendChild(rowLine);
+          container.appendChild(wrap);
+        });
+
+        container.scrollTop = container.scrollHeight;
+      }
+
+      window.refreshLiveChatMessages = function() {
+        const chatScreenEl = document.getElementById('chat-sub-screen');
+        if (chatScreenEl && !chatScreenEl.classList.contains('hidden')) {
+          renderChatMessages();
+        }
+      };
+
+      let pendingDeleteMsgKey = '';
+      function openChatDeleteConfirm(msgKey, previewText) {
+        pendingDeleteMsgKey = msgKey;
+        const modal = document.getElementById('chat-delete-modal');
+        const previewEl = document.getElementById('chat-delete-preview');
+        if (previewEl) previewEl.textContent = previewText;
+        if (modal) {
+          modal.classList.remove('hidden');
+          modal.classList.add('flex');
+        }
+      }
+
+      document.getElementById('cancel-chat-delete-btn').addEventListener('click', () => {
+        pendingDeleteMsgKey = '';
+        const modal = document.getElementById('chat-delete-modal');
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+      });
+
+      document.getElementById('confirm-chat-delete-btn').addEventListener('click', () => {
+        if (pendingDeleteMsgKey) {
+          const deletedIds = JSON.parse(localStorage.getItem('store_deleted_chat_ids') || '[]');
+          if (!deletedIds.includes(pendingDeleteMsgKey)) {
+            deletedIds.push(pendingDeleteMsgKey);
+            localStorage.setItem('store_deleted_chat_ids', JSON.stringify(deletedIds));
+          }
+          chatMessagesList = (Array.isArray(chatMessagesList) ? chatMessagesList : []).filter(
+            (m) => String(m.id || `${m.sender}_${m.time}_${m.text}`) !== pendingDeleteMsgKey
+          );
+          if (activeDispatchMemo) {
+            const memoKey = String(activeDispatchMemo.memoId || `office_${activeDispatchMemo.sentAt}_${activeDispatchMemo.message}`);
+            if (memoKey === pendingDeleteMsgKey) {
+              activeDispatchMemo = null;
+            }
+          }
+          updateChatUnreadBadge();
+          renderChatMessages();
+          showToast('メッセージを削除しました');
+        }
+        pendingDeleteMsgKey = '';
+        const modal = document.getElementById('chat-delete-modal');
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+      });
+
+      let isChatHistoryPushed = false;
+
+      function hideChatSubScreenUI() {
+        const screen = document.getElementById('chat-sub-screen');
+        if (!screen) return;
+        screen.classList.add('hidden');
+        screen.classList.remove('flex');
+        screen.style.height = '';
+        screen.style.top = '';
+      }
+
+      window.addEventListener('popstate', () => {
+        const screen = document.getElementById('chat-sub-screen');
+        if (screen && !screen.classList.contains('hidden')) {
+          isChatHistoryPushed = false;
+          hideChatSubScreenUI();
+        }
+      });
+
+      document.getElementById('open-chat-screen-btn').addEventListener('click', () => {
+        document.getElementById('chat-header-title').textContent = `事務所連絡（${excelCarIndex}号車）`;
+        renderChatMessages();
+        const screen = document.getElementById('chat-sub-screen');
+        screen.classList.remove('hidden');
+        screen.classList.add('flex');
+        syncChatViewportHeight();
+        if (!isChatHistoryPushed) {
+          try {
+            window.history.pushState({ chatSubScreen: true }, '');
+            isChatHistoryPushed = true;
+          } catch (e) {}
+        }
+        if (gasWebAppUrl) fetchSheetData(true);
+      });
+
+      document.getElementById('close-chat-screen-btn').addEventListener('click', () => {
+        hideChatSubScreenUI();
+        if (isChatHistoryPushed) {
+          isChatHistoryPushed = false;
+          try {
+            window.history.back();
+          } catch (e) {}
+        }
+      });
+
+      document.getElementById('chat-camera-btn').addEventListener('click', () => {
+        document.getElementById('chat-camera-input').click();
+      });
+
+      document.getElementById('chat-camera-input').addEventListener('change', (e) => {
+        const file = e.target.files && e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+          const img = new Image();
+          img.onload = () => {
+            const canvas = document.createElement('canvas');
+            const maxDim = 640;
+            let w = img.width;
+            let h = img.height;
+            if (w > maxDim || h > maxDim) {
+              if (w > h) { h = Math.round(h * maxDim / w); w = maxDim; }
+              else { w = Math.round(w * maxDim / h); h = maxDim; }
+            }
+            canvas.width = w;
+            canvas.height = h;
+            canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+            pendingChatImageBase64 = canvas.toDataURL('image/jpeg', 0.65);
+            document.getElementById('chat-photo-thumb').src = pendingChatImageBase64;
+            document.getElementById('chat-photo-preview-bar').classList.remove('hidden');
+          };
+          img.src = ev.target.result;
+        };
+        reader.readAsDataURL(file);
+      });
+
+      document.getElementById('chat-remove-photo-btn').addEventListener('click', () => {
+        pendingChatImageBase64 = '';
+        document.getElementById('chat-camera-input').value = '';
+        document.getElementById('chat-photo-preview-bar').classList.add('hidden');
+      });
+
+      async function sendDriverChatMessage() {
+        const inputEl = document.getElementById('chat-message-input');
+        const text = inputEl.value.trim();
+        if (!text && !pendingChatImageBase64) return;
+        triggerSendWhooshTone();
+        const now = new Date();
+        const timeStr = `${pad2(now.getHours())}:${pad2(now.getMinutes())}`;
+        const imgToSend = pendingChatImageBase64;
+        chatMessagesList.push({
+          id: 'DRV_LOCAL_' + Date.now(),
+          sender: 'driver',
+          text: text,
+          time: timeStr,
+          confirmed: true,
+          imageData: imgToSend
+        });
+        inputEl.value = '';
+        pendingChatImageBase64 = '';
+        document.getElementById('chat-camera-input').value = '';
+        document.getElementById('chat-photo-preview-bar').classList.add('hidden');
+        renderChatMessages();
+        updateChatUnreadBadge();
+        showToast('事務所へメッセージを送信しました');
+        if (gasWebAppUrl) {
+          try {
+            await fetch(gasWebAppUrl, {
+              method: 'POST',
+              mode: 'no-cors',
+              headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+              body: JSON.stringify({
+                action: 'sendDriverChat',
+                excelCarIndex: excelCarIndex,
+                message: text,
+                imageData: imgToSend,
+                sentAt: timeStr
+              })
+            });
+            setTimeout(() => {
+              fetchSheetData(true);
+            }, 900);
+          } catch (err) {}
+        }
+      }
+
+      document.getElementById('chat-send-btn').addEventListener('click', sendDriverChatMessage);
+      document.getElementById('chat-message-input').addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && !e.isComposing) {
+          e.preventDefault();
+          sendDriverChatMessage();
+        }
+      });
+
+      const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+      let activeRecognition = null;
+      document.getElementById('chat-mic-btn').addEventListener('click', () => {
+        const micBtn = document.getElementById('chat-mic-btn');
+        const inputEl = document.getElementById('chat-message-input');
+        if (!SpeechRec) {
+          inputEl.focus();
+          showToast('キーボード右下の🎤マークから音声入力できます');
+          return;
+        }
+        if (activeRecognition) {
+          activeRecognition.stop();
+          activeRecognition = null;
+          micBtn.classList.remove('bg-rose-500', 'text-white', 'animate-pulse');
+          micBtn.classList.add('bg-slate-100', 'text-slate-700');
+          return;
+        }
+        try {
+          const rec = new SpeechRec();
+          rec.lang = 'ja-JP';
+          rec.interimResults = false;
+          rec.maxAlternatives = 1;
+          activeRecognition = rec;
+          micBtn.classList.remove('bg-slate-100', 'text-slate-700');
+          micBtn.classList.add('bg-rose-500', 'text-white', 'animate-pulse');
+          showToast('🎤 お話しください...');
+
+          rec.onresult = (event) => {
+            const transcript = event.results[0][0].transcript;
+            if (transcript) {
+              inputEl.value = inputEl.value ? `${inputEl.value} ${transcript}` : transcript;
+            }
+          };
+          rec.onerror = () => {
+            showToast('音声を認識できませんでした');
+          };
+          rec.onend = () => {
+            activeRecognition = null;
+            micBtn.classList.remove('bg-rose-500', 'text-white', 'animate-pulse');
+            micBtn.classList.add('bg-slate-100', 'text-slate-700');
+          };
+          rec.start();
+        } catch (err) {
+          inputEl.focus();
+        }
+      });
+
+      function syncChatViewportHeight() {
+        const screen = document.getElementById('chat-sub-screen');
+        if (!screen || screen.classList.contains('hidden')) return;
+        if (window.visualViewport) {
+          screen.style.height = `${window.visualViewport.height}px`;
+          screen.style.top = `${window.visualViewport.offsetTop}px`;
+        }
+        const container = document.getElementById('chat-messages-container');
+        if (container) container.scrollTop = container.scrollHeight;
+      }
+      if (window.visualViewport) {
+        window.visualViewport.addEventListener('resize', syncChatViewportHeight);
+        window.visualViewport.addEventListener('scroll', syncChatViewportHeight);
+      }
+      document.getElementById('chat-message-input').addEventListener('focus', () => {
+        setTimeout(syncChatViewportHeight, 120);
+        setTimeout(syncChatViewportHeight, 350);
+      });
+      document.getElementById('chat-message-input').addEventListener('blur', () => {
+        const screen = document.getElementById('chat-sub-screen');
+        if (screen) {
+          screen.style.height = '';
+          screen.style.top = '';
+        }
+      });
+
+      // ★初期データ読込（キャッシュ即時描画＋裏側GAS最新同期）
+      hasInitializedMessageIds = true;
       renderStoreList();
-      fetchSheetData(false);
+      if (gasWebAppUrl) {
+        fetchSheetData();
+      }
 
+      // ★アプリを開いている間、5秒ごとに安定して自動同期（連続通信詰まり防止）
       setInterval(() => {
-        triggerSmartBackgroundSync(8000);
-      }, 10000);
+        if (gasWebAppUrl && document.visibilityState === 'visible') {
+          fetchSheetData(true).then(() => {
+            updateChatUnreadBadge();
+          });
+        }
+      }, 5000);
+
+      // ★他のアプリやスリープから画面に戻った時に即座に裏側更新
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') {
+          isFetchingSheetData = false;
+          triggerSmartBackgroundSync(500);
+        }
+      });
+      window.addEventListener('focus', () => {
+        isFetchingSheetData = false;
+        triggerSmartBackgroundSync(500);
+      });
     });
   </script>
 </body>
