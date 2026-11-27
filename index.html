@@ -1973,34 +1973,63 @@
         const goBtn = document.getElementById('onboarding-go-started-btn');
         if (!overlay) return;
 
+        function showOnboardingScreen() {
+          try {
+            sessionStorage.removeItem('store_arrival_onboarding_session_done');
+          } catch (e) {}
+          document.documentElement.classList.remove('is-onboarding-dismissed');
+          overlay.classList.remove('hidden', 'is-closing');
+          overlay.classList.add('flex');
+        }
+
+        function hideOnboardingScreen(immediate) {
+          try {
+            sessionStorage.setItem('store_arrival_onboarding_session_done', '1');
+          } catch (e) {}
+          if (immediate) {
+            document.documentElement.classList.add('is-onboarding-dismissed');
+            overlay.classList.add('hidden');
+            overlay.classList.remove('flex', 'is-closing');
+            return;
+          }
+          overlay.classList.add('is-closing');
+          setTimeout(() => {
+            document.documentElement.classList.add('is-onboarding-dismissed');
+            overlay.classList.add('hidden');
+            overlay.classList.remove('flex', 'is-closing');
+          }, 420);
+        }
+
         let dismissedInSession = false;
         try {
           dismissedInSession = sessionStorage.getItem('store_arrival_onboarding_session_done') === '1';
         } catch (e) {}
 
         if (dismissedInSession || isManualReloading) {
-          document.documentElement.classList.add('is-onboarding-dismissed');
-          overlay.classList.add('hidden');
-          overlay.classList.remove('flex', 'is-closing');
+          hideOnboardingScreen(true);
         } else {
-          document.documentElement.classList.remove('is-onboarding-dismissed');
-          overlay.classList.remove('hidden', 'is-closing');
-          overlay.classList.add('flex');
+          showOnboardingScreen();
         }
 
         if (goBtn) {
           goBtn.addEventListener('click', () => {
-            try {
-              sessionStorage.setItem('store_arrival_onboarding_session_done', '1');
-            } catch (e) {}
-            overlay.classList.add('is-closing');
-            setTimeout(() => {
-              document.documentElement.classList.add('is-onboarding-dismissed');
-              overlay.classList.add('hidden');
-              overlay.classList.remove('flex', 'is-closing');
-            }, 420);
+            hideOnboardingScreen(false);
           });
         }
+
+        // ホームボタン等でアプリを閉じてバックグラウンドへ回った瞬間、次回アイコンタップ用にオープニング画面を待機させる
+        // （※カメラ起動中・電話発信中は戻らないよう保護）
+        window.__suppressOnboardingOnHide = false;
+        document.addEventListener('visibilitychange', () => {
+          if (document.visibilityState === 'hidden') {
+            if (window.__suppressOnboardingOnHide) return;
+            showOnboardingScreen();
+          }
+        });
+        window.addEventListener('pagehide', () => {
+          if (window.__suppressOnboardingOnHide) return;
+          showOnboardingScreen();
+        });
       })();
 
       generateAppIcons();
@@ -2203,7 +2232,10 @@
         if (!cleanNum) {
           e.preventDefault();
           showToast('⚠️ 歯車（⚙）から運行携帯の電話番号を登録してください');
+          return;
         }
+        window.__suppressOnboardingOnHide = true;
+        setTimeout(() => { window.__suppressOnboardingOnHide = false; }, 10000);
       });
 
       let currentInviteUrl = '';
@@ -2665,10 +2697,13 @@
       });
 
       document.getElementById('chat-camera-btn').addEventListener('click', () => {
+        window.__suppressOnboardingOnHide = true;
+        setTimeout(() => { window.__suppressOnboardingOnHide = false; }, 15000);
         document.getElementById('chat-camera-input').click();
       });
 
       document.getElementById('chat-camera-input').addEventListener('change', (e) => {
+        window.__suppressOnboardingOnHide = false;
         const file = e.target.files && e.target.files[0];
         if (!file) return;
         const reader = new FileReader();
