@@ -165,11 +165,25 @@
       font-family: Georgia, 'Times New Roman', serif;
       font-style: italic;
     }
+    html.is-onboarding-active #onboarding-overlay {
+      display: flex !important;
+    }
     ::-webkit-scrollbar {
       width: 0px;
       background: transparent;
     }
   </style>
+  <script>
+    (function () {
+      try {
+        var isReloading = sessionStorage.getItem('store_arrival_reloading') === '1' || window.location.search.indexOf('reloading=1') !== -1;
+        var completed = localStorage.getItem('store_arrival_onboarding_done') === '1';
+        if (!completed && !isReloading) {
+          document.documentElement.classList.add('is-onboarding-active');
+        }
+      } catch (e) {}
+    })();
+  </script>
 </head>
 <body class="text-slate-900 min-h-screen flex justify-center overflow-x-hidden">
 
@@ -1944,12 +1958,17 @@
       } catch (e) {}
     }
 
-    // ★オープニング画面（GitHub上の ./opening-bg.jpg 実写背景を表示・アイコンタップ/復帰時確実表示）
-    const APP_UI_VERSION = '2026.11.28.v3';
+    // ★オープニング画面（電源OFF/スリープ復帰時も切る前の画面を完全保持・チラつきゼロ版）
+    const APP_UI_VERSION = '2026.11.28.v4';
+    const ONBOARDING_DONE_KEY = 'store_arrival_onboarding_done';
 
     async function checkAndAutoRefreshLatestHtml() {
       try {
         if (isManualReloading) return;
+        const lastChecked = Number(sessionStorage.getItem('store_ver_checked_at') || '0');
+        if (Date.now() - lastChecked < 15000) return;
+        sessionStorage.setItem('store_ver_checked_at', String(Date.now()));
+
         const baseUrl = window.location.href.split('?')[0];
         const res = await fetch(`${baseUrl}?_vercheck=${Date.now()}`, { cache: 'no-store' });
         if (!res.ok) return;
@@ -1968,16 +1987,25 @@
       const goBtn = document.getElementById('onboarding-go-started-btn');
       if (!overlay) return;
 
-      const showOverlay = () => {
-        if (isManualReloading) return;
+      const isAlreadyDone = localStorage.getItem(ONBOARDING_DONE_KEY) === '1';
+
+      if (isAlreadyDone || isManualReloading) {
+        document.documentElement.classList.remove('is-onboarding-active');
+        overlay.classList.add('hidden');
+        overlay.classList.remove('flex', 'is-closing');
+      } else {
         overlay.classList.remove('hidden', 'is-closing');
         overlay.classList.add('flex');
-      };
+      }
 
       const closeOverlay = () => {
         triggerWaterDropTap();
+        try {
+          localStorage.setItem(ONBOARDING_DONE_KEY, '1');
+        } catch (e) {}
         overlay.classList.add('is-closing');
         setTimeout(() => {
+          document.documentElement.classList.remove('is-onboarding-active');
           overlay.classList.add('hidden');
           overlay.classList.remove('flex', 'is-closing');
         }, 420);
@@ -1986,24 +2014,6 @@
       if (goBtn) {
         goBtn.addEventListener('click', closeOverlay);
       }
-
-      showOverlay();
-
-      document.addEventListener('visibilitychange', () => {
-        if (document.visibilityState === 'visible' && !isAnyBlockingModalOpen()) {
-          const chatScreen = document.getElementById('chat-sub-screen');
-          const isChatOpen = chatScreen && !chatScreen.classList.contains('hidden');
-          if (!isChatOpen) {
-            showOverlay();
-          }
-        }
-      });
-
-      window.addEventListener('pageshow', (event) => {
-        if (event.persisted) {
-          showOverlay();
-        }
-      });
     }
 
     function initAdminCarSwitcher() {
