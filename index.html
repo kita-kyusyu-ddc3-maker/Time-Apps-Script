@@ -759,7 +759,7 @@
     }
 
     function unlockAudioOnFirstGesture() {
-      if (audioUnlocked) return;
+      if (audioUnlocked && sharedAudioCtx && sharedAudioCtx.state === 'running') return;
       try {
         const ctx = getAudioCtx();
         if (!ctx) return;
@@ -773,6 +773,36 @@
         source.start(0);
         if (ctx.state === 'running') {
           audioUnlocked = true;
+        }
+      } catch (e) {}
+    }
+
+    function triggerWaterDropTap() {
+      try {
+        unlockAudioOnFirstGesture();
+        if (navigator.vibrate) navigator.vibrate(8);
+        const ctx = getAudioCtx();
+        if (!ctx) return;
+        const playDrop = () => {
+          const now = ctx.currentTime;
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(880, now);
+          osc.frequency.exponentialRampToValueAtTime(1480, now + 0.045);
+          osc.frequency.exponentialRampToValueAtTime(1320, now + 0.24);
+          gain.gain.setValueAtTime(0.001, now);
+          gain.gain.linearRampToValueAtTime(0.075, now + 0.012);
+          gain.gain.exponentialRampToValueAtTime(0.0008, now + 0.26);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(now);
+          osc.stop(now + 0.27);
+        };
+        if (ctx.state === 'suspended') {
+          ctx.resume().then(playDrop).catch(() => {});
+        } else {
+          playDrop();
         }
       } catch (e) {}
     }
@@ -2156,43 +2186,53 @@
       const chatScreen = document.getElementById('chat-sub-screen');
       const sendBtn = document.getElementById('chat-send-btn');
       const inputEl = document.getElementById('chat-message-input');
+      const micBtn = document.getElementById('chat-mic-btn');
       const cameraBtn = document.getElementById('chat-camera-btn');
       const cameraInput = document.getElementById('chat-camera-input');
       const previewBar = document.getElementById('chat-photo-preview-bar');
       const photoThumb = document.getElementById('chat-photo-thumb');
       const removePhotoBtn = document.getElementById('chat-remove-photo-btn');
 
-      if (openBtn && chatScreen) {
-        openBtn.addEventListener('click', async () => {
-          chatScreen.classList.remove('hidden');
-          chatScreen.classList.add('flex');
-          renderChatMessages();
-
-          const confirmedIds = JSON.parse(localStorage.getItem('store_confirmed_chat_ids') || '[]');
-          let updated = false;
-          chatMessagesList.forEach((m) => {
-            if (m.sender === 'office' && m.id && !confirmedIds.includes(String(m.id))) {
-              confirmedIds.push(String(m.id));
-              m.confirmed = true;
-              updated = true;
+      if (micBtn && inputEl) {
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        let recognition = null;
+        let isRecording = false;
+        if (SpeechRecognition) {
+          recognition = new SpeechRecognition();
+          recognition.lang = 'ja-JP';
+          recognition.interimResults = false;
+          recognition.onstart = () => {
+            isRecording = true;
+            micBtn.classList.remove('bg-slate-100', 'text-slate-700');
+            micBtn.classList.add('bg-rose-500', 'text-white', 'animate-pulse');
+            showToast('🎤 お話しください（音声入力中）');
+          };
+          recognition.onresult = (event) => {
+            const transcript = event.results[0][0].transcript;
+            if (transcript) {
+              inputEl.value = (inputEl.value ? inputEl.value + ' ' : '') + transcript;
             }
-          });
-          if (updated) {
-            localStorage.setItem('store_confirmed_chat_ids', JSON.stringify(confirmedIds.slice(-100)));
-            updateChatUnreadBadge();
-            if (gasWebAppUrl) {
-              try {
-                await fetch(gasWebAppUrl, {
-                  method: 'POST',
-                  mode: 'no-cors',
-                  headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                  body: JSON.stringify({
-                    action: 'confirmMemo',
-                    excelCarIndex: excelCarIndex
-                  })
-                });
-              } catch (e) {}
-            }
+          };
+          recognition.onerror = () => {
+            isRecording = false;
+            micBtn.classList.add('bg-slate-100', 'text-slate-700');
+            micBtn.classList.remove('bg-rose-500', 'text-white', 'animate-pulse');
+          };
+          recognition.onend = () => {
+            isRecording = false;
+            micBtn.classList.add('bg-slate-100', 'text-slate-700');
+            micBtn.classList.remove('bg-rose-500', 'text-white', 'animate-pulse');
+          };
+        }
+        micBtn.addEventListener('click', () => {
+          if (!recognition) {
+            showToast('この端末のブラウザは音声入力に対応していません');
+            return;
+          }
+          if (isRecording) {
+            recognition.stop();
+          } else {
+            try { recognition.start(); } catch (e) {}
           }
         });
       }
@@ -2273,8 +2313,14 @@
     }
 
     function bindCoreUiEvents() {
-      document.body.addEventListener('touchstart', unlockAudioOnFirstGesture, { passive: true, once: true });
-      document.body.addEventListener('click', unlockAudioOnFirstGesture, { once: true });
+      document.body.addEventListener('touchstart', unlockAudioOnFirstGesture, { passive: true });
+      document.body.addEventListener('click', (e) => {
+        unlockAudioOnFirstGesture();
+        const clickable = e.target.closest('button, a, [data-tap-sound]');
+        if (clickable && clickable.id !== 'submit-arrival-btn' && clickable.id !== 'submit-holiday-btn' && clickable.id !== 'submit-extra-btn' && clickable.id !== 'chat-send-btn') {
+          triggerWaterDropTap();
+        }
+      });
 
       const tab1 = document.getElementById('tab-course-1');
       const tab2 = document.getElementById('tab-course-2');
