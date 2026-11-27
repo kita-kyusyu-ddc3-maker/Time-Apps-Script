@@ -187,7 +187,7 @@
 </head>
 <body class="text-slate-900 min-h-screen flex justify-center overflow-x-hidden">
 
-  <!-- 0. オープニング画面（オンボーディング1画面目・2画面目拡張対応独立レイヤー） -->
+  <!-- 0. オープニング画面（オンボーディング1画面目・独立レイヤー） -->
   <div id="onboarding-overlay" class="fixed inset-0 z-[100] flex flex-col justify-end max-w-md mx-auto bg-[#071120] text-white overflow-hidden select-none">
     <!-- 背景画像（GitHubアップロード済みの opening-bg.jpg をランナーから下のトラックまで全体表示） -->
     <img src="./opening-bg.jpg" alt="" class="absolute inset-0 w-full h-full object-cover object-top pointer-events-none" />
@@ -197,18 +197,15 @@
 
     <!-- 下部メインコンテンツ（ステップ1：Distribution Arrival Manager） -->
     <div id="onboarding-step-1" class="relative z-10 px-7 pb-[calc(2rem+env(safe-area-inset-bottom))] flex flex-col">
-      <!-- 大きな2行見出し -->
       <h2 class="text-[2.35rem] leading-[1.08] font-black tracking-tight text-white drop-shadow-[0_3px_14px_rgba(0,0,0,0.85)]">
         Distribution<br>
         <span class="onboarding-accent-serif font-bold text-[#3EE6A8] text-[2.45rem] tracking-normal drop-shadow-[0_3px_14px_rgba(0,0,0,0.85)]">Arrival Manager</span>
       </h2>
 
-      <!-- 見出しとボタンの間のドライバーサポート英語メッセージ -->
       <p class="mt-3.5 text-[14px] leading-[1.6] font-semibold text-white/95 max-w-[310px] drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)]">
         Smart arrival tracking and instant office dispatch support for every driver.
       </p>
 
-      <!-- メインアクションボタン（横長ミントグリーン） -->
       <button type="button" id="onboarding-go-started-btn" class="mt-6 w-full py-4 rounded-2xl bg-[#3EE6A8] hover:bg-[#34d69a] active:scale-[0.985] text-[#051811] font-extrabold text-[16px] tracking-wide shadow-[0_10px_28px_rgba(0,0,0,0.5)] transition">
         Go started
       </button>
@@ -1851,8 +1848,42 @@
     }
 
     document.addEventListener('DOMContentLoaded', () => {
-      checkAndAutoRefreshLatestHtml();
-      initOnboardingFlow();
+      // オープニング画面（アイコン起動時は即座に表示、Go started押下後の電源OFF/スリープ復帰時は入力画面を保持）
+      (function initOnboardingOverlay() {
+        const overlay = document.getElementById('onboarding-overlay');
+        const goBtn = document.getElementById('onboarding-go-started-btn');
+        if (!overlay) return;
+
+        let dismissedInSession = false;
+        try {
+          dismissedInSession = sessionStorage.getItem('store_arrival_onboarding_session_done') === '1';
+        } catch (e) {}
+
+        if (dismissedInSession || isManualReloading) {
+          document.documentElement.classList.add('is-onboarding-dismissed');
+          overlay.classList.add('hidden');
+          overlay.classList.remove('flex', 'is-closing');
+        } else {
+          document.documentElement.classList.remove('is-onboarding-dismissed');
+          overlay.classList.remove('hidden', 'is-closing');
+          overlay.classList.add('flex');
+        }
+
+        if (goBtn) {
+          goBtn.addEventListener('click', () => {
+            try {
+              sessionStorage.setItem('store_arrival_onboarding_session_done', '1');
+            } catch (e) {}
+            overlay.classList.add('is-closing');
+            setTimeout(() => {
+              document.documentElement.classList.add('is-onboarding-dismissed');
+              overlay.classList.add('hidden');
+              overlay.classList.remove('flex', 'is-closing');
+            }, 420);
+          });
+        }
+      })();
+
       generateAppIcons();
       updateOfficeCallLink();
       initTimeSelectOptions();
