@@ -194,7 +194,7 @@
     <div id="onboarding-step-1" class="relative z-10 px-7 pb-[calc(2rem+env(safe-area-inset-bottom))] flex flex-col">
       <h2 class="text-[2.35rem] leading-[1.08] font-black tracking-tight text-white drop-shadow-[0_3px_14px_rgba(0,0,0,0.85)]">
         Distribution<br>
-        <span class="onboarding-accent-serif font-bold text-[#3EE6A8] text-[2.45rem] tracking-normal drop-shadow-[0_3px_14px_rgba(0,0,0,0.85)]">Arrival Manager</span>
+        <span class="onboarding-accent-serif font-bold text-[#3EE6A8] text-[2.45rem] tracking-normal drop-shadow-[0_3px_14px_rgba(0,0,0,0.85)]">Arrival<br>Manager</span>
       </h2>
       <p class="mt-3.5 text-[14px] leading-[1.6] font-semibold text-white/95 max-w-[310px] drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)]">
         Smart arrival tracking and instant office dispatch support for every driver.
@@ -1973,63 +1973,34 @@
         const goBtn = document.getElementById('onboarding-go-started-btn');
         if (!overlay) return;
 
-        function showOnboardingScreen() {
-          try {
-            sessionStorage.removeItem('store_arrival_onboarding_session_done');
-          } catch (e) {}
-          document.documentElement.classList.remove('is-onboarding-dismissed');
-          overlay.classList.remove('hidden', 'is-closing');
-          overlay.classList.add('flex');
-        }
-
-        function hideOnboardingScreen(immediate) {
-          try {
-            sessionStorage.setItem('store_arrival_onboarding_session_done', '1');
-          } catch (e) {}
-          if (immediate) {
-            document.documentElement.classList.add('is-onboarding-dismissed');
-            overlay.classList.add('hidden');
-            overlay.classList.remove('flex', 'is-closing');
-            return;
-          }
-          overlay.classList.add('is-closing');
-          setTimeout(() => {
-            document.documentElement.classList.add('is-onboarding-dismissed');
-            overlay.classList.add('hidden');
-            overlay.classList.remove('flex', 'is-closing');
-          }, 420);
-        }
-
         let dismissedInSession = false;
         try {
           dismissedInSession = sessionStorage.getItem('store_arrival_onboarding_session_done') === '1';
         } catch (e) {}
 
         if (dismissedInSession || isManualReloading) {
-          hideOnboardingScreen(true);
+          document.documentElement.classList.add('is-onboarding-dismissed');
+          overlay.classList.add('hidden');
+          overlay.classList.remove('flex', 'is-closing');
         } else {
-          showOnboardingScreen();
+          document.documentElement.classList.remove('is-onboarding-dismissed');
+          overlay.classList.remove('hidden', 'is-closing');
+          overlay.classList.add('flex');
         }
 
         if (goBtn) {
           goBtn.addEventListener('click', () => {
-            hideOnboardingScreen(false);
+            try {
+              sessionStorage.setItem('store_arrival_onboarding_session_done', '1');
+            } catch (e) {}
+            overlay.classList.add('is-closing');
+            setTimeout(() => {
+              document.documentElement.classList.add('is-onboarding-dismissed');
+              overlay.classList.add('hidden');
+              overlay.classList.remove('flex', 'is-closing');
+            }, 420);
           });
         }
-
-        // ホームボタン等でアプリを閉じてバックグラウンドへ回った瞬間、次回アイコンタップ用にオープニング画面を待機させる
-        // （※カメラ起動中・電話発信中は戻らないよう保護）
-        window.__suppressOnboardingOnHide = false;
-        document.addEventListener('visibilitychange', () => {
-          if (document.visibilityState === 'hidden') {
-            if (window.__suppressOnboardingOnHide) return;
-            showOnboardingScreen();
-          }
-        });
-        window.addEventListener('pagehide', () => {
-          if (window.__suppressOnboardingOnHide) return;
-          showOnboardingScreen();
-        });
       })();
 
       generateAppIcons();
@@ -2232,10 +2203,7 @@
         if (!cleanNum) {
           e.preventDefault();
           showToast('⚠️ 歯車（⚙）から運行携帯の電話番号を登録してください');
-          return;
         }
-        window.__suppressOnboardingOnHide = true;
-        setTimeout(() => { window.__suppressOnboardingOnHide = false; }, 10000);
       });
 
       let currentInviteUrl = '';
@@ -2697,13 +2665,10 @@
       });
 
       document.getElementById('chat-camera-btn').addEventListener('click', () => {
-        window.__suppressOnboardingOnHide = true;
-        setTimeout(() => { window.__suppressOnboardingOnHide = false; }, 15000);
         document.getElementById('chat-camera-input').click();
       });
 
       document.getElementById('chat-camera-input').addEventListener('change', (e) => {
-        window.__suppressOnboardingOnHide = false;
         const file = e.target.files && e.target.files[0];
         if (!file) return;
         const reader = new FileReader();
