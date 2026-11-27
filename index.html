@@ -101,7 +101,7 @@
       font-size: 1.85rem;
       font-weight: 900;
     }
-    /* LINE風吹き出しのしっぽデザイン（上部からカーブして尖る本物のLINE形状） */
+    /* LINE風吹き出しのしっぽデザイン */
     .line-bubble-office {
       position: relative;
       border-radius: 18px;
@@ -152,6 +152,19 @@
       background: #c7d6ec;
       border-bottom-left-radius: 12px;
     }
+    /* オープニング（オンボーディング）専用スタイル（既存UIに一切干渉しない独立レイヤー） */
+    #onboarding-overlay {
+      transition: opacity 0.45s cubic-bezier(0.22, 1, 0.36, 1), transform 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+    #onboarding-overlay.is-closing {
+      opacity: 0;
+      transform: scale(1.03);
+      pointer-events: none;
+    }
+    .onboarding-accent-serif {
+      font-family: Georgia, 'Times New Roman', serif;
+      font-style: italic;
+    }
     ::-webkit-scrollbar {
       width: 0px;
       background: transparent;
@@ -159,6 +172,56 @@
   </style>
 </head>
 <body class="text-slate-900 min-h-screen flex justify-center overflow-x-hidden">
+
+  <!-- 0. オープニング画面（オンボーディング1画面目・2画面目拡張対応独立レイヤー） -->
+  <div id="onboarding-overlay" class="fixed inset-0 z-[100] hidden flex-col justify-between max-w-md mx-auto bg-[#071120] text-white overflow-hidden select-none">
+    <!-- 背景画像（GitHubアップロード済みの opening-bg.jpg を全画面表示） -->
+    <img src="./opening-bg.jpg" alt="" class="absolute inset-0 w-full h-full object-cover object-center pointer-events-none" />
+
+    <!-- 上部・下部グラデーションマスク（文字とボタンの視認性を極限まで高める） -->
+    <div class="absolute inset-0 pointer-events-none bg-gradient-to-b from-[#081529]/50 via-transparent to-[#050b14]/92"></div>
+    <div class="absolute inset-x-0 bottom-0 h-[56%] pointer-events-none bg-gradient-to-t from-[#040911] via-[#06101e]/85 to-transparent"></div>
+
+    <!-- 上部ブランドヘッダー -->
+    <div class="relative z-10 px-6 pt-[calc(1.25rem+env(safe-area-inset-top))] flex items-center justify-between">
+      <div class="flex items-center gap-2.5">
+        <span class="w-7 h-7 rounded-full bg-[#3EE6A8] flex items-center justify-center shadow-[0_0_16px_rgba(62,230,168,0.45)]">
+          <span class="w-3.5 h-1.5 bg-[#061320] rounded-b-full translate-y-[1px]"></span>
+        </span>
+        <span id="onboarding-car-tag" class="text-sm font-extrabold tracking-wide text-white/95 drop-shadow-xs">CAR --</span>
+      </div>
+      <div class="flex items-center gap-1.5" id="onboarding-step-dots">
+        <span class="w-6 h-1.5 rounded-full bg-[#3EE6A8] transition-all"></span>
+        <span class="w-1.5 h-1.5 rounded-full bg-white/35 transition-all"></span>
+      </div>
+    </div>
+
+    <!-- 下部メインコンテンツ（ステップ1：Distribution Arrival Manager） -->
+    <div id="onboarding-step-1" class="relative z-10 px-7 pb-[calc(2.1rem+env(safe-area-inset-bottom))] flex flex-col">
+      <!-- ページインジケーターバー -->
+      <div class="flex items-center gap-2 mb-5">
+        <span class="w-7 h-1.5 rounded-full bg-[#3EE6A8]"></span>
+        <span class="w-1.5 h-1.5 rounded-full bg-white/35"></span>
+        <span class="w-1.5 h-1.5 rounded-full bg-white/35"></span>
+      </div>
+
+      <!-- 大きな2行見出し -->
+      <h2 class="text-[2.35rem] leading-[1.08] font-black tracking-tight text-white drop-shadow-[0_2px_12px_rgba(0,0,0,0.5)]">
+        Distribution<br>
+        <span class="onboarding-accent-serif font-bold text-[#3EE6A8] text-[2.45rem] tracking-normal">Arrival Manager</span>
+      </h2>
+
+      <!-- 見出しとボタンの間のドライバーサポート英語メッセージ -->
+      <p class="mt-4 text-[14px] leading-[1.6] font-medium text-slate-200/90 max-w-[310px]">
+        Smart arrival tracking and instant office dispatch support for every driver.
+      </p>
+
+      <!-- メインアクションボタン（横長ミントグリーン） -->
+      <button type="button" id="onboarding-go-started-btn" class="mt-7 w-full py-4 rounded-2xl bg-[#3EE6A8] hover:bg-[#34d69a] active:scale-[0.985] text-[#051811] font-extrabold text-[16px] tracking-wide shadow-[0_10px_28px_rgba(62,230,168,0.32)] transition">
+        Go started
+      </button>
+    </div>
+  </div>
 
   <!-- モバイルアプリシェル -->
   <div class="w-full max-w-md bg-[#F8FAFC] min-h-screen flex flex-col relative shadow-[0_0_50px_rgba(15,23,42,0.08)] overflow-x-hidden">
@@ -174,7 +237,6 @@
           <div class="min-w-0">
             <div class="flex items-center gap-1.5">
               <h1 id="fixed-car-label" class="text-lg font-black tracking-tight text-slate-900 leading-none">--号車</h1>
-              <!-- 運行携帯（?admin=1）専用：タップで号車選択パネルを開くボタン -->
               <button type="button" id="admin-car-switcher-btn" class="hidden items-center gap-1 bg-violet-100 active:bg-violet-200 text-violet-950 border border-violet-300 rounded-xl px-2.5 py-1 text-xs font-black shadow-2xs transition">
                 <span id="admin-car-btn-label">0号車</span>
                 <svg class="w-3.5 h-3.5 text-violet-700" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
@@ -274,7 +336,7 @@
       </div>
     </div>
 
-    <!-- 5. モーダル1：店着時間を入力する画面（シックな白デザイン） -->
+    <!-- 5. モーダル1：店着時間を入力する画面 -->
     <div id="arrival-modal" class="fixed inset-0 bg-zinc-950/35 backdrop-blur-xs z-40 hidden items-end sm:items-center justify-center p-0 sm:p-4">
       <div class="bg-[#FCFCFD] w-full max-w-md rounded-t-[2rem] sm:rounded-[2rem] p-6 shadow-[0_20px_50px_rgba(24,24,27,0.16)] border-t sm:border border-zinc-200/80 space-y-5 animate-modal-in max-h-[92vh] overflow-y-auto">
         <div class="w-10 h-1 bg-zinc-200 rounded-full mx-auto -mt-2 mb-1 sm:hidden"></div>
@@ -304,7 +366,6 @@
 
           <div class="bg-white rounded-3xl px-3 py-2.5 border border-zinc-200/85 shadow-[0_2px_12px_rgba(24,24,27,0.04)] relative">
             <div class="grid grid-cols-11 items-center">
-              <!-- 時 (HOUR) ドラムリール -->
               <div class="col-span-5 flex flex-col items-center">
                 <span class="text-[10px] font-extrabold text-zinc-400 tracking-wider mb-0.5">時 (HOUR)</span>
                 <div id="wheel-hour-viewport" class="wheel-viewport w-full rounded-2xl">
@@ -314,12 +375,10 @@
                 </div>
               </div>
 
-              <!-- 中央コロン -->
               <div class="col-span-1 flex flex-col items-center justify-center pt-4">
                 <span class="text-2xl font-black text-zinc-800 pb-1">:</span>
               </div>
 
-              <!-- 分 (MIN) ドラムリール -->
               <div class="col-span-5 flex flex-col items-center">
                 <span class="text-[10px] font-extrabold text-zinc-400 tracking-wider mb-0.5">分 (MIN)</span>
                 <div id="wheel-minute-viewport" class="wheel-viewport w-full rounded-2xl">
@@ -329,7 +388,6 @@
                 </div>
               </div>
             </div>
-            <!-- 値保持用の隠しinput -->
             <input type="hidden" id="select-hour" value="00" />
             <input type="hidden" id="select-minute" value="00" />
           </div>
@@ -380,7 +438,6 @@
           </div>
         </div>
 
-        <!-- ★追加：他端末導入用の号車別QRコード発行セクション -->
         <div class="border-t border-zinc-200/80 pt-4 space-y-3">
           <div>
             <h3 class="text-sm font-black text-zinc-900">他端末導入用 QRコード発行</h3>
@@ -502,7 +559,6 @@
   </div>
 
   <script>
-    // ⑤ 起動直後にCAR15が出ないよう、URLパラメータ → localStorage保存値 の順で本来の号車番号を即座に確定
     const urlParams = new URLSearchParams(window.location.search);
     const paramCarRaw = urlParams.get('car');
     const paramCar = paramCarRaw !== null ? parseInt(paramCarRaw, 10) : NaN;
@@ -521,12 +577,10 @@
     let isSingleCourseCar = (excelCarIndex === 14);
     const isAdminMode = (urlParams.get('admin') === '1');
 
-    // 初期描画の瞬間に本来のCARナンバーを即反映
     document.getElementById('fixed-car-num').textContent = String(excelCarIndex).padStart(2, '0');
     document.getElementById('fixed-car-label').textContent = `${excelCarIndex}号車`;
     document.getElementById('fixed-course-summary').textContent = `${100 + excelCarIndex} / ${200 + excelCarIndex}コース`;
 
-    // ★QRコードのURLパラメータ(?gas=...)があれば自動取得してスマホに永続保存（一発自動接続）
     const paramGasUrl = urlParams.get('gas');
     if (paramGasUrl && paramGasUrl.startsWith('http')) {
       localStorage.setItem('store_arrival_gas_url', paramGasUrl.trim());
@@ -536,14 +590,12 @@
       localStorage.setItem('store_arrival_office_phone', paramOfficePhone.trim());
     }
 
-    // 自分自身のGASウェブアプリURLを自動検出
     const AUTO_GAS_URL = (typeof google !== 'undefined' && google.script && google.script.run)
       ? window.location.href.split('?')[0]
       : '';
     let gasWebAppUrl = localStorage.getItem('store_arrival_gas_url') || AUTO_GAS_URL;
     let officePhoneNumber = localStorage.getItem('store_arrival_office_phone') || '';
 
-    // ★ダブルタップリロード直後の「更新中...」判定（デモ表示の一瞬チラつき防止）
     let isManualReloading = false;
     try {
       if (sessionStorage.getItem('store_arrival_reloading') === '1' || urlParams.get('reloading') === '1') {
@@ -577,7 +629,6 @@
       return new Date(now.getFullYear(), now.getMonth(), now.getDate());
     }
 
-    // ⑥ 現在の稼働日（当日）より過去日（前日以前）かどうかを判定
     function isPastDeliveryDate() {
       const todayEff = getInitialDeliveryDate();
       const currentTarget = new Date(deliveryDate.getFullYear(), deliveryDate.getMonth(), deliveryDate.getDate());
@@ -611,14 +662,12 @@
     let hourWheelController = null;
     let minuteWheelController = null;
 
-    // ★裏側同期制御用のタイムスタンプ＆多重通信ロック
     let lastFetchTimestamp = 0;
     let isFetchingSheetData = false;
     let fetchingStartedAt = 0;
     let lastKnownUnreadCount = 0;
     let knownOfficeMessageIds = new Set();
     let hasInitializedMessageIds = true;
-    let autoPollTimerId = null;
 
     function pad2(n) {
       return String(n).padStart(2, '0');
@@ -674,7 +723,6 @@
       }, 2800);
     }
 
-    // 店舗データを配列の並び順（1, 2, 3...）として確実に正規化
     function normalizeStoreArray(rawList) {
       if (!Array.isArray(rawList)) return [];
       return rawList.map((item, idx) => {
@@ -719,7 +767,6 @@
       });
     }
 
-    // Web Audio API サウンド
     let sharedAudioCtx = null;
     let audioUnlocked = false;
     function getAudioCtx() {
@@ -866,7 +913,6 @@
       } catch (e) {}
     }
 
-    // ★事務所からの緊急伝言通知音（優しい2音チャイム）
     function triggerDispatchMemoAlertSound() {
       try {
         if (navigator.vibrate) navigator.vibrate([40, 60, 40]);
@@ -896,7 +942,6 @@
       } catch (e) {}
     }
 
-    // ② iPhoneタイマー風 縦型ドラムホイール（前後回転エンドレス無限ループ＋慣性スクロール）
     function createDrumWheel({ viewportId, reelId, hiddenInputId, maxCount, onValueChange }) {
       const viewport = document.getElementById(viewportId);
       const reel = document.getElementById(reelId);
@@ -1197,7 +1242,6 @@
       }
     }
 
-    // ★いずれかのモーダルが開いているか判定（裏側同期時に画面リセットを防ぐため）
     function isAnyBlockingModalOpen() {
       const modalIds = ['arrival-modal', 'gas-modal', 'history-modal', 'admin-car-modal'];
       return modalIds.some((id) => {
@@ -1556,7 +1600,6 @@
       saveScheduleCacheToLocal();
       renderStoreList();
 
-      // ★送信ボタンを押した瞬間（await fetchより前）に保護登録し、進行中の古いGET結果を無効化
       window.__lastArrivalSubmitAt = Date.now();
       window.__recentSubmittedLogs = window.__recentSubmittedLogs || [];
       window.__recentSubmittedLogs = window.__recentSubmittedLogs.filter(
@@ -1594,7 +1637,6 @@
       }
     }
 
-    // ④ ローカルキャッシュ保存＆即座復元（体感読込み速度を0.01秒に高速化）
     function getScheduleCacheKey() {
       return `store_schedule_cache_${excelCarIndex}_${getFormattedDeliveryDateKey()}`;
     }
@@ -1637,7 +1679,6 @@
         return;
       }
 
-      // 同時多重リクエストの防止（4.5秒以上経過したロックは強制解除して自動同期停止を防ぐ）
       if (isFetchingSheetData && silent) {
         if (Date.now() - fetchingStartedAt < 4500) {
           return;
@@ -1649,7 +1690,6 @@
       const thisFetchStartedAt = fetchingStartedAt;
       lastFetchTimestamp = Date.now();
 
-      // ④ 手動更新(!silent)の時だけ端末キャッシュから即時描画し、自動同期(silent)ではキャッシュ巻き戻しをしない
       const hasCached = !silent ? restoreScheduleCacheFromLocal() : false;
       if (hasCached && !isAnyBlockingModalOpen()) {
         renderStoreList();
@@ -1683,7 +1723,6 @@
         try {
           res = await fetch(`${gasWebAppUrl}?${query.toString()}`, fetchOptions);
         } catch (firstNetErr) {
-          // 電波瞬断やGASリダイレクト遅延時は600ms後に1回自動リトライ
           await new Promise((r) => setTimeout(r, 600));
           res = await fetch(`${gasWebAppUrl}?${query.toString()}`, {
             method: 'GET',
@@ -1703,7 +1742,6 @@
 
         if (data && data.status === 'ok') {
           window.__lastGasRawDebug = data;
-          // ★このGET通信開始後に新しく店着送信が行われていた場合、古いデータでの画面巻き戻しを防止
           const submittedDuringThisFetch = Boolean(window.__lastArrivalSubmitAt && thisFetchStartedAt < window.__lastArrivalSubmitAt);
           const prevScheduleSnapshot = JSON.stringify({
             course1Code,
@@ -1711,10 +1749,6 @@
             course1Stores,
             course2Stores,
             arrivalLogs
-          });
-          const prevChatSnapshot = JSON.stringify({
-            chatMessagesList,
-            activeDispatchMemo
           });
 
           if (data.course1Code) course1Code = String(data.course1Code);
@@ -1811,7 +1845,6 @@
       }
     }
 
-    // ★クールダウン付きスマート裏側同期（タッチ・画面復帰用）
     function triggerSmartBackgroundSync(minIntervalMs = 4000) {
       if (!gasWebAppUrl) return;
       if (document.visibilityState !== 'visible') return;
@@ -1825,7 +1858,6 @@
       document.getElementById('clock-display').textContent = `${pad2(now.getHours())}:${pad2(now.getMinutes())}`;
     }
 
-    // ★ネイティブアプリ風のホーム画面アイコン（iOS / Android対応）を動的生成
     function generateAppIcons() {
       try {
         const size = 512;
@@ -1921,7 +1953,38 @@
       } catch (e) {}
     }
 
+    // ★オープニング画面（GitHub上の ./opening-bg.jpg 実写背景を表示）
+    function initOnboardingFlow() {
+      const overlay = document.getElementById('onboarding-overlay');
+      const goBtn = document.getElementById('onboarding-go-started-btn');
+      const carTag = document.getElementById('onboarding-car-tag');
+      if (!overlay || !goBtn) return;
+
+      if (isManualReloading) return;
+
+      if (carTag) {
+        carTag.textContent = `${excelCarIndex}号車 • ${pad2(excelCarIndex)}`;
+      }
+
+      overlay.classList.remove('hidden');
+      overlay.classList.add('flex');
+
+      window.completeOnboardingFlow = function() {
+        overlay.classList.add('is-closing');
+        setTimeout(() => {
+          overlay.classList.add('hidden');
+          overlay.classList.remove('flex', 'is-closing');
+        }, 420);
+      };
+
+      goBtn.addEventListener('click', () => {
+        triggerWaterDropTap();
+        window.completeOnboardingFlow();
+      });
+    }
+
     document.addEventListener('DOMContentLoaded', () => {
+      initOnboardingFlow();
       generateAppIcons();
       updateOfficeCallLink();
       initTimeSelectOptions();
@@ -2244,7 +2307,6 @@
         const confirmedIds = JSON.parse(localStorage.getItem('store_confirmed_chat_ids') || '[]');
         const list = Array.isArray(chatMessagesList) ? chatMessagesList : [];
         let hasBrandNewOfficeMsg = false;
-        let newestUnconfirmedOfficeMsg = null;
 
         const currentOfficeIds = new Set();
         let unread = list.filter((m) => {
@@ -2745,14 +2807,12 @@
         }
       });
 
-      // ★初期データ読込（キャッシュ即時描画＋裏側GAS最新同期）
       hasInitializedMessageIds = true;
       renderStoreList();
       if (gasWebAppUrl) {
         fetchSheetData();
       }
 
-      // ★アプリを開いている間、5秒ごとに安定して自動同期（連続通信詰まり防止）
       setInterval(() => {
         if (gasWebAppUrl && document.visibilityState === 'visible') {
           fetchSheetData(true).then(() => {
@@ -2761,7 +2821,6 @@
         }
       }, 5000);
 
-      // ★他のアプリやスリープから画面に戻った時に即座に裏側更新
       document.addEventListener('visibilitychange', () => {
         if (document.visibilityState === 'visible') {
           isFetchingSheetData = false;
