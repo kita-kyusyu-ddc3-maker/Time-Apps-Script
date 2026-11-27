@@ -1945,7 +1945,7 @@
     }
 
     // ★オープニング画面（GitHub上の ./opening-bg.jpg 実写背景を表示・アイコンタップ/復帰時確実表示）
-    const APP_UI_VERSION = '2026.11.28.v2';
+    const APP_UI_VERSION = '2026.11.28.v3';
 
     async function checkAndAutoRefreshLatestHtml() {
       try {
@@ -2192,6 +2192,49 @@
       const previewBar = document.getElementById('chat-photo-preview-bar');
       const photoThumb = document.getElementById('chat-photo-thumb');
       const removePhotoBtn = document.getElementById('chat-remove-photo-btn');
+
+      if (openBtn && chatScreen) {
+        openBtn.addEventListener('click', async () => {
+          chatScreen.classList.remove('hidden');
+          chatScreen.classList.add('flex');
+
+          const confirmedIds = JSON.parse(localStorage.getItem('store_confirmed_chat_ids') || '[]');
+          const newlyConfirmed = [];
+
+          chatMessagesList = chatMessagesList.map((m) => {
+            if (m.sender === 'office' && !m.confirmed) {
+              const mId = String(m.id || '');
+              if (mId && !confirmedIds.includes(mId)) {
+                confirmedIds.push(mId);
+                newlyConfirmed.push(mId);
+              }
+              return { ...m, confirmed: true };
+            }
+            return m;
+          });
+
+          if (newlyConfirmed.length > 0) {
+            localStorage.setItem('store_confirmed_chat_ids', JSON.stringify(confirmedIds));
+            updateChatUnreadBadge();
+            if (gasWebAppUrl) {
+              newlyConfirmed.forEach((mId) => {
+                fetch(gasWebAppUrl, {
+                  method: 'POST',
+                  mode: 'no-cors',
+                  headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                  body: JSON.stringify({
+                    action: 'confirmMemo',
+                    excelCarIndex: excelCarIndex,
+                    memoId: mId
+                  })
+                }).catch(() => {});
+              });
+            }
+          }
+
+          renderChatMessages();
+        });
+      }
 
       if (micBtn && inputEl) {
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
