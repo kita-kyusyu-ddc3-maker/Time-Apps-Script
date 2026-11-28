@@ -1973,34 +1973,6 @@
         const goBtn = document.getElementById('onboarding-go-started-btn');
         if (!overlay) return;
 
-        let isExternalAppSwitching = false;
-        let shouldShowOnboardingOnNextResume = false;
-
-        // カメラ撮影・電話発信で一時的に別アプリへ移る場合は除外
-        const camInput = document.getElementById('chat-camera-input');
-        const callLink = document.getElementById('chat-office-call-link');
-        if (camInput) {
-          camInput.addEventListener('click', () => {
-            isExternalAppSwitching = true;
-            setTimeout(() => { isExternalAppSwitching = false; }, 15000);
-          });
-        }
-        if (callLink) {
-          callLink.addEventListener('click', () => {
-            isExternalAppSwitching = true;
-            setTimeout(() => { isExternalAppSwitching = false; }, 15000);
-          });
-        }
-
-        function showOnboardingScreen() {
-          try {
-            sessionStorage.removeItem('store_arrival_onboarding_session_done');
-          } catch (e) {}
-          document.documentElement.classList.remove('is-onboarding-dismissed');
-          overlay.classList.remove('hidden', 'is-closing');
-          overlay.classList.add('flex');
-        }
-
         let dismissedInSession = false;
         try {
           dismissedInSession = sessionStorage.getItem('store_arrival_onboarding_session_done') === '1';
@@ -2011,34 +1983,13 @@
           overlay.classList.add('hidden');
           overlay.classList.remove('flex', 'is-closing');
         } else {
-          showOnboardingScreen();
+          document.documentElement.classList.remove('is-onboarding-dismissed');
+          overlay.classList.remove('hidden', 'is-closing');
+          overlay.classList.add('flex');
         }
-
-        // ホームボタンや左←でバックグラウンドへ移った後に、再度アイコンから開かれた時だけオープニングを表示
-        // （店着画面を表示したまま電源ボタンを押して消灯→再点灯した場合は、表示復帰時にそのまま店着画面を維持）
-        document.addEventListener('visibilitychange', () => {
-          if (document.visibilityState === 'hidden') {
-            if (isExternalAppSwitching) return;
-            shouldShowOnboardingOnNextResume = true;
-          } else if (document.visibilityState === 'visible') {
-            isExternalAppSwitching = false;
-            if (shouldShowOnboardingOnNextResume) {
-              shouldShowOnboardingOnNextResume = false;
-              showOnboardingScreen();
-            }
-          }
-        });
-
-        window.addEventListener('pageshow', (e) => {
-          if (e.persisted && shouldShowOnboardingOnNextResume) {
-            shouldShowOnboardingOnNextResume = false;
-            showOnboardingScreen();
-          }
-        });
 
         if (goBtn) {
           goBtn.addEventListener('click', () => {
-            shouldShowOnboardingOnNextResume = false;
             try {
               sessionStorage.setItem('store_arrival_onboarding_session_done', '1');
             } catch (e) {}
